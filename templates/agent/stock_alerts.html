@@ -1,0 +1,59 @@
+{% extends "agent/base.html" %}
+
+{% block agent_content %}
+<div class="mb-4 d-flex justify-content-between align-items-center">
+    <h3 class="text-dark mb-0">Stock Alerts</h3>
+    <a href="{% url 'agent:stock_overview' %}" class="btn btn-success btn-sm">
+        <i class="fas fa-plus mr-2"></i> Manage Stock
+    </a>
+</div>
+
+{% if alerts %}
+<div class="row">
+    {% for alert in alerts %}
+    <div class="col-md-6 mb-3">
+        <div class="card border-{% if alert.is_triggered %}danger{% else %}warning{% endif %}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="card-title mb-1">{{ alert.product.title }}</h5>
+                        <p class="mb-2">
+                            <strong>Threshold:</strong> {{ alert.threshold_quantity }} units
+                            <br>
+                            <strong>Current Stock:</strong> {{ alert.product.stock }} units
+                        </p>
+                        {% if alert.is_triggered %}
+                        <span class="badge bg-danger">TRIGGERED</span>
+                        <small class="text-muted d-block mt-2">
+                            Last triggered: {{ alert.last_triggered|date:"M d, Y H:i" }}
+                        </small>
+                        {% else %}
+                        <span class="badge bg-success">ACTIVE</span>
+                        {% endif %}
+                    </div>
+                    <form method="post" action="" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="button" class="btn btn-sm btn-close"></button>
+                    </form>
+                </div>
+                
+                <div class="mt-3 pt-3 border-top">
+                    <small class="text-muted">Created: {{ alert.created_at|date:"M d, Y" }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-bell" style="font-size: 48px; color: #ccc;"></i>
+        <p class="text-muted mt-3">No alerts configured</p>
+        <a href="{% url 'agent:stock_overview' %}" class="btn btn-primary">
+            <i class="fas fa-warehouse mr-2"></i> Manage Stock
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

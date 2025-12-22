@@ -1,0 +1,224 @@
+{% extends "agent/base.html" %}
+
+{% block agent_content %}
+<!-- Page Header -->
+<div class="page-header">
+    <h3><i class="fas fa-truck"></i>Delivery Partners</h3>
+    <p>Manage your delivery partners and configure shipping methods.</p>
+</div>
+
+<!-- Quick Stats Cards -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon" style="color: #1976d2;">
+                <i class="fas fa-briefcase"></i>
+            </div>
+            <div class="metric-value">{{ delivery_partnerships.count }}</div>
+            <div class="metric-label">Active Partners</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon" style="color: #43a047;">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="metric-value">{{ delivery_partnerships|dictsort:"is_preferred"|last }}</div>
+            <div class="metric-label">Preferred Partner</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon" style="color: #fb8c00;">
+                <i class="fas fa-plus-circle"></i>
+            </div>
+            <div class="metric-value">{{ available_partners.count }}</div>
+            <div class="metric-label">Available to Add</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon" style="color: #00bfa5;">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="metric-value">24h</div>
+            <div class="metric-label">Avg Delivery</div>
+        </div>
+    </div>
+</div>
+
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle mr-2"></i>
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <!-- Configured Partners -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list mr-2" style="color: #1976d2;"></i>Your Delivery Partners</h5>
+                <a href="{% url 'agent:add_delivery_partner' %}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus"></i> Add Partner
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if delivery_partnerships %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr style="background: linear-gradient(135deg, #f5f7fa 0%, #e8eef7 100%); border-bottom: 2px solid var(--border);">
+                                <th style="padding: 16px; font-weight: 600; color: var(--dark);">Partner Name</th>
+                                <th style="padding: 16px; font-weight: 600; color: var(--dark);">Vehicle Type</th>
+                                <th style="padding: 16px; font-weight: 600; color: var(--dark);">Delivery Time</th>
+                                <th style="padding: 16px; font-weight: 600; color: var(--dark);">Success Rate</th>
+                                <th style="padding: 16px; font-weight: 600; color: var(--dark);">Status</th>
+                                <th style="padding: 16px; font-weight: 600; color: var(--dark);">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for partnership in delivery_partnerships %}
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 16px;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <i class="fas fa-truck" style="color: #1976d2; font-size: 18px;"></i>
+                                        <div>
+                                            <strong>{{ partnership.delivery_partner.name }}</strong>
+                                            {% if partnership.is_preferred %}
+                                            <span style="background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-left: 8px;">★ Preferred</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="padding: 16px;">
+                                    <span style="background: #e3f2fd; color: #1976d2; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;">
+                                        {{ partnership.delivery_partner.get_vehicle_type_display }}
+                                    </span>
+                                </td>
+                                <td style="padding: 16px;">
+                                    <strong>{{ partnership.delivery_partner.avg_delivery_time_hours }}h</strong>
+                                </td>
+                                <td style="padding: 16px;">
+                                    <span style="color: #43a047; font-weight: 600;">{{ partnership.delivery_partner.success_delivery_rate }}%</span>
+                                </td>
+                                <td style="padding: 16px;">
+                                    {% if partnership.is_active %}
+                                    <span style="background: #c8e6c9; color: #1b5e20; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;">
+                                        <i class="fas fa-check-circle"></i> Active
+                                    </span>
+                                    {% else %}
+                                    <span style="background: #ffccbc; color: #bf360c; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;">
+                                        <i class="fas fa-times-circle"></i> Inactive
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 16px;">
+                                    <div style="display: flex; gap: 8px;">
+                                        {% if not partnership.is_preferred %}
+                                        <a href="{% url 'agent:set_preferred_partner' partnership.id %}" class="btn btn-sm btn-outline-success" title="Set as preferred">
+                                            <i class="fas fa-star"></i>
+                                        </a>
+                                        {% endif %}
+                                        <a href="{% url 'agent:edit_delivery_partner' partnership.id %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'agent:remove_delivery_partner' partnership.id %}" class="btn btn-sm btn-outline-danger" title="Remove" onclick="return confirm('Remove this partner?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div style="padding: 40px 20px; text-align: center;">
+                    <i class="fas fa-truck" style="font-size: 48px; color: #ccc; margin-bottom: 12px;"></i>
+                    <p style="color: #999; margin-bottom: 16px;">No delivery partners configured yet.</p>
+                    <a href="{% url 'agent:add_delivery_partner' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Your First Partner
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Available Partners to Add -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-star mr-2" style="color: #fb8c00;"></i>Available Partners</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if available_partners %}
+                <div style="max-height: 400px; overflow-y: auto;">
+                    {% for partner in available_partners|slice:":5" %}
+                    <div style="padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <strong style="display: block; margin-bottom: 4px;">{{ partner.name }}</strong>
+                            <small style="color: #666;">{{ partner.get_vehicle_type_display }}</small><br>
+                            <small style="color: #666;">{{ partner.current_location }}</small>
+                        </div>
+                        <a href="{% url 'agent:add_delivery_partner' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-plus"></i> Add
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div style="padding: 16px; border-top: 1px solid var(--border); text-align: center;">
+                    <a href="{% url 'agent:add_delivery_partner' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus-circle"></i> View All Available
+                    </a>
+                </div>
+                {% else %}
+                <div style="padding: 40px 20px; text-align: center;">
+                    <i class="fas fa-check-circle" style="font-size: 32px; color: #43a047; margin-bottom: 12px;"></i>
+                    <p style="color: #999;">All available partners are already added!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Partner Guidelines -->
+<div class="row g-4 mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle mr-2" style="color: #1976d2;"></i>How to Use Delivery Partners</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 style="font-weight: 600; margin-bottom: 8px;">✓ Add Partners</h6>
+                        <p style="font-size: 13px; color: #666; margin-bottom: 16px;">Click "Add Partner" to register delivery partners available in your area. You can configure multiple partners for different routes.</p>
+                        
+                        <h6 style="font-weight: 600; margin-bottom: 8px;">✓ Set Preferred</h6>
+                        <p style="font-size: 13px; color: #666; margin-bottom: 16px;">Mark your most reliable partner as preferred. This partner will be suggested first when assigning deliveries.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 style="font-weight: 600; margin-bottom: 8px;">✓ Custom Notes</h6>
+                        <p style="font-size: 13px; color: #666; margin-bottom: 16px;">Add special instructions for each partner - payment terms, delivery zones, vehicle requirements, etc.</p>
+                        
+                        <h6 style="font-weight: 600; margin-bottom: 8px;">✓ Enable/Disable</h6>
+                        <p style="font-size: 13px; color: #666;">Quickly disable partners when they're on leave or inactive without removing their configuration.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

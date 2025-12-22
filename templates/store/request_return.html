@@ -1,0 +1,80 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Request Return - Bhrikutimandap{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Request Return</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle"></i> 
+                        You are requesting a return for: <strong>{{ order_item.product.title }}</strong>
+                    </div>
+
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="product" class="form-label">Product</label>
+                            <input type="text" class="form-control" id="product" readonly 
+                                   value="{{ order_item.product.title }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Quantity Ordered</label>
+                            <input type="number" class="form-control" id="quantity" readonly 
+                                   value="{{ order_item.quantity }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="price" class="form-label">Price Per Unit</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control" id="price" readonly 
+                                       value="{{ order_item.price_at_purchase }}" step="0.01">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Reason for Return <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="reason" name="reason" rows="5" required 
+                                      placeholder="Please explain why you want to return this product..."></textarea>
+                            <small class="form-text text-muted">
+                                Be as specific as possible. Common reasons: defective, wrong item, not as described, changed mind, etc.
+                            </small>
+                        </div>
+
+                        <div class="alert alert-warning" role="alert">
+                            <i class="fas fa-exclamation-circle"></i> 
+                            <strong>Important:</strong> Once submitted, your return request will be reviewed by our team. 
+                            If approved, you will be refunded the full amount and provided with return shipping instructions.
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'store:order_detail' order_item.order.id %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-send"></i> Submit Return Request
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,151 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Order #{{ order.id }} - Bhrikutimandap{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Order #{{ order.id }}</h2>
+            <p class="text-muted">Placed on {{ order.created_at|date:"d M Y, H:i" }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <span class="badge bg-info" style="font-size: 1rem;">
+                {% if order.paid %}Paid{% else %}Pending Payment{% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="fas fa-map-marker-alt"></i> Shipping To</h6>
+                </div>
+                <div class="card-body">
+                    {% if order.delivery_address %}
+                        <p class="mb-1"><strong>{{ order.delivery_address.label }}</strong></p>
+                        <p class="mb-1"><strong>{{ order.delivery_address.recipient_name }}</strong></p>
+                        <p class="mb-1">{{ order.delivery_address.address_line1 }}</p>
+                        {% if order.delivery_address.address_line2 %}
+                            <p class="mb-1">{{ order.delivery_address.address_line2 }}</p>
+                        {% endif %}
+                        <p class="mb-1">{{ order.delivery_address.city }}, {{ order.delivery_address.state }} {{ order.delivery_address.postal_code }}</p>
+                        <p class="mb-0">{{ order.delivery_address.country }}</p>
+                        <p class="mb-0 mt-2"><small class="text-muted"><i class="fas fa-phone"></i> {{ order.delivery_address.phone }}</small></p>
+                    {% else %}
+                        <p class="mb-1"><strong>{{ order.user.get_full_name }}</strong></p>
+                        <p class="mb-1">{{ order.user.address_line1 }}</p>
+                        {% if order.user.address_line2 %}
+                            <p class="mb-1">{{ order.user.address_line2 }}</p>
+                        {% endif %}
+                        <p class="mb-1">{{ order.user.city }}, {{ order.user.state }} {{ order.user.postal_code }}</p>
+                        <p class="mb-0">{{ order.user.country }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="fas fa-credit-card"></i> Payment & Contact</h6>
+                </div>
+                <div class="card-body">
+                    {% if order.payment_method %}
+                        <p class="mb-2">
+                            <strong>Payment Method:</strong><br>
+                            {{ order.payment_method.display_name }} ({{ order.payment_method.get_payment_type_display }})
+                        </p>
+                    {% endif %}
+                    <p class="mb-1"><strong>Email:</strong><br> {{ order.user.email }}</p>
+                    <p class="mb-0"><strong>Phone:</strong><br> {{ order.user.phone|default:"Not provided" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h6 class="mb-0">Order Items</h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Subtotal</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'store:product_detail' item.product.id %}">
+                                    {{ item.product.title }}
+                                </a>
+                                {% if item.product.supplier %}
+                                    <br><small class="text-muted">Supplier: {{ item.product.supplier.username }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.quantity }}</td>
+                            <td>₹{{ item.product.price }}</td>
+                            <td><strong>₹{{ item.total_price }}</strong></td>
+                            <td>
+                                {% if item.return_status == "requested" %}
+                                    <span class="badge bg-warning">Return Requested</span>
+                                {% elif item.return_status == "approved" %}
+                                    <span class="badge bg-success">Return Approved</span>
+                                {% elif item.return_status == "rejected" %}
+                                    <span class="badge bg-danger">Return Rejected</span>
+                                {% else %}
+                                    <span class="badge bg-success">Purchased</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not item.return_status or item.return_status == "rejected" %}
+                                    {% if not item.return_status %}
+                                        <a href="{% url 'store:request_return' item.id %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-undo"></i> Return
+                                        </a>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row justify-content-end">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-6">Subtotal:</div>
+                        <div class="col-6 text-end">₹{{ total }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">Shipping:</div>
+                        <div class="col-6 text-end">₹0</div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-6"><strong>Total:</strong></div>
+                        <div class="col-6 text-end"><strong>₹{{ total }}</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'store:product_list' %}" class="btn btn-secondary">Continue Shopping</a>
+    </div>
+</div>
+{% endblock %}

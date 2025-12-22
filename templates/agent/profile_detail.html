@@ -1,0 +1,117 @@
+{% extends "agent/base.html" %}
+
+{% block agent_content %}
+<div class="mb-4">
+    <h3 class="text-dark">Profile</h3>
+</div>
+
+<div class="card">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Company Information</h5>
+        <a href="{% url 'agent:profile_edit' %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-edit mr-2"></i> Edit
+        </a>
+    </div>
+    
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="text-muted small">Company Name</label>
+                <p class="text-dark">{{ agent_profile.company_name }}</p>
+            </div>
+            <div class="col-md-6">
+                <label class="text-muted small">Company Address</label>
+                <p class="text-dark">{{ agent_profile.company_address }}</p>
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="text-muted small">Phone</label>
+                <p class="text-dark">{{ agent_profile.company_phone }}</p>
+            </div>
+            <div class="col-md-6">
+                <label class="text-muted small">GST Number</label>
+                <p class="text-dark">{{ agent_profile.gst_number }}</p>
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="text-muted small">Bank Account</label>
+                <p class="text-dark">{{ agent_profile.bank_account }}</p>
+            </div>
+            <div class="col-md-6">
+                <label class="text-muted small">Bank IFSC</label>
+                <p class="text-dark">{{ agent_profile.bank_ifsc }}</p>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <label class="text-muted small">Monthly Sales Target</label>
+                <p class="text-dark">₹{{ agent_profile.monthly_sales_target|floatformat:0 }}</p>
+            </div>
+            <div class="col-md-6">
+                <label class="text-muted small">Approval Status</label>
+                <p class="text-dark">
+                    {% if agent_profile.approval_status == 'approved' %}
+                    <span class="badge bg-success">{{ agent_profile.get_approval_status_display }}</span>
+                    {% elif agent_profile.approval_status == 'rejected' %}
+                    <span class="badge bg-danger">{{ agent_profile.get_approval_status_display }}</span>
+                    {% else %}
+                    <span class="badge bg-warning">{{ agent_profile.get_approval_status_display }}</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Branding & Images</h5>
+    </div>
+    
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <label class="text-muted small">Company Logo</label>
+                {% if agent_profile.company_logo %}
+                <div class="mb-3">
+                    <img src="{{ agent_profile.company_logo.url }}" alt="Company Logo" style="max-width: 150px; max-height: 150px; object-fit: contain; border: 1px solid #ddd; padding: 5px; border-radius: 4px;">
+                </div>
+                {% else %}
+                <p class="text-muted"><em>No logo uploaded</em></p>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+                <label class="text-muted small">Company Banner</label>
+                {% if agent_profile.company_banner %}
+                <div class="mb-3">
+                    <img src="{{ agent_profile.company_banner.url }}" alt="Company Banner" style="max-width: 200px; max-height: 150px; object-fit: contain; border: 1px solid #ddd; padding: 5px; border-radius: 4px;">
+                </div>
+                {% else %}
+                <p class="text-muted"><em>No banner uploaded</em></p>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+                <label class="text-muted small">Trademark Image</label>
+                {% if agent_profile.trademark_image %}
+                <div class="mb-3">
+                    <img src="{{ agent_profile.trademark_image.url }}" alt="Trademark" style="max-width: 150px; max-height: 150px; object-fit: contain; border: 1px solid #ddd; padding: 5px; border-radius: 4px;">
+                </div>
+                {% else %}
+                <p class="text-muted"><em>No trademark uploaded</em></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'agent:dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+</div>
+{% endblock %}

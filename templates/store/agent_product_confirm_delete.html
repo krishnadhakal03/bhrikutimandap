@@ -1,0 +1,38 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Delete Product - Bhrikutimandap{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Delete Product</h4>
+                </div>
+                <div class="card-body">
+                    <p class="mb-4">
+                        Are you sure you want to delete the product <strong>"{{ product.title }}"</strong>? 
+                        This action cannot be undone.
+                    </p>
+
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-info-circle"></i> All associated orders and cart items will also be affected.
+                    </div>
+
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'store:agent_dashboard' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Yes, Delete Product
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

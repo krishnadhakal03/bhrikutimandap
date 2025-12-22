@@ -1,0 +1,136 @@
+{% extends "agent/base.html" %}
+{% load widget_tweaks %}
+
+{% block agent_content %}
+<div class="mb-4">
+    <h3 class="text-dark">Edit Profile</h3>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data" class="needs-validation">
+            {% csrf_token %}
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.company_name.label }}</label>
+                    {{ form.company_name|add_class:"form-control" }}
+                    {% if form.company_name.errors %}
+                    <div class="invalid-feedback d-block">{{ form.company_name.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.company_phone.label }}</label>
+                    {{ form.company_phone|add_class:"form-control" }}
+                    {% if form.company_phone.errors %}
+                    <div class="invalid-feedback d-block">{{ form.company_phone.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label class="form-label">{{ form.company_address.label }}</label>
+                    {{ form.company_address|add_class:"form-control" }}
+                    {% if form.company_address.errors %}
+                    <div class="invalid-feedback d-block">{{ form.company_address.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.gst_number.label }}</label>
+                    {{ form.gst_number|add_class:"form-control" }}
+                    {% if form.gst_number.errors %}
+                    <div class="invalid-feedback d-block">{{ form.gst_number.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.monthly_target.label }}</label>
+                    {{ form.monthly_target|add_class:"form-control" }}
+                    {% if form.monthly_target.errors %}
+                    <div class="invalid-feedback d-block">{{ form.monthly_target.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.bank_account.label }}</label>
+                    {{ form.bank_account|add_class:"form-control" }}
+                    {% if form.bank_account.errors %}
+                    <div class="invalid-feedback d-block">{{ form.bank_account.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.bank_ifsc.label }}</label>
+                    {{ form.bank_ifsc|add_class:"form-control" }}
+                    {% if form.bank_ifsc.errors %}
+                    <div class="invalid-feedback d-block">{{ form.bank_ifsc.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <hr class="my-4">
+            <h5 class="mb-3">Branding & Images</h5>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.company_logo.label }}</label>
+                    {% if form.company_logo.value %}
+                    <div class="mb-2">
+                        <img src="{{ form.company_logo.value.url }}" alt="Company Logo" style="max-width: 150px; max-height: 100px; object-fit: contain;">
+                    </div>
+                    {% endif %}
+                    {{ form.company_logo|add_class:"form-control" }}
+                    <small class="text-muted">Upload your company logo (PNG, JPG, GIF)</small>
+                    {% if form.company_logo.errors %}
+                    <div class="invalid-feedback d-block">{{ form.company_logo.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.company_banner.label }}</label>
+                    {% if form.company_banner.value %}
+                    <div class="mb-2">
+                        <img src="{{ form.company_banner.value.url }}" alt="Company Banner" style="max-width: 200px; max-height: 100px; object-fit: contain;">
+                    </div>
+                    {% endif %}
+                    {{ form.company_banner|add_class:"form-control" }}
+                    <small class="text-muted">Upload your company banner/hero image</small>
+                    {% if form.company_banner.errors %}
+                    <div class="invalid-feedback d-block">{{ form.company_banner.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.trademark_image.label }}</label>
+                    {% if form.trademark_image.value %}
+                    <div class="mb-2">
+                        <img src="{{ form.trademark_image.value.url }}" alt="Trademark" style="max-width: 150px; max-height: 100px; object-fit: contain;">
+                    </div>
+                    {% endif %}
+                    {{ form.trademark_image|add_class:"form-control" }}
+                    <small class="text-muted">Upload trademark or certification image</small>
+                    {% if form.trademark_image.errors %}
+                    <div class="invalid-feedback d-block">{{ form.trademark_image.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save mr-2"></i> Save Changes
+                </button>
+                <a href="{% url 'agent:profile_detail' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

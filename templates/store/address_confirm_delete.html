@@ -1,0 +1,50 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Delete Address - Bhrikutimandap{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row">
+    <div class="col-md-6 offset-md-3">
+      <div class="card border-0 shadow-sm border-danger border-2">
+        <div class="card-header bg-light border-bottom">
+          <h4 class="mb-0 text-danger">Delete Address</h4>
+        </div>
+        <div class="card-body p-4">
+          <div class="alert alert-warning" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> 
+            <strong>Are you sure?</strong> This action cannot be undone.
+          </div>
+
+          <p><strong>Address to be deleted:</strong></p>
+          <div class="card bg-light mb-4">
+            <div class="card-body">
+              <h6>{{ address.label }}</h6>
+              <p class="mb-0 small">
+                {{ address.recipient_name }}<br>
+                {{ address.address_line1 }}
+                {% if address.address_line2 %}<br>{{ address.address_line2 }}{% endif %}<br>
+                {{ address.city }}, {{ address.state }} {{ address.postal_code }}<br>
+                {{ address.country }}
+              </p>
+            </div>
+          </div>
+
+          <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-danger">
+                <i class="fas fa-trash"></i> Delete Address
+              </button>
+              <a href="{% url 'store:address_list' %}" class="btn btn-outline-secondary">
+                Cancel
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

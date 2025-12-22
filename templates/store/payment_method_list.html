@@ -1,0 +1,92 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Payment Methods - Bhrikutimandap{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2>Payment Methods</h2>
+      <p class="text-muted">Manage your saved payment methods for faster checkout</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <a href="{% url 'store:payment_method_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add Payment Method
+      </a>
+    </div>
+  </div>
+
+  <div class="alert alert-info">
+    <i class="fas fa-lock"></i> 
+    <strong>Security:</strong> We only store encrypted payment tokens and never store raw card data.
+  </div>
+
+  {% if payment_methods %}
+    <div class="row">
+      {% for method in payment_methods %}
+        <div class="col-md-6 mb-4">
+          <div class="card border-0 shadow-sm {% if method.is_default %}border-success border-2{% endif %}">
+            {% if method.is_default %}
+              <div class="card-header bg-success text-white">
+                <span class="badge bg-light text-success">Default</span>
+              </div>
+            {% endif %}
+            <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="card-title mb-0">
+                  {% if method.payment_type == 'card' %}
+                    <i class="fas fa-credit-card"></i>
+                  {% elif method.payment_type == 'upi' %}
+                    <i class="fas fa-mobile-alt"></i>
+                  {% elif method.payment_type == 'netbanking' %}
+                    <i class="fas fa-university"></i>
+                  {% elif method.payment_type == 'wallet' %}
+                    <i class="fas fa-wallet"></i>
+                  {% endif %}
+                  {{ method.display_name }}
+                </h5>
+              </div>
+
+              <p class="card-text text-muted">
+                <strong>Type:</strong> {{ method.get_payment_type_display }}<br>
+                {% if method.last_four %}
+                  <strong>Last 4 Digits:</strong> {{ method.last_four }}<br>
+                {% endif %}
+                {% if method.expiry_month and method.expiry_year %}
+                  <strong>Expires:</strong> {{ method.expiry_month }}/{{ method.expiry_year }}<br>
+                {% endif %}
+                <small class="text-muted">Added on {{ method.created_at|date:"M d, Y" }}</small>
+              </p>
+
+              <div class="btn-group mt-3" role="group">
+                {% if not method.is_default %}
+                  <a href="{% url 'store:payment_method_set_default' method.id %}" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-check"></i> Set Default
+                  </a>
+                {% endif %}
+                <a href="{% url 'store:payment_method_delete' method.id %}" class="btn btn-sm btn-outline-danger">
+                  <i class="fas fa-trash"></i> Remove
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info" role="alert">
+      <i class="fas fa-info-circle"></i> No payment methods saved yet.
+      <a href="{% url 'store:payment_method_create' %}" class="alert-link">Add your first payment method</a>
+    </div>
+  {% endif %}
+
+  <!-- Back to Dashboard -->
+  <div class="mt-4">
+    <a href="{% url 'store:customer_dashboard' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

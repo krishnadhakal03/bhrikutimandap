@@ -1,0 +1,451 @@
+{% extends "agent/base.html" %}
+{% load static %}
+
+{% block agent_content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <a href="{% url 'agent:incoming_orders' %}" class="btn btn-outline-secondary btn-sm mb-3">
+                <i class="fas fa-arrow-left mr-1"></i> Back to Orders
+            </a>
+            <h2 class="text-dark">
+                <i class="fas fa-map-marked-alt text-primary mr-2"></i>
+                Delivery Tracking
+            </h2>
+            <p class="text-muted">Order #{{ order.id }} - Real-time delivery tracking</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Tracking Section -->
+        <div class="col-lg-8">
+            <!-- Pizza Trajectory (Delivery Stages) -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-light border-bottom">
+                    <h6 class="mb-0 text-dark">
+                        <i class="fas fa-tasks mr-2"></i>Delivery Journey
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <!-- Progress Bar -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <strong>Overall Progress</strong>
+                            <span class="badge badge-primary">{{ progress_percentage }}%</span>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {{ progress_percentage }}%;" 
+                                 aria-valuenow="{{ progress_percentage }}" 
+                                 aria-valuemin="0" aria-valuemax="100">
+                                {{ progress_percentage }}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline -->
+                    <div class="timeline">
+                        {% for tracking in tracking_history %}
+                        <div class="timeline-item {% if forloop.counter <= current_stage_index %}completed{% endif %}">
+                            <div class="timeline-marker {% if forloop.counter == current_stage_index %}active{% elif forloop.counter < current_stage_index %}success{% endif %}">
+                                {% if tracking.stage == 'order_confirmed' %}
+                                    <i class="fas fa-check-circle"></i>
+                                {% elif tracking.stage == 'order_packed' %}
+                                    <i class="fas fa-box"></i>
+                                {% elif tracking.stage == 'pickup_scheduled' %}
+                                    <i class="fas fa-calendar-alt"></i>
+                                {% elif tracking.stage == 'picked_up' %}
+                                    <i class="fas fa-truck-pickup"></i>
+                                {% elif tracking.stage == 'in_transit' %}
+                                    <i class="fas fa-truck"></i>
+                                {% elif tracking.stage == 'out_for_delivery' %}
+                                    <i class="fas fa-map-pin"></i>
+                                {% elif tracking.stage == 'delivered' %}
+                                    <i class="fas fa-check-double"></i>
+                                {% endif %}
+                            </div>
+                            <div class="timeline-content">
+                                <h6 class="text-dark mb-1">
+                                    {% if tracking.stage == 'order_confirmed' %}
+                                        Order Confirmed
+                                    {% elif tracking.stage == 'order_packed' %}
+                                        Order Packed
+                                    {% elif tracking.stage == 'pickup_scheduled' %}
+                                        Pickup Scheduled
+                                    {% elif tracking.stage == 'picked_up' %}
+                                        Picked Up
+                                    {% elif tracking.stage == 'in_transit' %}
+                                        In Transit
+                                    {% elif tracking.stage == 'out_for_delivery' %}
+                                        Out for Delivery
+                                    {% elif tracking.stage == 'delivered' %}
+                                        Delivered
+                                    {% endif %}
+                                </h6>
+                                <p class="text-muted mb-1">
+                                    <small>{{ tracking.created_at|date:"M d, Y \a\t h:i A" }}</small>
+                                </p>
+                                {% if tracking.location %}
+                                <p class="text-muted mb-1">
+                                    <i class="fas fa-map-marker-alt mr-1"></i>
+                                    <small>{{ tracking.location }}</small>
+                                </p>
+                                {% endif %}
+                                {% if tracking.notes %}
+                                <p class="mb-0">
+                                    <small class="text-dark">{{ tracking.notes }}</small>
+                                </p>
+                                {% endif %}
+                                {% if tracking.image %}
+                                <div class="mt-2">
+                                    <a href="{{ tracking.image.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-image mr-1"></i> View Photo
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Update Delivery Status (Agent Only) -->
+            <div class="card shadow">
+                <div class="card-header bg-light border-bottom">
+                    <h6 class="mb-0 text-dark">
+                        <i class="fas fa-edit mr-2"></i>Update Delivery Status
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form id="updateStatusForm" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label for="stage" class="font-weight-bold">Next Delivery Stage</label>
+                            <select name="stage" id="stage" class="form-control form-control-lg" required>
+                                <option value="">-- Select a stage --</option>
+                                <option value="order_packed">Order Packed</option>
+                                <option value="pickup_scheduled">Pickup Scheduled</option>
+                                <option value="picked_up">Picked Up</option>
+                                <option value="in_transit">In Transit</option>
+                                <option value="out_for_delivery">Out for Delivery</option>
+                                <option value="delivered">Delivered ✓</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="location" class="font-weight-bold">Location / Update</label>
+                            <input type="text" name="location" id="location" class="form-control" 
+                                   placeholder="e.g., Distribution Center, In Transit to City, Final Delivery Route">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="notes" class="font-weight-bold">Notes / Comments</label>
+                            <textarea name="notes" id="notes" class="form-control" rows="3" 
+                                      placeholder="Add any additional information or updates..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="image" class="font-weight-bold">Photo Evidence (Optional)</label>
+                            <div class="custom-file">
+                                <input type="file" name="image" id="image" class="custom-file-input" accept="image/*">
+                                <label class="custom-file-label" for="image">Choose file...</label>
+                            </div>
+                            <small class="text-muted">Upload a photo at critical stages (pickup, delivery)</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg btn-block mt-3">
+                            <i class="fas fa-check-circle mr-2"></i> Update Status
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Order & Delivery Info -->
+        <div class="col-lg-4">
+            <!-- Order Summary -->
+            <div class="card shadow mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">Order Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Order ID:</small>
+                        <p class="mb-0"><strong>#{{ order.id }}</strong></p>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Customer:</small>
+                        <p class="mb-0"><strong>{{ order.user.get_full_name }}</strong></p>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Order Date:</small>
+                        <p class="mb-0"><strong>{{ order.created_at|date:"M d, Y" }}</strong></p>
+                    </div>
+                    <div class="mb-3 border-top pt-3">
+                        <small class="text-muted">Order Total:</small>
+                        <p class="mb-0"><strong class="text-success h5">₹{{ order.total|floatformat:0 }}</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Partner Info -->
+            {% if delivery.delivery_partner %}
+            <div class="card shadow mb-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-truck mr-2"></i>Delivery Partner
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h5 class="text-dark mb-1">{{ delivery.delivery_partner.name }}</h5>
+                        <div class="mb-2">
+                            {% if delivery.delivery_partner.vehicle_type == 'bike' %}
+                                🏍️ Bike
+                            {% elif delivery.delivery_partner.vehicle_type == 'auto' %}
+                                🛺 Auto
+                            {% elif delivery.delivery_partner.vehicle_type == 'car' %}
+                                🚗 Car
+                            {% elif delivery.delivery_partner.vehicle_type == 'truck' %}
+                                🚚 Truck
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted">Contact:</small>
+                        <p class="mb-0">
+                            <i class="fas fa-phone mr-1 text-primary"></i>
+                            <strong>{{ delivery.delivery_partner.phone }}</strong>
+                        </p>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted">Avg. Delivery Time:</small>
+                        <p class="mb-0"><strong>{{ delivery.delivery_partner.avg_delivery_time_hours }} hours</strong></p>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted">Success Rate:</small>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {{ delivery.delivery_partner.success_delivery_rate }}%;">
+                            </div>
+                        </div>
+                        <small><strong>{{ delivery.delivery_partner.success_delivery_rate }}%</strong></small>
+                    </div>
+
+                    <div class="border-top pt-3">
+                        <small class="text-muted">Status:</small>
+                        <p class="mb-0">
+                            <span class="badge badge-{% if delivery.delivery_partner.status == 'active' %}success{% else %}warning{% endif %}">
+                                {{ delivery.delivery_partner.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                No delivery partner assigned yet.
+            </div>
+            {% endif %}
+
+            <!-- Delivery Timeline Stats -->
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">Timeline</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Assigned On:</small>
+                        <p class="mb-0">
+                            <strong>
+                                {% if delivery.assigned_at %}
+                                    {{ delivery.assigned_at|date:"M d, Y h:i A" }}
+                                {% else %}
+                                    Not yet assigned
+                                {% endif %}
+                            </strong>
+                        </p>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted">Est. Delivery:</small>
+                        <p class="mb-0">
+                            <strong>
+                                {% if delivery.estimated_delivery %}
+                                    {{ delivery.estimated_delivery|date:"M d, Y h:i A" }}
+                                {% else %}
+                                    Calculating...
+                                {% endif %}
+                            </strong>
+                        </p>
+                    </div>
+
+                    <div>
+                        <small class="text-muted">Actual Delivery:</small>
+                        <p class="mb-0">
+                            <strong>
+                                {% if delivery.actual_delivery %}
+                                    {{ delivery.actual_delivery|date:"M d, Y h:i A" }}
+                                {% else %}
+                                    Pending...
+                                {% endif %}
+                            </strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Timeline Styles */
+    .timeline {
+        position: relative;
+        padding: 20px 0;
+    }
+
+    .timeline-item {
+        display: flex;
+        margin-bottom: 40px;
+        position: relative;
+    }
+
+    .timeline-item:not(:last-child)::before {
+        content: '';
+        position: absolute;
+        left: 20px;
+        top: 50px;
+        width: 2px;
+        height: 60px;
+        background-color: #e9ecef;
+    }
+
+    .timeline-item.completed:not(:last-child)::before {
+        background-color: #27ae60;
+    }
+
+    .timeline-marker {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        border: 2px solid #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 18px;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 2;
+        margin-right: 20px;
+    }
+
+    .timeline-marker.active {
+        background-color: #3498db;
+        color: white;
+        box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1);
+        animation: pulse 2s infinite;
+    }
+
+    .timeline-marker.success {
+        background-color: #27ae60;
+        color: white;
+    }
+
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1);
+        }
+        50% {
+            box-shadow: 0 0 0 8px rgba(52, 152, 219, 0.2);
+        }
+        100% {
+            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1);
+        }
+    }
+
+    .timeline-content {
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        flex: 1;
+    }
+
+    .timeline-item.completed .timeline-content {
+        background-color: #f0f8f5;
+    }
+
+    .timeline-item.completed h6 {
+        color: #27ae60;
+    }
+
+    .custom-file-label::after {
+        content: "Browse";
+    }
+
+    .card {
+        border: none;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    }
+</style>
+
+<script>
+document.getElementById('updateStatusForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const stage = document.getElementById('stage').value;
+    
+    if (!stage) {
+        alert('Please select a delivery stage');
+        return;
+    }
+
+    // Show loading state
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Updating...';
+
+    fetch("{% url 'agent:update_delivery_status' order.id %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Status updated successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to update status'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating the status');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+});
+
+// Update file input label
+document.getElementById('image').addEventListener('change', function(e) {
+    const label = document.querySelector('.custom-file-label');
+    label.textContent = this.files[0] ? this.files[0].name : 'Choose file...';
+});
+</script>
+
+{% endblock %}

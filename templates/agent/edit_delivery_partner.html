@@ -1,0 +1,157 @@
+{% extends "agent/base.html" %}
+
+{% block agent_content %}
+<!-- Page Header -->
+<div class="page-header">
+    <h3><i class="fas fa-edit"></i>Edit Delivery Partner</h3>
+    <p>Update configuration for {{ partnership.delivery_partner.name }}</p>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-truck mr-2"></i>{{ partnership.delivery_partner.name }}</h5>
+                    <span style="background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">
+                        {{ partnership.delivery_partner.get_vehicle_type_display }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- Partner Info (Read-only) -->
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>Partner Details:</strong>
+                        {{ partnership.delivery_partner.name }} | 
+                        Phone: {{ partnership.delivery_partner.phone }} |
+                        Avg Delivery: {{ partnership.delivery_partner.avg_delivery_time_hours }}h |
+                        Success Rate: {{ partnership.delivery_partner.success_delivery_rate }}%
+                    </div>
+                    
+                    <!-- Preferred Partner -->
+                    <div class="form-group mb-4">
+                        <div class="form-check">
+                            {{ form.is_preferred }}
+                            <label class="form-check-label" for="id_is_preferred" style="font-weight: 600;">
+                                <i class="fas fa-star mr-2" style="color: #fb8c00;"></i>Mark as Preferred Partner
+                            </label>
+                        </div>
+                        <small class="form-text text-muted d-block mt-2">This partner will be suggested first when assigning deliveries</small>
+                        {% if form.is_preferred.errors %}
+                        <div class="alert alert-danger mt-2">{{ form.is_preferred.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Active Status -->
+                    <div class="form-group mb-4">
+                        <div class="form-check">
+                            {{ form.is_active }}
+                            <label class="form-check-label" for="id_is_active" style="font-weight: 600;">
+                                <i class="fas fa-check-circle mr-2" style="color: #43a047;"></i>Active
+                            </label>
+                        </div>
+                        <small class="form-text text-muted d-block mt-2">Uncheck to disable this partner temporarily</small>
+                        {% if form.is_active.errors %}
+                        <div class="alert alert-danger mt-2">{{ form.is_active.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Special Notes -->
+                    <div class="form-group mb-4">
+                        <label for="id_notes" class="form-label" style="font-weight: 600; margin-bottom: 12px;">
+                            <i class="fas fa-sticky-note mr-2" style="color: #00bfa5;"></i>Special Instructions
+                        </label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                        <div class="alert alert-danger mt-2">{{ form.notes.errors }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted mt-2">Add payment terms, delivery zones, vehicle requirements, or any special notes</small>
+                    </div>
+                    
+                    <!-- Configuration Metadata -->
+                    <div class="alert alert-light mb-4">
+                        <small style="color: #666;">
+                            <strong>Added:</strong> {{ partnership.assigned_at|date:"M d, Y" }} |
+                            <strong>Last Updated:</strong> {{ partnership.updated_at|date:"M d, Y H:i" }}
+                        </small>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="d-flex gap-2 mt-5">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save mr-2"></i>Save Changes
+                        </button>
+                        <a href="{% url 'agent:delivery_partners' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-times mr-2"></i>Cancel
+                        </a>
+                        <a href="{% url 'agent:remove_delivery_partner' partnership.id %}" class="btn btn-outline-danger btn-lg ms-auto" onclick="return confirm('Remove this partner?')">
+                            <i class="fas fa-trash mr-2"></i>Remove Partner
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Partner Stats -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar mr-2" style="color: #1976d2;"></i>Performance</h5>
+            </div>
+            <div class="card-body">
+                <div style="margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <strong>Success Rate</strong>
+                        <span style="color: #43a047; font-weight: 600;">{{ partnership.delivery_partner.success_delivery_rate }}%</span>
+                    </div>
+                    <div style="height: 6px; background: #e0e3e8; border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: {{ partnership.delivery_partner.success_delivery_rate }}%; background: linear-gradient(90deg, #43a047 0%, #2e7d32 100%);"></div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <strong>Avg Delivery Time</strong>
+                        <span style="font-weight: 600;">{{ partnership.delivery_partner.avg_delivery_time_hours }}h</span>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <strong>Total Deliveries</strong>
+                        <span style="font-weight: 600;">{{ partnership.delivery_partner.total_deliveries }}</span>
+                    </div>
+                </div>
+                
+                <div style="padding-top: 16px; border-top: 1px solid var(--border);">
+                    <p style="font-size: 13px; color: #666; margin-bottom: 0;">Service Area: <strong>{{ partnership.delivery_partner.current_location }}</strong></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-headset mr-2" style="color: #fb8c00;"></i>Contact</h5>
+            </div>
+            <div class="card-body">
+                <p style="font-size: 13px; margin-bottom: 8px;">
+                    <strong>Phone:</strong> {{ partnership.delivery_partner.phone }}
+                </p>
+                {% if partnership.delivery_partner.email %}
+                <p style="font-size: 13px; margin-bottom: 8px;">
+                    <strong>Email:</strong> {{ partnership.delivery_partner.email }}
+                </p>
+                {% endif %}
+                <p style="font-size: 13px; margin-bottom: 0;">
+                    <strong>Vehicle:</strong> {{ partnership.delivery_partner.vehicle_number|default:"Not specified" }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

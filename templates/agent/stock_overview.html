@@ -1,0 +1,126 @@
+{% extends "agent/base.html" %}
+
+{% block agent_content %}
+<div class="mb-4 d-flex justify-content-between align-items-center">
+    <h3 class="text-dark mb-0">Stock Overview</h3>
+    <a href="{% url 'agent:stock_alerts' %}" class="btn btn-warning btn-sm">
+        <i class="fas fa-bell mr-2"></i> Alerts ({{ alert_count }})
+    </a>
+</div>
+
+<!-- Stock Status Cards -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <h5 class="text-success">In Stock</h5>
+                <h3 class="mb-0">{{ products_in_stock }}</h3>
+                <small class="text-muted">Products with stock</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <h5 class="text-warning">Low Stock</h5>
+                <h3 class="mb-0">{{ products_low_stock }}</h3>
+                <small class="text-muted">Below 20 units</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card border-danger">
+            <div class="card-body text-center">
+                <h5 class="text-danger">Out of Stock</h5>
+                <h3 class="mb-0">{{ products_out_of_stock }}</h3>
+                <small class="text-muted">No stock available</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Table -->
+<div class="card mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Product Stock Levels</h5>
+        <a href="{% url 'agent:stock_alerts' %}" class="btn btn-sm btn-outline-primary">Manage Alerts</a>
+    </div>
+    
+    <div class="card-body">
+        {% if products %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Product</th>
+                        <th>Current Stock</th>
+                        <th>Status</th>
+                        <th>Last Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>
+                            <strong>{{ product.title }}</strong>
+                            <br>
+                            <small class="text-muted">Price: ₹{{ product.price }}</small>
+                        </td>
+                        <td><strong>{{ product.stock }}</strong> units</td>
+                        <td>
+                            {% if product.stock == 0 %}
+                            <span class="badge bg-danger">Out of Stock</span>
+                            {% elif product.stock < 20 %}
+                            <span class="badge bg-warning">Low Stock</span>
+                            {% else %}
+                            <span class="badge bg-success">In Stock</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ product.updated_at|date:"M d, Y" }}</td>
+                        <td>
+                            <a href="{% url 'agent:stock_adjust' product.id %}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-edit mr-1"></i> Adjust
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-center text-muted py-5">No products yet. <a href="{% url 'agent:product_create' %}">Add a product</a></p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Stock Changes -->
+{% if recent_changes %}
+<div class="card">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Recent Stock Changes</h5>
+    </div>
+    
+    <div class="card-body">
+        <div class="list-group list-group-flush">
+            {% for change in recent_changes %}
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="mb-1">{{ change.product.title }}</h6>
+                        <small class="text-muted">{{ change.get_action_display }} - {{ change.reason }}</small>
+                    </div>
+                    <span class="badge bg-{% if change.action == 'increase' %}success{% else %}danger{% endif %}">
+                        {% if change.action == 'increase' %}+{% else %}-{% endif %}{{ change.quantity_changed }} units
+                    </span>
+                </div>
+                <small class="text-muted">{{ change.created_at|date:"M d, Y H:i" }}</small>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

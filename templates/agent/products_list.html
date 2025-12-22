@@ -1,0 +1,138 @@
+{% extends "agent/base.html" %}
+
+{% block agent_content %}
+<div class="mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <h3 class="text-dark mb-0">Products</h3>
+    </div>
+    <a href="{% url 'agent:product_create' %}" class="btn btn-success">
+        <i class="fas fa-plus mr-2"></i> Add Product
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" name="search" class="form-control" 
+                       placeholder="Search by name or description" 
+                       value="{{ request.GET.search }}">
+            </div>
+            
+            <div class="col-md-2">
+                <select name="price_min" class="form-select">
+                    <option value="">Min Price</option>
+                    <option value="0" {% if request.GET.price_min == '0' %}selected{% endif %}>0+</option>
+                    <option value="100" {% if request.GET.price_min == '100' %}selected{% endif %}>100+</option>
+                    <option value="500" {% if request.GET.price_min == '500' %}selected{% endif %}>500+</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <select name="price_max" class="form-select">
+                    <option value="">Max Price</option>
+                    <option value="100" {% if request.GET.price_max == '100' %}selected{% endif %}>100</option>
+                    <option value="500" {% if request.GET.price_max == '500' %}selected{% endif %}>500</option>
+                    <option value="1000" {% if request.GET.price_max == '1000' %}selected{% endif %}>1000+</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <select name="stock_status" class="form-select">
+                    <option value="">All Stock Status</option>
+                    <option value="low" {% if request.GET.stock_status == 'low' %}selected{% endif %}>Low Stock</option>
+                    <option value="ok" {% if request.GET.stock_status == 'ok' %}selected{% endif %}>In Stock</option>
+                    <option value="out" {% if request.GET.stock_status == 'out' %}selected{% endif %}>Out of Stock</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Products Table -->
+<div class="card">
+    <div class="card-body">
+        {% if products %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>
+                            <strong>{{ product.title }}</strong>
+                            <br>
+                            <small class="text-muted">{{ product.description|truncatewords:10 }}</small>
+                        </td>
+                        <td>₹{{ product.price|floatformat:0 }}</td>
+                        <td>{{ product.stock }} units</td>
+                        <td>
+                            {% if product.stock == 0 %}
+                            <span class="badge bg-danger">Out of Stock</span>
+                            {% elif product.stock < 20 %}
+                            <span class="badge bg-warning">Low Stock</span>
+                            {% else %}
+                            <span class="badge bg-success">In Stock</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'agent:product_edit' product.id %}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'agent:product_delete' product.id %}" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <p class="text-center text-muted py-5">No products found. <a href="{% url 'agent:product_create' %}">Create your first product</a></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

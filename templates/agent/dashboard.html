@@ -1,0 +1,287 @@
+{% extends "agent/base.html" %}
+
+{% block agent_content %}
+<!-- Agent Profile Header Card -->
+<div class="card mb-5" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); border: none;">
+    <div class="card-body d-flex align-items-center justify-content-between p-4">
+        <div class="d-flex align-items-center gap-3">
+            {% if agent_profile.company_logo %}
+            <img src="{{ agent_profile.company_logo.url }}" alt="{{ agent_profile.company_name }}" style="width: 80px; height: 80px; border-radius: 8px; border: 3px solid white; object-fit: cover;">
+            {% else %}
+            <div style="width: 80px; height: 80px; background: rgba(255,255,255,0.3); border-radius: 8px; border: 3px solid white; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-store" style="font-size: 40px; color: white;"></i>
+            </div>
+            {% endif %}
+            <div style="color: white;">
+                <h4 style="margin: 0 0 4px 0; font-weight: 700;">{{ agent_profile.company_name }}</h4>
+                <p style="margin: 0; font-size: 14px; opacity: 0.9;">{{ agent_profile.get_agent_type_display|default:"Agent" }}</p>
+                <small style="opacity: 0.8;">{{ agent_profile.location|default:"Location not set" }}</small>
+            </div>
+        </div>
+        <div style="text-align: right; color: white;">
+            <div style="font-size: 24px; font-weight: 700;">Member since</div>
+            <div style="font-size: 14px; opacity: 0.9;">{{ agent_profile.created_date|date:"M Y" }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <h3><i class="fas fa-tachometer-alt"></i>Dashboard</h3>
+    <p>Welcome back! Here's your business overview.</p>
+</div>
+
+<!-- KPI Cards Row 1 -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon" style="color: #2e7d32;">
+                <i class="fas fa-rupee-sign"></i>
+            </div>
+            <div class="metric-value">₹{{ total_revenue|floatformat:0 }}</div>
+            <div class="metric-label">Total Revenue</div>
+            {% if total_revenue > 0 %}
+            <div class="metric-change positive">
+                <i class="fas fa-arrow-up"></i> +12% from last month
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card metric-trending">
+            <div class="metric-icon" style="color: #43a047;">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <div class="metric-value">{{ total_quantity }}</div>
+            <div class="metric-label">Units Sold</div>
+            {% if total_quantity > 100 %}
+            <div class="metric-change positive">
+                <i class="fas fa-arrow-up"></i> Strong sales
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon" style="color: #1976d2;">
+                <i class="fas fa-shopping-bag"></i>
+            </div>
+            <div class="metric-value">{{ kpis.total_orders }}</div>
+            <div class="metric-label">Orders</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon" style="color: #fb8c00;">
+                <i class="fas fa-cube"></i>
+            </div>
+            <div class="metric-value">{{ total_products }}</div>
+            <div class="metric-label">Active Products</div>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Cards Row 2 -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card metric-warning">
+            <div class="metric-icon" style="color: #fb8c00;">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="metric-value">{{ kpis.low_stock_alerts }}</div>
+            <div class="metric-label">Low Stock Items</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card metric-danger">
+            <div class="metric-icon" style="color: #e53935;">
+                <i class="fas fa-times-circle"></i>
+            </div>
+            <div class="metric-value">{{ kpis.out_of_stock_count }}</div>
+            <div class="metric-label">Out Of Stock</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card">
+            <div class="metric-icon" style="color: #00bfa5;">
+                <i class="fas fa-inbox"></i>
+            </div>
+            <div class="metric-value">{{ kpis.new_orders }}</div>
+            <div class="metric-label">New Orders</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card metric-trending">
+            <div class="metric-icon" style="color: #43a047;">
+                <i class="fas fa-truck"></i>
+            </div>
+            <div class="metric-value">{{ kpis.delivered_orders }}</div>
+            <div class="metric-label">Delivered</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts and Analytics Row -->
+<div class="row g-4">
+    <!-- Daily Sales Trend -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-line mr-2" style="color: #2e7d32;"></i>Daily Sales Trend (7 Days)</h5>
+            </div>
+            <div class="card-body">
+                {% if daily_trends %}
+                <div class="d-flex align-items-flex-end" style="height: 200px; gap: 8px; padding: 20px 0;">
+                    {% for day, quantity in daily_trends.items %}
+                    <div class="flex-grow-1 text-center">
+                        <div style="height: {{ quantity|add:50 }}px; background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%); border-radius: 6px 6px 0 0; margin-bottom: 8px; transition: all 0.3s ease;" class="bar-chart" title="{{ quantity }} units"></div>
+                        <small class="text-muted d-block mt-2" style="font-weight: 500;">{{ day|slice:"0:3" }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-chart-line" style="font-size: 48px; color: #ccc;"></i>
+                    <p class="text-muted mt-3">No sales data yet</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-list mr-2" style="color: #1976d2;"></i>Quick Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Today's Revenue</span>
+                        <strong>{{ kpis.today_revenue|floatformat:0 }}</strong>
+                    </div>
+                    <div style="height: 4px; background: #e0e3e8; border-radius: 2px; overflow: hidden;">
+                        <div style="height: 100%; width: 65%; background: linear-gradient(90deg, #43a047 0%, #2e7d32 100%);"></div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">This Month</span>
+                        <strong>{{ kpis.month_revenue|floatformat:0 }}</strong>
+                    </div>
+                    <div style="height: 4px; background: #e0e3e8; border-radius: 2px; overflow: hidden;">
+                        <div style="height: 100%; width: 85%; background: linear-gradient(90deg, #1976d2 0%, #0d47a1 100%);"></div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Stock Health</span>
+                        <strong>{{ kpis.total_products }} items</strong>
+                    </div>
+                    <div style="height: 4px; background: #e0e3e8; border-radius: 2px; overflow: hidden;">
+                        <div style="height: 100%; width: 72%; background: linear-gradient(90deg, #fb8c00 0%, #f57c00 100%);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Products and Recent Sales -->
+<div class="row g-4 mt-3">
+    <!-- Top Products -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-fire mr-2" style="color: #fb8c00;"></i>Top Selling Products</h5>
+                <a href="{% url 'agent:reports' %}" class="btn btn-sm btn-outline-primary">View More</a>
+            </div>
+            <div class="card-body p-0">
+                {% if top_products %}
+                <div style="max-height: 300px; overflow-y: auto;">
+                    {% for product in top_products %}
+                    <div style="padding: 16px; border-bottom: 1px solid #e0e3e8; display: flex; justify-content: space-between; align-items: center; transition: background-color 0.2s ease;" onmouseenter="this.style.backgroundColor='#f5f5f5'" onmouseleave="this.style.backgroundColor='transparent'">
+                        <div>
+                            <strong style="display: block; margin-bottom: 4px;">{{ product.title }}</strong>
+                            <small style="color: #666;">{{ product.quantity }} units sold</small>
+                        </div>
+                        <span style="background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%); color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; white-space: nowrap;">₹{{ product.total_revenue|floatformat:0 }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="padding: 40px 20px; text-align: center;">
+                    <i class="fas fa-box" style="font-size: 32px; color: #ccc; margin-bottom: 12px;"></i>
+                    <p style="color: #999;">No sales data available</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Sales -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-receipt mr-2" style="color: #1976d2;"></i>Recent Transactions</h5>
+                <a href="{% url 'agent:sales_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_sales %}
+                <div style="max-height: 300px; overflow-y: auto;">
+                    {% for sale in recent_sales %}
+                    <div style="padding: 16px; border-bottom: 1px solid #e0e3e8; transition: background-color 0.2s ease;" onmouseenter="this.style.backgroundColor='#f5f5f5'" onmouseleave="this.style.backgroundColor='transparent'">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <strong style="display: block;">{{ sale.product.title }}</strong>
+                            <span style="background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%); color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold;">₹{{ sale.total_amount|floatformat:0 }}</span>
+                        </div>
+                        <small style="color: #666;">{{ sale.quantity }} units @ ₹{{ sale.unit_price }} • {{ sale.transaction_date|date:"M d, Y" }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="padding: 40px 20px; text-align: center;">
+                    <i class="fas fa-shopping-cart" style="font-size: 32px; color: #ccc; margin-bottom: 12px;"></i>
+                    <p style="color: #999;">No transaction data available</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions Bar -->
+<div class="col-12">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-bolt mr-2" style="color: #00bfa5;"></i>Quick Actions</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-3">
+                <a href="{% url 'agent:product_create' %}" style="flex: 1; min-width: 150px;" class="btn btn-success d-flex align-items-center justify-content-center" style="padding: 10px 16px;">
+                    <i class="fas fa-plus mr-2"></i> Add Product
+                </a>
+                <a href="{% url 'agent:sales_create' %}" style="flex: 1; min-width: 150px;" class="btn btn-primary d-flex align-items-center justify-content-center" style="padding: 10px 16px;">
+                    <i class="fas fa-money-bill mr-2"></i> Record Sale
+                </a>
+                <a href="{% url 'agent:stock_overview' %}" style="flex: 1; min-width: 150px;" class="btn btn-warning d-flex align-items-center justify-content-center" style="padding: 10px 16px;">
+                    <i class="fas fa-warehouse mr-2"></i> Manage Stock
+                </a>
+                <a href="{% url 'agent:market_insights' %}" style="flex: 1; min-width: 150px;" class="btn btn-info d-flex align-items-center justify-content-center" style="padding: 10px 16px;">
+                    <i class="fas fa-lightbulb mr-2"></i> AI Insights
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

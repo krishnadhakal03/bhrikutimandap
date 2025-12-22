@@ -1,0 +1,327 @@
+{% extends "agent/base.html" %}
+
+{% block agent_content %}
+<div class="container-fluid">
+    <div class="page-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="text-dark mb-0">
+                    <i class="fas fa-incoming-mail text-primary mr-2"></i>
+                    Incoming Orders Dashboard
+                </h2>
+                <small class="text-muted">Monitor and manage customer orders</small>
+            </div>
+            <div class="col-md-4 text-right">
+                <a href="{% url 'agent:orders' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-list mr-1"></i> All Orders
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-left-danger">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger mb-1">NEW ORDERS</div>
+                            <div class="h3 mb-0 text-gray-800">{{ total_new }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-circle text-danger fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-warning">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning mb-1">ASSIGNED</div>
+                            <div class="h3 mb-0 text-gray-800">{{ total_assigned }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-box text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-info">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info mb-1">IN TRANSIT</div>
+                            <div class="h3 mb-0 text-gray-800">{{ total_in_transit }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-truck text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-success">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success mb-1">DELIVERED</div>
+                            <div class="h3 mb-0 text-gray-800">{{ total_delivered }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Orders Section -->
+    {% if new_orders %}
+    <div class="card mb-4 shadow">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-star"></i> New Orders - Awaiting Delivery Partner Assignment
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th width="10%">Order ID</th>
+                            <th width="20%">Customer</th>
+                            <th width="30%">Items</th>
+                            <th width="15%">Total</th>
+                            <th width="25%">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in new_orders %}
+                        <tr>
+                            <td><strong>#{{ order.id }}</strong></td>
+                            <td>
+                                <div>{{ order.user.get_full_name }}</div>
+                                <small class="text-muted">{{ order.user.email }}</small>
+                            </td>
+                            <td>
+                                {% for item in order.items.all %}
+                                    {% if item.product.supplier == request.user %}
+                                    <div class="mb-1">
+                                        {{ item.product.title }} <span class="badge badge-primary">x{{ item.quantity }}</span>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                            <td><strong>₹{{ order.total|floatformat:0 }}</strong></td>
+                            <td>
+                                <a href="{% url 'agent:assign_delivery' order.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-handshake mr-1"></i> Assign Delivery
+                                </a>
+                                <a href="{% url 'agent:order_detail' order.id %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-eye mr-1"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle mr-2"></i> No new orders awaiting delivery assignment
+    </div>
+    {% endif %}
+
+    <!-- Assigned Orders Section -->
+    {% if assigned_orders %}
+    <div class="card mb-4 shadow">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">
+                <i class="fas fa-box"></i> Assigned Orders - Ready for Pickup
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th width="10%">Order ID</th>
+                            <th width="20%">Customer</th>
+                            <th width="20%">Delivery Partner</th>
+                            <th width="15%">Total</th>
+                            <th width="20%">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in assigned_orders %}
+                        <tr>
+                            <td><strong>#{{ order.id }}</strong></td>
+                            <td>
+                                <div>{{ order.user.get_full_name }}</div>
+                                <small class="text-muted">{{ order.user.email }}</small>
+                            </td>
+                            <td>
+                                {% if order.delivery.delivery_partner %}
+                                    <span class="badge badge-info">{{ order.delivery.delivery_partner.name }}</span>
+                                    <div class="small text-muted">📞 {{ order.delivery.delivery_partner.phone }}</div>
+                                {% else %}
+                                    <span class="badge badge-secondary">Not assigned</span>
+                                {% endif %}
+                            </td>
+                            <td><strong>₹{{ order.total|floatformat:0 }}</strong></td>
+                            <td>
+                                <a href="{% url 'agent:delivery_tracking' order.id %}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-map-marker-alt mr-1"></i> Track
+                                </a>
+                                <a href="{% url 'agent:order_detail' order.id %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-eye mr-1"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- In Transit Orders Section -->
+    {% if in_transit_orders %}
+    <div class="card mb-4 shadow">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-truck"></i> In Transit - Currently Being Delivered
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th width="10%">Order ID</th>
+                            <th width="20%">Customer</th>
+                            <th width="20%">Status</th>
+                            <th width="15%">Last Update</th>
+                            <th width="20%">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in in_transit_orders %}
+                        <tr>
+                            <td><strong>#{{ order.id }}</strong></td>
+                            <td>{{ order.user.get_full_name }}</td>
+                            <td>
+                                <span class="badge badge-primary">
+                                    {{ order.delivery.get_delivery_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ order.delivery.last_updated|date:"M d, h:i A" }}
+                                </small>
+                            </td>
+                            <td>
+                                <a href="{% url 'agent:delivery_tracking' order.id %}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-map-marker-alt mr-1"></i> Track
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Delivered Orders Section -->
+    {% if delivered_orders %}
+    <div class="card shadow">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-check-circle"></i> Delivered - Completed Orders
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th width="10%">Order ID</th>
+                            <th width="25%">Customer</th>
+                            <th width="20%">Delivered On</th>
+                            <th width="15%">Total</th>
+                            <th width="15%">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in delivered_orders %}
+                        <tr>
+                            <td><strong>#{{ order.id }}</strong></td>
+                            <td>{{ order.user.get_full_name }}</td>
+                            <td>
+                                {% if order.delivery.actual_delivery %}
+                                    {{ order.delivery.actual_delivery|date:"M d, Y h:i A" }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td><strong>₹{{ order.total|floatformat:0 }}</strong></td>
+                            <td>
+                                <a href="{% url 'agent:order_detail' order.id %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-eye mr-1"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .card {
+        border: none;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        margin-bottom: 1.5rem;
+    }
+    
+    .border-left-danger {
+        border-left: 0.25rem solid #e74c3c !important;
+    }
+    
+    .border-left-warning {
+        border-left: 0.25rem solid #f39c12 !important;
+    }
+    
+    .border-left-info {
+        border-left: 0.25rem solid #3498db !important;
+    }
+    
+    .border-left-success {
+        border-left: 0.25rem solid #27ae60 !important;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+</style>
+
+{% endblock %}

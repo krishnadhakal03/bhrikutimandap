@@ -1,0 +1,353 @@
+{% extends "agent/base.html" %}
+
+{% block agent_content %}
+<div class="mb-4">
+    <a href="{% url 'agent:orders' %}" class="btn btn-secondary btn-sm mb-2">
+        <i class="fas fa-arrow-left mr-2"></i> Back to Orders
+    </a>
+    <h3 class="text-dark">Order #{{ order.id }}</h3>
+</div>
+
+<div class="row">
+    <!-- Order Information -->
+    <div class="col-md-8 mb-4">
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Order Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="text-muted small">Order Date</label>
+                        <p class="text-dark">{{ order.created_at|date:"M d, Y H:i" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small">Current Status</label>
+                        <p class="text-dark">
+                            <span class="badge 
+                                {% if order.status == 'pending' %}bg-warning
+                                {% elif order.status == 'confirmed' %}bg-info
+                                {% elif order.status == 'shipped' %}bg-primary
+                                {% elif order.status == 'delivered' %}bg-success
+                                {% elif order.status == 'cancelled' %}bg-danger
+                                {% endif %}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="text-muted small">Payment Method</label>
+                        <p class="text-dark">{{ order.payment_method }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small">Delivery Address</label>
+                        <p class="text-dark">{{ order.delivery_address }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Order Items -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Order Items</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                                <th>Agent</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.items.all %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.product.title }}</strong>
+                                </td>
+                                <td>{{ item.quantity }}</td>
+                                <td>₹{{ item.product.price|floatformat:0 }}</td>
+                                <td>₹{{ item.get_total|floatformat:0 }}</td>
+                                <td>
+                                    {% if item.product.agent %}
+                                    {{ item.product.agent.user.username }}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Delivery Tracking (if in delivery status) -->
+        {% if order.delivery %}
+        <div class="card mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-tracking mr-2" style="color: #1976d2;"></i>Delivery Information</h5>
+                <a href="{% url 'agent:delivery_tracking' order.id %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-map"></i> View Full Tracking
+                </a>
+            </div>
+            <div class="card-body">
+                {% if order.delivery.delivery_partner %}
+                <!-- Partner & Vehicle Info -->
+                <div class="mb-4 pb-4" style="border-bottom: 1px solid #eee;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Delivery Partner</label>
+                            <p class="text-dark mb-2">
+                                <strong>{{ order.delivery.delivery_partner.name }}</strong>
+                            </p>
+                            <small style="color: #666;">
+                                <i class="fas fa-phone"></i> {{ order.delivery.delivery_partner.phone }}<br>
+                                {% if order.delivery.delivery_partner.email %}
+                                <i class="fas fa-envelope"></i> {{ order.delivery.delivery_partner.email }}
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            {% if order.delivery.vehicle %}
+                            <label class="text-muted small">Vehicle</label>
+                            <p class="text-dark mb-2">
+                                <strong>{{ order.delivery.vehicle.vehicle_number }}</strong>
+                                <span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 8px;">
+                                    {{ order.delivery.vehicle.get_vehicle_type_display }}
+                                </span>
+                            </p>
+                            <small style="color: #666;">
+                                {% if order.delivery.vehicle.model %}Capacity: {{ order.delivery.vehicle.capacity }}{% endif %}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Delivery Status -->
+                <div class="mb-4 pb-4" style="border-bottom: 1px solid #eee;">
+                    <label class="text-muted small">Delivery Status</label>
+                    {% with status=order.delivery.delivery_status %}
+                    <p class="text-dark mb-2">
+                        {% if status == 'not_assigned' %}
+                        <span style="background: #999; color: white; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;">Not Assigned</span>
+                        {% elif status == 'assigned' %}
+                        <span style="background: #2196F3; color: white; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;">Assigned</span>
+                        {% elif status == 'picked_up' %}
+                        <span style="background: #FF9800; color: white; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;">Picked Up</span>
+                        {% elif status == 'in_transit' %}
+                        <span style="background: #00BCD4; color: white; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;">In Transit</span>
+                        {% elif status == 'out_for_delivery' %}
+                        <span style="background: #4CAF50; color: white; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;">Out for Delivery</span>
+                        {% elif status == 'delivered' %}
+                        <span style="background: #43a047; color: white; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;">✓ Delivered</span>
+                        {% elif status == 'delivery_failed' %}
+                        <span style="background: #f44336; color: white; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;">Failed</span>
+                        {% else %}
+                        <span style="background: #ccc; color: white; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;">{{ order.delivery.get_delivery_status_display }}</span>
+                        {% endif %}
+                    </p>
+                    {% endwith %}
+                </div>
+                
+                <!-- Timeline -->
+                <div>
+                    <label class="text-muted small">Tracking Timeline</label>
+                    <div style="position: relative; padding-left: 20px;">
+                        {% if order.delivery.assigned_at %}
+                        <div style="margin-bottom: 16px;">
+                            <div style="position: absolute; left: -14px; width: 10px; height: 10px; background: #2196F3; border: 2px solid white; border-radius: 50%; top: 5px;"></div>
+                            <strong style="font-size: 13px;">Assigned</strong>
+                            <div style="font-size: 12px; color: #666;">{{ order.delivery.assigned_at|date:"M d, Y H:i" }}</div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if order.delivery.picked_up_at %}
+                        <div style="margin-bottom: 16px;">
+                            <div style="position: absolute; left: -14px; width: 10px; height: 10px; background: #FF9800; border: 2px solid white; border-radius: 50%; top: 5px;"></div>
+                            <strong style="font-size: 13px;">Picked Up</strong>
+                            <div style="font-size: 12px; color: #666;">{{ order.delivery.picked_up_at|date:"M d, Y H:i" }}</div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if order.delivery.actual_delivery %}
+                        <div style="margin-bottom: 16px;">
+                            <div style="position: absolute; left: -14px; width: 10px; height: 10px; background: #43a047; border: 2px solid white; border-radius: 50%; top: 5px;"></div>
+                            <strong style="font-size: 13px;">Delivered</strong>
+                            <div style="font-size: 12px; color: #666;">{{ order.delivery.actual_delivery|date:"M d, Y H:i" }}</div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if order.delivery.estimated_delivery and not order.delivery.actual_delivery %}
+                        <div style="margin-bottom: 16px;">
+                            <div style="position: absolute; left: -14px; width: 10px; height: 10px; background: #ccc; border: 2px solid white; border-radius: 50%; top: 5px;"></div>
+                            <strong style="font-size: 13px;">Expected Delivery</strong>
+                            <div style="font-size: 12px; color: #666;">{{ order.delivery.estimated_delivery|date:"M d, Y H:i" }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if order.delivery.last_location %}
+                <div style="margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 4px;">
+                    <small style="color: #666;">
+                        <i class="fas fa-map-marker-alt"></i> <strong>Last Location:</strong> {{ order.delivery.last_location }}
+                    </small>
+                </div>
+                {% endif %}
+                {% else %}
+                <div style="padding: 24px; text-align: center;">
+                    <i class="fas fa-info-circle" style="font-size: 32px; color: #ccc; margin-bottom: 12px;"></i>
+                    <p style="color: #999; margin-bottom: 16px;">No delivery partner assigned yet</p>
+                    <a href="{% url 'agent:assign_delivery' order.id %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Assign Delivery Partner
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Update Status -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Update Delivery Status</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'agent:order_status_update' order.id %}">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-8">
+                            <select name="status" class="form-select">
+                                <option value="">Select new status</option>
+                                <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="confirmed" {% if order.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                                <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>Shipped</option>
+                                <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                                <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-sync mr-2"></i> Update Status
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Summary -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Order Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 pb-3 border-bottom">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal</span>
+                        <span>₹{{ order.total_amount|floatformat:0 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tax</span>
+                        <span>₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Delivery</span>
+                        <span>₹0</span>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <strong>Total Amount</strong>
+                    <h5 class="text-success mb-0">₹{{ order.total_amount|floatformat:0 }}</h5>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Customer Info -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Customer Information</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <strong>{{ order.user.first_name }} {{ order.user.last_name }}</strong><br>
+                    <small class="text-muted">{{ order.user.email }}</small>
+                </p>
+                
+                <label class="text-muted small d-block mt-3">Delivery Address</label>
+                <p class="text-dark small">{{ order.delivery_address }}</p>
+                
+                <label class="text-muted small d-block mt-3">Payment Method</label>
+                <p class="text-dark small">{{ order.payment_method }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle order status form submission
+    const statusForm = document.querySelector('form[action*="status"]');
+    if (statusForm) {
+        statusForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const statusSelect = statusForm.querySelector('select[name="status"]');
+            const newStatus = statusSelect.value;
+            
+            if (!newStatus) {
+                alert('Please select a status');
+                return;
+            }
+            
+            // Get the form's action URL
+            const url = statusForm.getAttribute('action');
+            
+            // Get CSRF token
+            const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
+            
+            // Send AJAX request
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    status: newStatus
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    // Show success message
+                    alert('Order status updated successfully');
+                    // Reload the page to show updated status
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to update status'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating status: ' + error);
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

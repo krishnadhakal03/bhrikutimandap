@@ -1,0 +1,169 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+  .login-cta-box {
+    background: linear-gradient(135deg, #384aeb 0%, #764ba2 100%);
+    color: white;
+    padding: 50px;
+    border-radius: 15px;
+    box-shadow: 0px 10px 40px rgba(56, 74, 235, 0.2);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 400px;
+  }
+
+  .cta-button {
+    display: inline-block;
+    padding: 14px 45px;
+    border-radius: 30px;
+    background: #fff;
+    color: #384aeb;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 2px solid #fff;
+    text-align: center;
+    font-size: 15px;
+    align-self: flex-start;
+  }
+
+  .cta-button:hover {
+    background: #384aeb;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0px 10px 25px rgba(56, 74, 235, 0.3);
+  }
+
+  .login-container {
+    display: flex;
+    gap: 40px;
+    align-items: stretch;
+  }
+
+  @media (max-width: 991px) {
+    .login-container {
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    .login-cta-box {
+      min-height: auto;
+      text-align: center;
+    }
+
+    .cta-button {
+      align-self: center;
+    }
+  }
+</style>
+
+<!-- Banner Section -->
+<section class="hero-banner" style="padding: 40px 0;">
+  <div class="container">
+    <div class="text-center">
+      <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 15px;">Sign In</h1>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb" style="background: transparent; justify-content: center;">
+          <li class="breadcrumb-item"><a href="/">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Sign In</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+</section>
+
+<!-- Login Section -->
+<section class="section-margin" style="padding: 80px 0;">
+  <div class="container">
+    <div class="login-container">
+      <!-- Left Column - Sign Up CTA -->
+      <div style="flex: 1; min-width: 0;">
+        <div class="login-cta-box">
+          <h3 style="font-size: 2rem; font-weight: 700; margin-bottom: 20px;">New to our platform?</h3>
+          <p style="font-size: 1.1rem; margin-bottom: 30px; opacity: 0.95;">
+            Create an account to enjoy faster checkout, order tracking, and personalized recommendations.
+          </p>
+          <ul style="list-style: none; padding: 0; margin-bottom: 30px;">
+            <li style="margin-bottom: 15px; display: flex; align-items: center; gap: 12px;">
+              <i class="fas fa-check-circle"></i> Quick & Easy Registration
+            </li>
+            <li style="margin-bottom: 15px; display: flex; align-items: center; gap: 12px;">
+              <i class="fas fa-check-circle"></i> Save Your Preferences
+            </li>
+            <li style="margin-bottom: 15px; display: flex; align-items: center; gap: 12px;">
+              <i class="fas fa-check-circle"></i> Track Your Orders
+            </li>
+            <li style="display: flex; align-items: center; gap: 12px;">
+              <i class="fas fa-check-circle"></i> Exclusive Deals
+            </li>
+          </ul>
+          <a href="{% url 'store:register' %}" class="cta-button">
+            Create Account
+          </a>
+        </div>
+      </div>
+
+      <!-- Right Column - Login Form -->
+      <div style="flex: 1; min-width: 0;">
+        <div>
+          <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 10px;">Welcome Back!</h2>
+          <p style="color: var(--text-secondary); margin-bottom: 30px;">Sign in to access your account and orders.</p>
+
+          <form method="post" action="{% url 'store:login' %}">
+            {% csrf_token %}
+
+            {% if messages %}
+            <div>
+              {% for message in messages %}
+              <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}" role="alert">
+                {{ message }}
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Username Field -->
+            <div class="form-group">
+              <label for="username" style="font-weight: 600; margin-bottom: 8px; display: block;">Username or Email</label>
+              <input type="text" class="form-control" id="username" name="username" placeholder="Enter your username or email" value="{{ request.POST.username }}" required style="padding: 12px 15px;">
+            </div>
+
+            <!-- Password Field -->
+            <div class="form-group">
+              <label for="password" style="font-weight: 600; margin-bottom: 8px; display: block;">Password</label>
+              <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required style="padding: 12px 15px;">
+            </div>
+
+            <!-- Remember Me -->
+            <div class="form-group">
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                <label class="form-check-label" for="remember">Keep me signed in</label>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-group">
+              <button type="submit" class="btn button-primary w-100" style="padding: 12px 30px; font-size: 1rem; font-weight: 600;">
+                Sign In
+              </button>
+            </div>
+
+            <!-- Forgot Password Link -->
+            <div style="text-align: center; margin-top: 20px;">
+              <a href="{% url 'store:password_reset' %}" style="color: var(--primary-color); text-decoration: none; font-weight: 600;">
+                <i class="fas fa-lock"></i> Forgot Password?
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+

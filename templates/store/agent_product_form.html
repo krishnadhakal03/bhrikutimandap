@@ -1,0 +1,94 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}{% if action == "Add" %}Add Product{% else %}Edit Product{% endif %} - Bhrikutimandap{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">{% if action == "Add" %}Add New Product{% else %}Edit Product{% endif %}</h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Product Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{% if product %}{{ product.title }}{% endif %}" required>
+                            <small class="form-text text-muted">Enter the product name or title</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4">{% if product %}{{ product.description }}{% endif %}</textarea>
+                            <small class="form-text text-muted">Describe your product in detail</small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="price" class="form-label">Price (₹) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="price" name="price" 
+                                       value="{% if product %}{{ product.price }}{% endif %}" step="0.01" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="stock" class="form-label">Stock Quantity</label>
+                                <input type="number" class="form-control" id="stock" name="stock" 
+                                       value="{% if product %}{{ product.stock }}{% else %}0{% endif %}" min="0">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="expiration_date" class="form-label">Expiration Date (if applicable)</label>
+                            <input type="date" class="form-control" id="expiration_date" name="expiration_date" 
+                                   value="{% if product and product.expiration_date %}{{ product.expiration_date|date:'Y-m-d' }}{% endif %}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="delivery_rules" class="form-label">Delivery Rules</label>
+                            <textarea class="form-control" id="delivery_rules" name="delivery_rules" rows="3">{% if product %}{{ product.delivery_rules }}{% endif %}</textarea>
+                            <small class="form-text text-muted">E.g., "Free delivery on orders above ₹500" or "Next-day delivery available"</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="payment_methods" class="form-label">Accepted Payment Methods</label>
+                            <textarea class="form-control" id="payment_methods" name="payment_methods" rows="2">{% if product %}{{ product.payment_methods }}{% endif %}</textarea>
+                            <small class="form-text text-muted">E.g., "Credit Card, Debit Card, UPI, Cash on Delivery"</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Product Image</label>
+                            <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                            {% if product and product.image %}
+                                <small class="form-text text-muted d-block mt-2">
+                                    <img src="{{ product.image.url }}" alt="{{ product.title }}" style="max-height: 100px; margin-top: 10px;">
+                                    <br>Current image (upload a new one to replace)
+                                </small>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'store:agent_dashboard' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                {% if action == "Add" %}Create Product{% else %}Update Product{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,287 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Checkout - Bhrikutimandap{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <!-- Page Header -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <h2>Checkout</h2>
+      <p class="text-muted">Review your order and complete your purchase</p>
+    </div>
+  </div>
+
+  {% if insufficient_stock %}
+    <div class="alert alert-danger" role="alert">
+      <strong>Stock Issues:</strong>
+      <ul class="mb-0">
+        {% for item in insufficient_stock %}
+          <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+      <a href="{% url 'store:cart' %}" class="alert-link">Go back to cart</a>
+    </div>
+  {% endif %}
+
+  <form method="post" id="checkoutForm">
+    {% csrf_token %}
+    <div class="row">
+      <!-- Left Column: Cart Items & Delivery -->
+      <div class="col-lg-8">
+        <!-- Order Review Section -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light border-bottom">
+            <h5 class="mb-0">Order Summary</h5>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Product</th>
+                  <th>Quantity</th>
+                  <th>Price</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in cart_items %}
+                <tr>
+                  <td>{{ item.product.title }}</td>
+                  <td>{{ item.quantity }}</td>
+                  <td>₹{{ item.product.price }}</td>
+                  <td>₹{{ item.subtotal }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="card-body border-top">
+            <div class="row">
+              <div class="col-md-8 text-end">
+                <h6 class="text-muted mb-0">Order Total:</h6>
+              </div>
+              <div class="col-md-4">
+                <h5 class="mb-0">₹{{ cart_total }}</h5>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Delivery Address Section -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light border-bottom">
+            <h5 class="mb-0">
+              <i class="fas fa-map-marker-alt"></i> Delivery Address
+            </h5>
+          </div>
+          <div class="card-body">
+            {% if addresses %}
+              <div class="address-selection">
+                {% for address in addresses %}
+                  <div class="form-check mb-3">
+                    <input class="form-check-input" type="radio" name="delivery_address" 
+                           id="address_{{ address.id }}" value="{{ address.id }}"
+                           {% if address.is_default %}checked{% endif %}>
+                    <label class="form-check-label w-100" for="address_{{ address.id }}">
+                      <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                          <strong>{{ address.label }}</strong><br>
+                          <span class="text-muted small">
+                            {{ address.recipient_name }}<br>
+                            {{ address.address_line1 }}
+                            {% if address.address_line2 %}<br>{{ address.address_line2 }}{% endif %}<br>
+                            {{ address.city }}, {{ address.state }} {{ address.postal_code }}<br>
+                            {{ address.country }}<br>
+                            <i class="fas fa-phone"></i> {{ address.phone }}
+                          </span>
+                        </div>
+                        {% if address.is_default %}
+                          <span class="badge bg-success ms-2">Default</span>
+                        {% endif %}
+                      </div>
+                    </label>
+                  </div>
+                  {% if not forloop.last %}<hr>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="mt-3 pt-3 border-top">
+                <a href="{% url 'store:address_create' %}" class="btn btn-sm btn-outline-primary">
+                  <i class="fas fa-plus"></i> Add New Address
+                </a>
+              </div>
+            {% else %}
+              <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> No addresses found.
+                <a href="{% url 'store:address_create' %}" class="alert-link">Add a delivery address</a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Payment Method Section -->
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-light border-bottom">
+            <h5 class="mb-0">
+              <i class="fas fa-credit-card"></i> Payment Method
+            </h5>
+          </div>
+          <div class="card-body">
+            {% if payment_methods %}
+              <div class="payment-selection">
+                {% for method in payment_methods %}
+                  <div class="form-check mb-3">
+                    <input class="form-check-input" type="radio" name="payment_method" 
+                           id="payment_{{ method.id }}" value="{{ method.id }}"
+                           {% if method.is_default %}checked{% endif %}>
+                    <label class="form-check-label w-100" for="payment_{{ method.id }}">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                          <strong>
+                            {% if method.payment_type == 'card' %}
+                              <i class="fas fa-credit-card"></i>
+                            {% elif method.payment_type == 'upi' %}
+                              <i class="fas fa-mobile-alt"></i>
+                            {% elif method.payment_type == 'netbanking' %}
+                              <i class="fas fa-university"></i>
+                            {% elif method.payment_type == 'wallet' %}
+                              <i class="fas fa-wallet"></i>
+                            {% endif %}
+                            {{ method.display_name }}
+                          </strong><br>
+                          <span class="text-muted small">
+                            Type: {{ method.get_payment_type_display }}
+                            {% if method.last_four %}
+                              | Ending in {{ method.last_four }}
+                            {% endif %}
+                          </span>
+                        </div>
+                        {% if method.is_default %}
+                          <span class="badge bg-success ms-2">Default</span>
+                        {% endif %}
+                      </div>
+                    </label>
+                  </div>
+                  {% if not forloop.last %}<hr>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="mt-3 pt-3 border-top">
+                <a href="{% url 'store:payment_method_create' %}" class="btn btn-sm btn-outline-primary">
+                  <i class="fas fa-plus"></i> Add Payment Method
+                </a>
+              </div>
+            {% else %}
+              <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> No payment methods found.
+                <a href="{% url 'store:payment_method_create' %}" class="alert-link">Add a payment method</a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Summary & Actions -->
+      <div class="col-lg-4">
+        <!-- Order Summary Card -->
+        <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+          <div class="card-header bg-light border-bottom">
+            <h5 class="mb-0">Order Summary</h5>
+          </div>
+          <div class="card-body">
+            <div class="row mb-3">
+              <div class="col-6">
+                <strong>Subtotal:</strong>
+              </div>
+              <div class="col-6 text-end">
+                ₹{{ cart_total }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-6">
+                <strong>Shipping:</strong>
+              </div>
+              <div class="col-6 text-end">
+                Free
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-6">
+                <strong>Tax:</strong>
+              </div>
+              <div class="col-6 text-end">
+                Included
+              </div>
+            </div>
+            <hr>
+            <div class="row">
+              <div class="col-6">
+                <h5><strong>Total:</strong></h5>
+              </div>
+              <div class="col-6 text-end">
+                <h5><strong>₹{{ cart_total }}</strong></h5>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body border-top">
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary btn-lg" id="placeOrderBtn">
+                <i class="fas fa-check-circle"></i> Place Order
+              </button>
+              <a href="{% url 'store:cart' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Cart
+              </a>
+            </div>
+          </div>
+
+          <!-- Order Info -->
+          <div class="card-body bg-light border-top text-center small text-muted">
+            <p class="mb-1">
+              <i class="fas fa-shield-alt"></i> Secure Checkout
+            </p>
+            <p class="mb-0">
+              Your payment information is encrypted and safe
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Form validation
+  document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+    const deliveryAddress = document.querySelector('input[name="delivery_address"]:checked');
+    const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+
+    if (!deliveryAddress) {
+      e.preventDefault();
+      alert('Please select a delivery address');
+      return false;
+    }
+
+    if (!paymentMethod) {
+      e.preventDefault();
+      alert('Please select a payment method');
+      return false;
+    }
+
+    // Disable button to prevent double submission
+    document.getElementById('placeOrderBtn').disabled = true;
+    document.getElementById('placeOrderBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+  });
+</script>
+
+<style>
+  .address-selection .form-check:hover,
+  .payment-selection .form-check:hover {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 10px;
+    margin-left: -10px;
+    margin-right: -10px;
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,304 @@
+{% extends "agent/base.html" %}
+{% load static %}
+
+{% block agent_content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <!-- Header -->
+            <div class="mb-4">
+                <a href="{% url 'agent:incoming_orders' %}" class="btn btn-outline-secondary btn-sm mb-3">
+                    <i class="fas fa-arrow-left mr-1"></i> Back to Orders
+                </a>
+                <h2 class="text-dark">
+                    <i class="fas fa-truck text-primary mr-2"></i>
+                    Assign Delivery Partner
+                </h2>
+                <p class="text-muted">Select a delivery partner for this order</p>
+            </div>
+
+            <!-- Order Summary Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-light border-bottom">
+                    <h6 class="mb-0 text-dark">Order #{{ order.id }}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-dark font-weight-bold mb-3">Customer Details</h6>
+                            <div class="mb-2">
+                                <small class="text-muted">Name:</small>
+                                <p class="mb-1">{{ order.user.get_full_name }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Email:</small>
+                                <p class="mb-1">{{ order.user.email }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Phone:</small>
+                                <p class="mb-1">{{ order.user.phone|default:"Not provided" }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Address:</small>
+                                <p class="mb-1">
+                                    {{ order.user.address_line1 }}<br>
+                                    {% if order.user.address_line2 %}{{ order.user.address_line2 }}<br>{% endif %}
+                                    {{ order.user.city }}, {{ order.user.state }} - {{ order.user.postal_code }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="text-dark font-weight-bold mb-3">Order Items</h6>
+                            {% for item in order.items.all %}
+                                {% if item.product.supplier == request.user %}
+                                <div class="border-bottom pb-2 mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>{{ item.product.title }}</strong>
+                                        <span class="text-primary">x{{ item.quantity }}</span>
+                                    </div>
+                                    <small class="text-muted">₹{{ item.product.price }} each</small>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                            <div class="mt-3 border-top pt-2">
+                                <div class="d-flex justify-content-between">
+                                    <strong>Order Total:</strong>
+                                    <strong class="text-success">₹{{ order.total|floatformat:0 }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Partners Selection -->
+            {% if delivery_partners %}
+            <div class="card shadow">
+                <div class="card-header bg-light border-bottom">
+                    <h6 class="mb-0 text-dark">Available Delivery Partners</h6>
+                    <small class="text-muted">Sorted by success rate - Click to expand and select vehicle</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="delivery_form">
+                        {% csrf_token %}
+                        <div class="row">
+                            {% for partner in delivery_partners %}
+                            <div class="col-md-6 mb-4">
+                                <div class="partner-card border rounded p-3" style="cursor: pointer; transition: all 0.3s;">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0 text-dark">{{ partner.name }}</h6>
+                                        <span class="badge badge-{{ partner.status|lower }}">{{ partner.get_status_display }}</span>
+                                    </div>
+
+                                    <div class="row small mb-2">
+                                        <div class="col-6">
+                                            <small class="text-muted">Vehicles:</small>
+                                            <p class="mb-1" style="font-weight: 600;">{{ partner.vehicles.count }}</p>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">Delivery Time:</small>
+                                            <p class="mb-1">{{ partner.avg_delivery_time_hours }}h avg</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="progress mb-2" style="height: 6px;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ partner.success_delivery_rate }}%;" 
+                                             aria-valuenow="{{ partner.success_delivery_rate }}" 
+                                             aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <small class="text-muted">
+                                        Success Rate: <strong>{{ partner.success_delivery_rate }}%</strong>
+                                    </small>
+
+                                    <div class="mt-3">
+                                        <small class="text-muted">📞 {{ partner.phone }}</small>
+                                        {% if partner.email %}<br><small class="text-muted">📧 {{ partner.email }}</small>{% endif %}
+                                    </div>
+
+                                    <!-- Vehicles Selection (Hidden by default) -->
+                                    <div class="mt-3 pt-3" style="border-top: 1px solid #dee2e6;">
+                                        <h6 class="text-dark mb-2">Select Vehicle:</h6>
+                                        {% if partner.vehicles.all %}
+                                        <div class="vehicle-list" data-partner-id="{{ partner.id }}">
+                                            {% for vehicle in partner.vehicles.all %}
+                                            {% if vehicle.status == 'active' %}
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input vehicle-checkbox" 
+                                                       type="radio" 
+                                                       name="vehicle_id" 
+                                                       value="{{ vehicle.id }}"
+                                                       id="vehicle_{{ vehicle.id }}"
+                                                       data-partner-id="{{ partner.id }}">
+                                                <label class="form-check-label" for="vehicle_{{ vehicle.id }}">
+                                                    <strong>{{ vehicle.vehicle_number }}</strong>
+                                                    <span style="background: #e3f2fd; color: #1976d2; padding: 2px 6px; border-radius: 12px; font-size: 10px; margin-left: 4px;">
+                                                        {{ vehicle.get_vehicle_type_display }}
+                                                    </span>
+                                                    {% if vehicle.capacity %}<small style="color: #666;">({{ vehicle.capacity }})</small>{% endif %}
+                                                </label>
+                                            </div>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <small style="color: #999;">No active vehicles available</small>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <button type="button" class="btn btn-primary btn-sm btn-block partner-select-btn" 
+                                                data-partner-id="{{ partner.id }}"
+                                                onclick="selectPartner({{ partner.id }})">
+                                            <i class="fas fa-check-circle mr-1"></i> Select This Partner
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <input type="hidden" name="delivery_partner_id" id="selected_partner_id">
+
+                        <div id="confirmation-section" style="display: none; margin-top: 24px;">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-dark mb-3">Confirm Selection</h6>
+                                    <div id="selection-summary" style="margin-bottom: 16px;"></div>
+                                    <button type="submit" class="btn btn-success btn-lg btn-block">
+                                        <i class="fas fa-check"></i> Confirm Delivery Assignment
+                                    </button>
+                                    <button type="button" class="btn btn-secondary btn-sm btn-block mt-2" onclick="resetSelection()">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                No delivery partners available at the moment. Please try again later.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .partner-card {
+        background-color: #f8f9fa;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+    
+    .partner-card:hover {
+        background-color: #f0f7ff;
+        border-color: #3498db;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(52, 152, 219, 0.15);
+    }
+    
+    .partner-card.selected {
+        background-color: #e8f5e9;
+        border-color: #43a047;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(67, 160, 71, 0.15);
+    }
+    
+    .badge-active {
+        background-color: #27ae60;
+    }
+    
+    .badge-inactive {
+        background-color: #95a5a6;
+    }
+    
+    .vehicle-checkbox {
+        cursor: pointer;
+        margin-right: 8px;
+    }
+</style>
+
+<script>
+let selectedPartner = null;
+let selectedVehicle = null;
+
+function selectPartner(partnerId) {
+    // Get the partner card
+    const partnerCard = document.querySelector(`.partner-select-btn[data-partner-id="${partnerId}"]`).closest('.partner-card');
+    
+    // Get selected vehicle for this partner
+    const selectedVehicleCheckbox = document.querySelector(`.vehicle-checkbox[data-partner-id="${partnerId}"]:checked`);
+    
+    if (!selectedVehicleCheckbox) {
+        alert('Please select a vehicle for this partner');
+        return;
+    }
+    
+    // Remove selection from previously selected partner
+    document.querySelectorAll('.partner-card.selected').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Mark this partner as selected
+    partnerCard.classList.add('selected');
+    
+    // Set the hidden input
+    document.getElementById('selected_partner_id').value = partnerId;
+    selectedPartner = partnerId;
+    selectedVehicle = selectedVehicleCheckbox.value;
+    
+    // Get partner details for summary
+    const partnerName = partnerCard.querySelector('h6.text-dark').textContent;
+    const vehicleLabel = selectedVehicleCheckbox.parentElement.textContent.trim();
+    
+    // Update confirmation section
+    const summaryHtml = `
+        <div style="background: white; padding: 12px; border-radius: 4px; border-left: 4px solid #43a047;">
+            <p style="margin: 0; font-size: 14px;">
+                <strong>Partner:</strong> ${partnerName}<br>
+                <strong>Vehicle:</strong> ${vehicleLabel}
+            </p>
+        </div>
+    `;
+    
+    document.getElementById('selection-summary').innerHTML = summaryHtml;
+    document.getElementById('confirmation-section').style.display = 'block';
+    
+    // Scroll to confirmation section
+    setTimeout(() => {
+        document.getElementById('confirmation-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+}
+
+function resetSelection() {
+    selectedPartner = null;
+    selectedVehicle = null;
+    document.getElementById('selected_partner_id').value = '';
+    document.querySelectorAll('.partner-card.selected').forEach(card => {
+        card.classList.remove('selected');
+    });
+    document.querySelectorAll('.vehicle-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    document.getElementById('confirmation-section').style.display = 'none';
+    document.getElementById('selection-summary').innerHTML = '';
+}
+
+// Allow radio button selection to work smoothly
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('vehicle-checkbox')) {
+        // Uncheck vehicles from other partners
+        const partnerId = e.target.getAttribute('data-partner-id');
+        document.querySelectorAll('.vehicle-checkbox').forEach(checkbox => {
+            if (checkbox.getAttribute('data-partner-id') !== partnerId) {
+                checkbox.checked = false;
+            }
+        });
+    }
+});
+</script>
+
+{% endblock %}

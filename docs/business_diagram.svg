@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="760" viewBox="0 0 1200 760" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .bg { fill: #f7f9fc; }
+    .box { fill: #ffffff; stroke: #dde6f3; stroke-width: 1; rx: 8; }
+    .actor { fill: #fff; stroke: #cfe3ff; stroke-width: 2; rx: 8; }
+    .title { font: 700 18px/1.2 Arial, sans-serif; fill: #1f2937; }
+    .label { font: 600 13px/1.2 Arial, sans-serif; fill: #334155; }
+    .small { font: 500 12px/1.2 Arial, sans-serif; fill: #475569; }
+    .arrow { stroke: #9aaedb; stroke-width: 2; fill:none; marker-end: url(#arrowhead); }
+    .dashed { stroke-dasharray: 6 6; }
+  </style>
+
+  <rect width="1200" height="760" class="bg" />
+
+  <defs>
+    <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#9aaedb" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="40" y="40" class="title">Bhrikutimandap — High-level Business Diagram</text>
+  <text x="40" y="64" class="small">Actors, core systems and main flows for the Django Aroma-themed e‑commerce prototype</text>
+
+  <!-- Actors -->
+  <g transform="translate(40,110)">
+    <rect x="0" y="0" width="220" height="90" class="actor"/>
+    <text x="18" y="28" class="label">Customer</text>
+    <text x="18" y="50" class="small">- Browse products</text>
+    <text x="18" y="66" class="small">- Add to cart, Checkout</text>
+  </g>
+
+  <g transform="translate(300,110)">
+    <rect x="0" y="0" width="220" height="90" class="actor"/>
+    <text x="18" y="28" class="label">Agent (Supplier)</text>
+    <text x="18" y="50" class="small">- Manage products</text>
+    <text x="18" y="66" class="small">- View orders, stock</text>
+  </g>
+
+  <g transform="translate(560,110)">
+    <rect x="0" y="0" width="220" height="90" class="actor"/>
+    <text x="18" y="28" class="label">Admin</text>
+    <text x="18" y="50" class="small">- Site settings</text>
+    <text x="18" y="66" class="small">- Manage users, orders</text>
+  </g>
+
+  <!-- Core Systems -->
+  <g transform="translate(40,240)">
+    <rect x="0" y="0" width="740" height="120" class="box"/>
+    <text x="18" y="24" class="label">Core Application Services</text>
+
+    <g transform="translate(18,36)">
+      <rect x="0" y="0" width="210" height="70" class="box"/>
+      <text x="12" y="20" class="small">Product Catalog</text>
+      <text x="12" y="38" class="small">Products, Images, Variants</text>
+
+      <rect x="246" y="0" width="210" height="70" class="box"/>
+      <text x="258" y="20" class="small">Cart & Checkout</text>
+      <text x="258" y="38" class="small">CartItem, Order creation</text>
+
+      <rect x="492" y="0" width="210" height="70" class="box"/>
+      <text x="504" y="20" class="small">Order Management</text>
+      <text x="504" y="38" class="small">Fulfillment, Returns</text>
+    </g>
+  </g>
+
+  <!-- Supporting Systems -->
+  <g transform="translate(40,380)">
+    <rect x="0" y="0" width="350" height="100" class="box"/>
+    <text x="18" y="24" class="label">Media & Storage</text>
+    <text x="18" y="48" class="small">Product images in /media/products/</text>
+    <text x="18" y="66" class="small">Seed-generated placeholders</text>
+  </g>
+
+  <g transform="translate(420,380)">
+    <rect x="0" y="0" width="360" height="100" class="box"/>
+    <text x="18" y="24" class="label">Site Settings & Theme</text>
+    <text x="18" y="48" class="small">SiteSettings model provides colors/title</text>
+    <text x="18" y="66" class="small">Aroma theme assets in /theme/aroma-master/</text>
+  </g>
+
+  <!-- External/Optional -->
+  <g transform="translate(40,500)">
+    <rect x="0" y="0" width="740" height="80" class="box dashed"/>
+    <text x="18" y="24" class="label">External Integrations</text>
+    <text x="18" y="48" class="small">Payment gateway, Email/SMS, Analytics (optional)</text>
+  </g>
+
+  <!-- Arrows: Customer -> Product Catalog, Cart -> Checkout -> Orders -> Agent/Admin -->
+  <path d="M160 200 L160 240" class="arrow" />
+  <text x="170" y="226" class="small">browse</text>
+
+  <path d="M420 200 L420 240" class="arrow" />
+  <text x="430" y="226" class="small">manage</text>
+
+  <path d="M680 200 L680 240" class="arrow" />
+  <text x="690" y="226" class="small">admin</text>
+
+  <path d="M160 360 L240 320" class="arrow" />
+  <text x="150" y="340" class="small">select, add</text>
+
+  <path d="M430 360 L520 320" class="arrow" />
+  <text x="420" y="340" class="small">checkout</text>
+
+  <path d="M680 360 L840 320" class="arrow" />
+  <text x="660" y="340" class="small">order flow</text>
+
+  <!-- Arrows from Core to Supporting -->
+  <path d="M240 320 L120 400" class="arrow dashed" />
+  <text x="40" y="378" class="small">images</text>
+
+  <path d="M520 320 L540 420" class="arrow dashed" />
+  <text x="560" y="398" class="small">theme & settings</text>
+
+  <!-- Agent/Admin notification lines -->
+  <path d="M740 300 L780 300 L780 200" class="arrow" />
+  <text x="748" y="286" class="small">notify</text>
+
+  <!-- Legend -->
+  <rect x="820" y="120" width="340" height="160" rx="8" class="box"/>
+  <text x="832" y="144" class="label">Legend</text>
+  <text x="832" y="168" class="small">Customer — End user browsing & buying</text>
+  <text x="832" y="188" class="small">Agent — Supplier managing product listings</text>
+  <text x="832" y="208" class="small">Admin — Manage site settings, users, orders</text>
+
+  <!-- Footer note -->
+  <text x="40" y="720" class="small">Diagram generated for the Bhrikutimandap Django prototype — shows actors, core services, media & theme, and optional integrations.</text>
+</svg>

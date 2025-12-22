@@ -1,0 +1,302 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <style>
+    :root {
+      --primary-color: #2e7d32;
+      --accent-color: #00bfa5;
+      --danger-color: #d32f2f;
+      --warning-color: #f57c00;
+      --info-color: #1976d2;
+      --success-color: #388e3c;
+      --gray-dark: #37474f;
+      --gray-light: #eceff1;
+      --border-color: #bdbdbd;
+    }
+
+    /* Content Title Styling */
+    #content-main > h1:first-of-type {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      color: var(--primary-color);
+      font-size: 28px;
+    }
+
+    /* Results Table Styling */
+    .results {
+      background: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: linear-gradient(135deg, var(--primary-color), #66bb6a);
+      color: white;
+      font-weight: 600;
+    }
+
+    th {
+      padding: 15px 20px;
+      text-align: left;
+      border: none;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--gray-light);
+      transition: all 0.3s ease;
+    }
+
+    tbody tr:hover {
+      background: #f0f7f4;
+      box-shadow: inset 4px 0 0 var(--accent-color);
+    }
+
+    td {
+      padding: 14px 20px;
+      border: none;
+    }
+
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      padding: 4px 8px;
+      border-radius: 3px;
+    }
+
+    a:hover {
+      background: var(--gray-light);
+      color: var(--accent-color);
+    }
+
+    /* Filter Sidebar */
+    #changelist-filter {
+      background: white !important;
+      border: 1px solid var(--gray-light);
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      margin-bottom: 20px;
+    }
+
+    #changelist-filter h2 {
+      background: linear-gradient(135deg, var(--primary-color), #66bb6a) !important;
+      color: white !important;
+      padding: 12px 15px !important;
+      border: none !important;
+      font-size: 16px !important;
+      margin: 0 !important;
+      border-radius: 8px 8px 0 0;
+    }
+
+    #changelist-filter ul {
+      padding: 15px 0 !important;
+    }
+
+    #changelist-filter li {
+      padding: 0 !important;
+      border: none !important;
+      list-style: none !important;
+    }
+
+    #changelist-filter a {
+      display: block;
+      padding: 8px 20px !important;
+      color: var(--gray-dark) !important;
+      text-decoration: none;
+      transition: all 0.3s ease !important;
+      border-radius: 0;
+    }
+
+    #changelist-filter a:hover {
+      background: var(--gray-light) !important;
+      border-left: 4px solid var(--accent-color) !important;
+      padding-left: 24px !important;
+    }
+
+    #changelist-filter a.selected {
+      color: var(--primary-color) !important;
+      font-weight: bold !important;
+      background: rgba(46, 125, 50, 0.1) !important;
+    }
+
+    /* Pagination */
+    .paginator {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      text-align: center;
+    }
+
+    .paginator a, .paginator span {
+      padding: 8px 12px;
+      margin: 0 3px;
+      border-radius: 4px;
+      border: 1px solid var(--gray-light);
+      text-decoration: none;
+      color: var(--primary-color);
+      transition: all 0.3s ease;
+      display: inline-block;
+    }
+
+    .paginator a:hover {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .step-links {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    /* Submit Row */
+    .submit-row {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      text-align: right;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .submit-row input[type="submit"],
+    .submit-row .button {
+      background: linear-gradient(135deg, var(--primary-color), #66bb6a);
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .submit-row input[type="submit"]:hover,
+    .submit-row .button:hover {
+      background: linear-gradient(135deg, #1b5e20, #2e7d32);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+    }
+
+    .submit-row input[type="submit"]:active,
+    .submit-row .button:active {
+      transform: translateY(0);
+    }
+
+    /* Add button */
+    .addlink {
+      background: linear-gradient(135deg, #4CAF50, #66bb6a) !important;
+      color: white !important;
+      padding: 10px 24px !important;
+      border-radius: 6px !important;
+      text-decoration: none !important;
+      font-weight: 600 !important;
+      font-size: 14px !important;
+      transition: all 0.3s ease !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      border: none !important;
+    }
+
+    .addlink:hover {
+      background: linear-gradient(135deg, #388e3c, #4CAF50) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 12px rgba(56, 142, 60, 0.3) !important;
+    }
+
+    .addlink::before {
+      content: "✚";
+      font-size: 16px;
+    }
+
+    /* Search form styling */
+    #searchbar {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      border: 1px solid var(--gray-light);
+    }
+
+    #searchbar input {
+      border: 2px solid var(--gray-light) !important;
+      border-radius: 6px !important;
+      padding: 12px 15px !important;
+      font-size: 14px !important;
+    }
+
+    #searchbar input:focus {
+      border-color: var(--primary-color) !important;
+    }
+
+    /* Messages */
+    .messagelist {
+      list-style: none;
+      margin-bottom: 20px;
+    }
+
+    .messagelist li {
+      padding: 15px 20px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      border-left: 4px solid;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .messagelist .success {
+      background: #e8f5e9;
+      color: #4CAF50;
+      border-left-color: #4CAF50;
+    }
+
+    .messagelist .error {
+      background: #ffebee;
+      color: #f44336;
+      border-left-color: #f44336;
+    }
+
+    .messagelist .warning {
+      background: #fff3e0;
+      color: #FF9800;
+      border-left-color: #FF9800;
+    }
+
+    .messagelist .info {
+      background: #e3f2fd;
+      color: #1976d2;
+      border-left-color: #1976d2;
+    }
+  </style>
+{% endblock %}
+
+

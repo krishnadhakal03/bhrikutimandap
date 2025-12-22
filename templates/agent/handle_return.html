@@ -1,0 +1,289 @@
+{% extends "agent/base.html" %}
+{% load static %}
+
+{% block agent_content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Header -->
+            <div class="mb-4">
+                <a href="{% url 'agent:order_detail' order.id %}" class="btn btn-outline-secondary btn-sm mb-3">
+                    <i class="fas fa-arrow-left mr-1"></i> Back to Order
+                </a>
+                <h2 class="text-dark">
+                    <i class="fas fa-undo text-warning mr-2"></i>
+                    Handle Return Request
+                </h2>
+                <p class="text-muted">Review and process customer return request</p>
+            </div>
+
+            <!-- Return Request Info Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-warning text-dark font-weight-bold">
+                    <i class="fas fa-exclamation-circle mr-2"></i>Return Request Details
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-dark font-weight-bold mb-3">Request Information</h6>
+                            <div class="mb-2">
+                                <small class="text-muted">Request ID:</small>
+                                <p class="mb-1"><strong>#{{ return_request.id }}</strong></p>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Status:</small>
+                                <p class="mb-1">
+                                    <span class="badge badge-{% if return_request.status == 'requested' %}warning{% elif return_request.status == 'approved' %}success{% elif return_request.status == 'rejected' %}danger{% endif %}">
+                                        {{ return_request.get_status_display }}
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Requested On:</small>
+                                <p class="mb-1">{{ return_request.created_at|date:"M d, Y h:i A" }}</p>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="text-dark font-weight-bold mb-3">Customer Details</h6>
+                            <div class="mb-2">
+                                <small class="text-muted">Name:</small>
+                                <p class="mb-1">{{ order.user.get_full_name }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Email:</small>
+                                <p class="mb-1">{{ order.user.email }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Order #:</small>
+                                <p class="mb-1">{{ order.id }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Return Reason -->
+                    <div class="border-top pt-3">
+                        <h6 class="text-dark font-weight-bold mb-2">Return Reason</h6>
+                        <p class="text-dark mb-0">
+                            {{ return_request.return_reason }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Item Being Returned -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-light border-bottom">
+                    <h6 class="mb-0 text-dark">Item Being Returned</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            {% if order_item.product.image %}
+                            <img src="{{ order_item.product.image.url }}" alt="{{ order_item.product.title }}" 
+                                 class="img-fluid rounded" style="max-height: 150px;">
+                            {% else %}
+                            <div class="bg-light rounded p-4 text-center">
+                                <i class="fas fa-image fa-3x text-muted"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9">
+                            <h5 class="text-dark mb-1">{{ order_item.product.title }}</h5>
+                            <p class="text-muted mb-2">
+                                Product ID: <strong>{{ order_item.product.id }}</strong>
+                            </p>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted">Unit Price:</small>
+                                    <p class="mb-0"><strong>₹{{ order_item.product.price }}</strong></p>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Quantity Ordered:</small>
+                                    <p class="mb-0"><strong>{{ order_item.quantity }}</strong></p>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted">Quantity Returning:</small>
+                                    <p class="mb-0"><strong class="text-warning">{{ return_request.quantity_returning|default:order_item.quantity }}</strong></p>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Refund Amount:</small>
+                                    <p class="mb-0"><strong class="text-danger">₹{{ return_request.refund_amount|floatformat:0 }}</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Decision Form -->
+            {% if return_request.status == 'requested' %}
+            <div class="card shadow">
+                <div class="card-header bg-light border-bottom">
+                    <h6 class="mb-0 text-dark">Your Decision</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="decisionForm">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label class="font-weight-bold mb-3">Do you approve this return?</label>
+                            <div class="custom-control custom-radio mb-3">
+                                <input type="radio" id="approveRadio" name="decision" value="approve" 
+                                       class="custom-control-input" required>
+                                <label class="custom-control-label" for="approveRadio">
+                                    <span class="text-success font-weight-bold">
+                                        <i class="fas fa-check-circle mr-1"></i> Approve Return
+                                    </span>
+                                    <br>
+                                    <small class="text-muted">
+                                        Accept the return and process refund of ₹{{ return_request.refund_amount|floatformat:0 }}. 
+                                        Product stock will be automatically restored.
+                                    </small>
+                                </label>
+                            </div>
+
+                            <div class="custom-control custom-radio mb-3">
+                                <input type="radio" id="rejectRadio" name="decision" value="reject" 
+                                       class="custom-control-input" required>
+                                <label class="custom-control-label" for="rejectRadio">
+                                    <span class="text-danger font-weight-bold">
+                                        <i class="fas fa-times-circle mr-1"></i> Reject Return
+                                    </span>
+                                    <br>
+                                    <small class="text-muted">
+                                        Decline the return request. Customer will retain the product.
+                                    </small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="form-group">
+                            <label for="agentNotes" class="font-weight-bold">Your Notes / Comments</label>
+                            <textarea name="agent_notes" id="agentNotes" class="form-control" rows="4"
+                                      placeholder="Provide details about your decision..."></textarea>
+                            <small class="text-muted">Visible to customer in their order history</small>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row mt-4">
+                            <div class="col-6">
+                                <button type="reset" class="btn btn-outline-secondary btn-block">
+                                    <i class="fas fa-redo mr-1"></i> Reset
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <i class="fas fa-paper-plane mr-1"></i> Submit Decision
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <!-- Already Processed -->
+            <div class="card shadow">
+                <div class="card-header {% if return_request.status == 'approved' %}bg-success{% else %}bg-danger{% endif %} text-white">
+                    <h6 class="mb-0">
+                        {% if return_request.status == 'approved' %}
+                            <i class="fas fa-check-circle mr-1"></i> Return Approved
+                        {% else %}
+                            <i class="fas fa-times-circle mr-1"></i> Return Rejected
+                        {% endif %}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Decision Made On:</small>
+                        <p class="mb-1">
+                            <strong>
+                                {% if return_request.approved_at %}
+                                    {{ return_request.approved_at|date:"M d, Y h:i A" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </strong>
+                        </p>
+                    </div>
+
+                    {% if return_request.approved_by %}
+                    <div class="mb-3">
+                        <small class="text-muted">Approved By:</small>
+                        <p class="mb-1"><strong>{{ return_request.approved_by.get_full_name }}</strong></p>
+                    </div>
+                    {% endif %}
+
+                    {% if return_request.agent_notes %}
+                    <div class="mb-3 border-top pt-3">
+                        <small class="text-muted">Agent Notes:</small>
+                        <p class="mb-0 text-dark">{{ return_request.agent_notes }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-4">
+                        <a href="{% url 'agent:order_detail' order.id %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left mr-1"></i> Back to Order
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-control-label {
+        cursor: pointer;
+        padding-left: 0;
+    }
+
+    .card {
+        border: none;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    }
+
+    .custom-radio .custom-control-input:checked ~ .custom-control-label {
+        font-weight: 600;
+    }
+
+    textarea {
+        resize: vertical;
+    }
+</style>
+
+<script>
+document.getElementById('decisionForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const decision = document.querySelector('input[name="decision"]:checked');
+    
+    if (!decision) {
+        alert('Please select a decision (Approve or Reject)');
+        return;
+    }
+
+    // Show confirmation
+    const confirmMsg = decision.value === 'approve' 
+        ? 'Are you sure you want to APPROVE this return?\n\n✓ Refund will be processed: ₹{{ return_request.refund_amount|floatformat:0 }}\n✓ Stock will be restored automatically'
+        : 'Are you sure you want to REJECT this return?\n\nThe customer will be notified of your decision.';
+
+    if (confirm(confirmMsg)) {
+        this.submit();
+    }
+});
+
+// Show/hide notes based on decision
+document.querySelectorAll('input[name="decision"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const agentNotesField = document.getElementById('agentNotes');
+        agentNotesField.focus();
+    });
+});
+</script>
+
+{% endblock %}

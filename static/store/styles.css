@@ -1,0 +1,5 @@
+body{font-family:Arial, sans-serif;max-width:1000px;margin:20px auto;color:#111}
+header{display:flex;justify-content:space-between;align-items:center}
+.product{border:1px solid #eee;padding:12px;margin:12px 0;display:flex;gap:12px}
+.product img{height:100px;object-fit:cover}
+button, a.buy{background:#ffd814;padding:10px 16px;border-radius:4px;color:#111;text-decoration:none}

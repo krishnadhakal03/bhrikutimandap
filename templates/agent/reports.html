@@ -1,0 +1,140 @@
+{% extends "agent/base.html" %}
+
+{% block agent_content %}
+<div class="mb-4">
+    <h3 class="text-dark">Reports & Analytics</h3>
+</div>
+
+<!-- Revenue Summary -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Total Revenue</h6>
+                <h3 class="text-success">₹{{ total_revenue|floatformat:0 }}</h3>
+                <small class="text-muted">All time</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Total Units Sold</h6>
+                <h3 class="text-primary">{{ total_quantity }}</h3>
+                <small class="text-muted">All time</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Average Transaction</h6>
+                <h3 class="text-info">₹{{ avg_transaction|floatformat:0 }}</h3>
+                <small class="text-muted">Per sale</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue by Product -->
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Revenue by Product</h5>
+    </div>
+    
+    <div class="card-body">
+        {% if revenue_by_product %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Product</th>
+                        <th>Units Sold</th>
+                        <th>Revenue</th>
+                        <th>% of Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in revenue_by_product %}
+                    <tr>
+                        <td><strong>{{ product.title }}</strong></td>
+                        <td>{{ product.total_quantity }}</td>
+                        <td>₹{{ product.total_revenue|floatformat:0 }}</td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ product.percentage }}%">
+                                    {{ product.percentage|floatformat:1 }}%
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-center text-muted py-5">No sales data available</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Daily Sales Trends -->
+<div class="card">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Daily Sales Trends (30 days)</h5>
+    </div>
+    
+    <div class="card-body">
+        {% if daily_trends %}
+        <div style="height: 300px; display: flex; align-items: flex-end; gap: 2px; overflow-x: auto;">
+            {% for day, quantity in daily_trends.items %}
+            <div style="flex: 1; min-width: 20px;">
+                <div style="height: {% widthratio quantity max_daily_quantity 250 %}px; 
+                            background-color: #28a745; 
+                            border-radius: 4px; 
+                            margin-bottom: 10px;
+                            transition: background-color 0.3s;"
+                     onmouseover="this.style.backgroundColor='#20c997'" 
+                     onmouseout="this.style.backgroundColor='#28a745'">
+                </div>
+                <small style="font-size: 10px; text-align: center; display: block;">
+                    {{ day|slice:"5:10" }}
+                </small>
+            </div>
+            {% endfor %}
+        </div>
+        <small class="text-muted d-block mt-3">← Days →</small>
+        {% else %}
+        <p class="text-center text-muted py-5">No sales data for the past 30 days</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Top Selling Products -->
+<div class="card mt-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Top 5 Products by Revenue</h5>
+    </div>
+    
+    <div class="card-body">
+        {% if top_products %}
+        <div class="list-group list-group-flush">
+            {% for product in top_products %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">{{ product.title }}</h6>
+                    <small class="text-muted">{{ product.total_quantity }} units sold</small>
+                </div>
+                <span class="badge bg-primary rounded-pill">₹{{ product.total_revenue|floatformat:0 }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-center text-muted py-5">No sales data available</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

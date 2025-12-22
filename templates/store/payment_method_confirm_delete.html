@@ -1,0 +1,56 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Delete Payment Method - Bhrikutimandap{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row">
+    <div class="col-md-6 offset-md-3">
+      <div class="card border-0 shadow-sm border-danger border-2">
+        <div class="card-header bg-light border-bottom">
+          <h4 class="mb-0 text-danger">Remove Payment Method</h4>
+        </div>
+        <div class="card-body p-4">
+          <div class="alert alert-warning" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> 
+            <strong>Remove this payment method?</strong> You won't be able to use it for checkout.
+          </div>
+
+          <p><strong>Payment method to be removed:</strong></p>
+          <div class="card bg-light mb-4">
+            <div class="card-body">
+              <p class="mb-2">
+                <strong>{{ payment_method.display_name }}</strong><br>
+                <small class="text-muted">{{ payment_method.get_payment_type_display }}</small>
+              </p>
+              {% if payment_method.last_four %}
+                <p class="mb-0 small text-muted">Last 4 digits: {{ payment_method.last_four }}</p>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if payment_method.is_default %}
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle"></i> 
+              This is your default payment method. After removal, another method will be set as default.
+            </div>
+          {% endif %}
+
+          <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-danger">
+                <i class="fas fa-trash"></i> Remove Method
+              </button>
+              <a href="{% url 'store:payment_method_list' %}" class="btn btn-outline-secondary">
+                Cancel
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

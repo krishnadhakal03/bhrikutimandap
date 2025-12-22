@@ -1,0 +1,483 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ block.super }} - Bhrikutimandap Admin{% endblock %}
+
+{% block extrahead %}
+<link rel="stylesheet" href="{% static 'admin/css/bhrikutimandap-admin.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  :root {
+    --primary-color: #2e7d32;
+    --accent-color: #00bfa5;
+    --danger-color: #d32f2f;
+    --warning-color: #f57c00;
+    --info-color: #1976d2;
+    --success-color: #388e3c;
+    --gray-dark: #37474f;
+    --gray-light: #eceff1;
+    --border-color: #bdbdbd;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    color: var(--gray-dark);
+  }
+
+  /* Header Styling */
+  #header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #1b5e20 100%);
+    padding: 20px 30px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-bottom: 4px solid var(--accent-color);
+  }
+
+  #header h1 {
+    color: white;
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  #header h1 a {
+    color: white;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  #header h1 a:before {
+    content: "🛍️";
+    font-size: 28px;
+  }
+
+  #header h1 a:hover {
+    opacity: 0.9;
+  }
+
+  /* Navigation Bar */
+  #user-tools {
+    background: linear-gradient(to right, rgba(46, 125, 50, 0.95), rgba(0, 191, 165, 0.95));
+    padding: 12px 30px;
+    color: white;
+    font-size: 14px;
+    border-bottom: 2px solid var(--accent-color);
+  }
+
+  #user-tools a {
+    color: #ffffff;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    margin-right: 10px;
+  }
+
+  #user-tools a:hover {
+    background: rgba(255, 255, 255, 0.2);
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  }
+
+  /* Sidebar */
+  #sidebar {
+    background: #ffffff;
+    border-right: 3px solid var(--primary-color);
+    padding: 0;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .module h2 {
+    background: linear-gradient(135deg, var(--primary-color), #66bb6a);
+    color: white;
+    padding: 12px 15px;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    border-left: 4px solid var(--accent-color);
+  }
+
+  .module h2:first-child {
+    border-radius: 0;
+  }
+
+  .module {
+    border: none;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .module ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .module li {
+    padding: 0;
+    border-bottom: 1px solid var(--gray-light);
+  }
+
+  .module li:last-child {
+    border-bottom: none;
+  }
+
+  .module a {
+    display: block;
+    padding: 12px 20px;
+    color: var(--gray-dark);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+    font-weight: 500;
+  }
+
+  .module a:hover {
+    background: var(--gray-light);
+    border-left-color: var(--accent-color);
+    color: var(--primary-color);
+    padding-left: 24px;
+  }
+
+  /* Main Content */
+  #main {
+    padding: 30px;
+  }
+
+  .dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .module table {
+    width: 100%;
+  }
+
+  /* Table Styling */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  table thead {
+    background: linear-gradient(135deg, var(--primary-color), #66bb6a);
+    color: white;
+    font-weight: 600;
+  }
+
+  table thead th {
+    padding: 15px 20px;
+    text-align: left;
+    border: none;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  table tbody tr {
+    border-bottom: 1px solid var(--gray-light);
+    transition: all 0.3s ease;
+  }
+
+  table tbody tr:hover {
+    background: #f0f7f4;
+    box-shadow: inset 4px 0 0 var(--accent-color);
+  }
+
+  table tbody td {
+    padding: 14px 20px;
+    border: none;
+  }
+
+  table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  /* Action Links */
+  table a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    padding: 4px 8px;
+    border-radius: 3px;
+  }
+
+  table a:hover {
+    background: var(--gray-light);
+    color: var(--accent-color);
+  }
+
+  /* Buttons */
+  .button, input[type="submit"], input[type="button"],
+  .submit-row input[type="submit"] {
+    background: linear-gradient(135deg, var(--primary-color), #66bb6a);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .button:hover, input[type="submit"]:hover, input[type="button"]:hover {
+    background: linear-gradient(135deg, #1b5e20, #2e7d32);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+  }
+
+  .button:active, input[type="submit"]:active {
+    transform: translateY(0);
+  }
+
+  /* Delete Button */
+  .deletelink {
+    color: var(--danger-color) !important;
+  }
+
+  .deletelink:hover {
+    background: #ffebee !important;
+    color: var(--danger-color) !important;
+  }
+
+  /* Form Styling */
+  .form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 15px;
+  }
+
+  .form-row > div {
+    flex: 1;
+  }
+
+  fieldset {
+    background: white;
+    border: 1px solid var(--gray-light);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  }
+
+  fieldset h2 {
+    background: linear-gradient(135deg, var(--primary-color), #66bb6a);
+    color: white;
+    padding: 12px 15px;
+    margin: -20px -20px 15px -20px;
+    font-size: 16px;
+    border-radius: 7px 7px 0 0;
+  }
+
+  .field-box {
+    margin-bottom: 18px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: var(--gray-dark);
+    font-size: 14px;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  textarea,
+  select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid var(--gray-light);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    background: white;
+  }
+
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="number"]:focus,
+  input[type="date"]:focus,
+  input[type="time"]:focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 8px rgba(46, 125, 50, 0.1);
+    background: #fafafa;
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+
+  /* Filters & Search */
+  #searchbar {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--gray-light);
+  }
+
+  #searchbar input {
+    border: 2px solid var(--gray-light);
+    border-radius: 6px;
+    padding: 12px 15px;
+    font-size: 14px;
+  }
+
+  #searchbar input:focus {
+    border-color: var(--primary-color);
+  }
+
+  .module.filtered h2 {
+    background: linear-gradient(135deg, var(--warning-color), #ff9800);
+  }
+
+  /* Messages */
+  .messagelist {
+    list-style: none;
+    margin-bottom: 20px;
+  }
+
+  .messagelist li {
+    padding: 15px 20px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    border-left: 4px solid;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  }
+
+  .messagelist .success {
+    background: #e8f5e9;
+    color: var(--success-color);
+    border-left-color: var(--success-color);
+  }
+
+  .messagelist .error {
+    background: #ffebee;
+    color: var(--danger-color);
+    border-left-color: var(--danger-color);
+  }
+
+  .messagelist .warning {
+    background: #fff3e0;
+    color: var(--warning-color);
+    border-left-color: var(--warning-color);
+  }
+
+  .messagelist .info {
+    background: #e3f2fd;
+    color: var(--info-color);
+    border-left-color: var(--info-color);
+  }
+
+  /* Pagination */
+  .pagination {
+    display: flex;
+    gap: 5px;
+    margin: 20px 0;
+    justify-content: center;
+  }
+
+  .pagination a, .pagination span {
+    padding: 10px 14px;
+    border-radius: 5px;
+    border: 1px solid var(--gray-light);
+    text-decoration: none;
+    color: var(--primary-color);
+    transition: all 0.3s ease;
+  }
+
+  .pagination a:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+  }
+
+  .pagination .step-links span.step-label {
+    margin: 0 10px;
+  }
+
+  /* Breadcrumbs */
+  .breadcrumbs {
+    background: white;
+    padding: 15px 20px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  }
+
+  .breadcrumbs a {
+    color: var(--primary-color);
+    text-decoration: none;
+  }
+
+  .breadcrumbs a:hover {
+    color: var(--accent-color);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    #sidebar {
+      margin-bottom: 30px;
+    }
+
+    table {
+      font-size: 12px;
+    }
+
+    table thead th, table td {
+      padding: 10px;
+    }
+
+    .form-row {
+      flex-direction: column;
+    }
+
+    .dashboard {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block branding %}
+<div style="padding: 10px 0;">
+  <h1><a href="{% url 'admin:index' %}">🛍️ Bhrikutimandap Admin</a></h1>
+</div>
+{% endblock %}
+
+{% block nav-global %}
+<div style="background: var(--primary-color); padding: 10px 30px; text-align: right;">
+  <a href="{% url 'store:home' %}" style="color: white; text-decoration: none; margin-right: 20px; font-weight: 500;">← Back to Shop</a>
+</div>
+{% endblock %}

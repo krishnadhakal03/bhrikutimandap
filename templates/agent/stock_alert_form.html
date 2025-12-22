@@ -1,0 +1,58 @@
+{% extends "agent/base.html" %}
+{% load widget_tweaks %}
+
+{% block agent_content %}
+<div class="mb-4">
+    <h3 class="text-dark">Create Stock Alert</h3>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label class="form-label">{{ form.product.label }}</label>
+                    {{ form.product|add_class:"form-select" }}
+                    {% if form.product.errors %}
+                    <div class="invalid-feedback d-block">{{ form.product.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.threshold_quantity.label }}</label>
+                    {{ form.threshold_quantity|add_class:"form-control" }}
+                    {% if form.threshold_quantity.errors %}
+                    <div class="invalid-feedback d-block">{{ form.threshold_quantity.errors }}</div>
+                    {% endif %}
+                    <small class="text-muted">Alert will trigger when stock falls below this number</small>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.is_active.label }}</label>
+                    <div class="form-check">
+                        {{ form.is_active }}
+                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                            Enable this alert
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="alert alert-info">
+                <strong>How it works:</strong> This alert will be automatically triggered when the product stock drops below the threshold amount.
+            </div>
+            
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save mr-2"></i> Create Alert
+                </button>
+                <a href="{% url 'agent:stock_alerts' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

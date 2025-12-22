@@ -1,0 +1,154 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Banner Section -->
+<section class="hero-banner" style="padding: 40px 0;">
+  <div class="container">
+    <div class="text-center">
+      <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 15px;">Create Account</h1>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb" style="background: transparent; justify-content: center;">
+          <li class="breadcrumb-item"><a href="/">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Register</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+</section>
+
+<!-- Registration Section -->
+<section class="section-margin" style="padding: 80px 0;">
+  <div class="container">
+    <div class="row" style="gap: 40px;">
+      <!-- Left Column - Login CTA -->
+      <div class="col-lg-5">
+        <div style="background: linear-gradient(135deg, #ff6b35 0%, #f7b41f 100%); color: white; padding: 50px; border-radius: 15px; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; justify-content: center; min-height: 400px;">
+          <h3 style="font-size: 2rem; font-weight: 700; margin-bottom: 20px;">Already have an account?</h3>
+          <p style="font-size: 1.1rem; margin-bottom: 30px; opacity: 0.95;">
+            Sign in to access your existing orders, saved addresses, and personalized recommendations.
+          </p>
+          <ul style="list-style: none; padding: 0; margin-bottom: 30px;">
+            <li style="margin-bottom: 15px; display: flex; align-items: center; gap: 12px;">
+              <i class="fas fa-check-circle"></i> Quick Sign In
+            </li>
+            <li style="margin-bottom: 15px; display: flex; align-items: center; gap: 12px;">
+              <i class="fas fa-check-circle"></i> View Your Orders
+            </li>
+            <li style="margin-bottom: 15px; display: flex; align-items: center; gap: 12px;">
+              <i class="fas fa-check-circle"></i> Manage Addresses
+            </li>
+            <li style="display: flex; align-items: center; gap: 12px;">
+              <i class="fas fa-check-circle"></i> Track Shipments
+            </li>
+          </ul>
+          <a class="btn button-primary" href="{% url 'store:login' %}" style="text-align: center; display: block; padding: 12px 30px; border-radius: 5px; background: white; color: #ff6b35 !important;">
+            Sign In
+          </a>
+        </div>
+      </div>
+
+      <!-- Right Column - Registration Form -->
+      <div class="col-lg-7">
+        <div>
+          <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 10px;">Join Our Community</h2>
+          <p style="color: var(--text-secondary); margin-bottom: 30px;">Create your account in just a few steps. It takes less than 2 minutes!</p>
+
+          <form method="post" action="{% url 'store:register' %}">
+            {% csrf_token %}
+
+            {% if messages %}
+            <div>
+              {% for message in messages %}
+              <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}" role="alert">
+                {{ message }}
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Account Information -->
+            <div style="margin-bottom: 25px;">
+              <h4 style="font-weight: 600; font-size: 0.95rem; margin-bottom: 15px; color: var(--primary-color); text-transform: uppercase;">Account Information</h4>
+              <div class="form-group">
+                <label for="username" style="font-weight: 600; margin-bottom: 8px; display: block;">Username</label>
+                <input type="text" class="form-control" id="username" name="username" placeholder="Choose a username" value="{{ request.POST.username }}" required>
+              </div>
+              <div class="form-group">
+                <label for="email" style="font-weight: 600; margin-bottom: 8px; display: block;">Email Address</label>
+                <input type="email" class="form-control" id="email" name="email" placeholder="your.email@example.com" value="{{ request.POST.email }}" required>
+              </div>
+              <div class="form-group">
+                <label for="password" style="font-weight: 600; margin-bottom: 8px; display: block;">Password</label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Create a strong password" required>
+              </div>
+            </div>
+
+            <!-- Personal Information -->
+            <div style="margin-bottom: 25px;">
+              <h4 style="font-weight: 600; font-size: 0.95rem; margin-bottom: 15px; color: var(--primary-color); text-transform: uppercase;">Personal Information</h4>
+              <div class="form-group">
+                <label for="phone" style="font-weight: 600; margin-bottom: 8px; display: block;">Phone Number (Optional)</label>
+                <input type="text" class="form-control" id="phone" name="phone" placeholder="+91 90000 00000" value="{{ request.POST.phone }}">
+              </div>
+              <div class="form-group">
+                <label for="company" style="font-weight: 600; margin-bottom: 8px; display: block;">Company/Business Name (Optional)</label>
+                <input type="text" class="form-control" id="company" name="company" placeholder="Your company name" value="{{ request.POST.company }}">
+              </div>
+            </div>
+
+            <!-- Address Information -->
+            <div style="margin-bottom: 25px;">
+              <h4 style="font-weight: 600; font-size: 0.95rem; margin-bottom: 15px; color: var(--primary-color); text-transform: uppercase;">Address Information</h4>
+              <div class="form-group">
+                <label for="address_line1" style="font-weight: 600; margin-bottom: 8px; display: block;">Address Line 1</label>
+                <input type="text" class="form-control" id="address_line1" name="address_line1" placeholder="Street address" value="{{ request.POST.address_line1 }}">
+              </div>
+              <div class="form-group">
+                <label for="address_line2" style="font-weight: 600; margin-bottom: 8px; display: block;">Address Line 2</label>
+                <input type="text" class="form-control" id="address_line2" name="address_line2" placeholder="Apartment, suite, etc." value="{{ request.POST.address_line2 }}">
+              </div>
+              <div class="row">
+                <div class="col-md-6 form-group">
+                  <label for="city" style="font-weight: 600; margin-bottom: 8px; display: block;">City</label>
+                  <input type="text" class="form-control" id="city" name="city" placeholder="City" value="{{ request.POST.city }}">
+                </div>
+                <div class="col-md-6 form-group">
+                  <label for="postal_code" style="font-weight: 600; margin-bottom: 8px; display: block;">Postal Code</label>
+                  <input type="text" class="form-control" id="postal_code" name="postal_code" placeholder="PIN Code" value="{{ request.POST.postal_code }}">
+                </div>
+              </div>
+            </div>
+
+            <!-- Account Type -->
+            <div style="margin-bottom: 25px;">
+              <h4 style="font-weight: 600; font-size: 0.95rem; margin-bottom: 15px; color: var(--primary-color); text-transform: uppercase;">Account Type</h4>
+              <div class="form-group">
+                <label for="role" style="font-weight: 600; margin-bottom: 8px; display: block;">I want to register as</label>
+                <select class="form-control" id="role" name="role" required>
+                  <option value="customer" selected>Customer (Buyer)</option>
+                  <option value="agent">Agent/Seller</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-group">
+              <button type="submit" class="btn button-primary w-100" style="padding: 12px 30px; font-size: 1rem; font-weight: 600;">
+                <i class="fas fa-user-plus"></i> Create My Account
+              </button>
+            </div>
+
+            <!-- Terms & Conditions -->
+            <p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center; margin-top: 20px;">
+              By creating an account, you agree to our <a href="#" style="color: var(--primary-color); text-decoration: none;">Terms & Conditions</a> and <a href="#" style="color: var(--primary-color); text-decoration: none;">Privacy Policy</a>
+            </p>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+

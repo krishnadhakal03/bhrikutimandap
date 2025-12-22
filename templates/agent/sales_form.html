@@ -1,0 +1,61 @@
+{% extends "agent/base.html" %}
+{% load widget_tweaks %}
+
+{% block agent_content %}
+<div class="mb-4">
+    <h3 class="text-dark">Record Sale</h3>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.product.label }}</label>
+                    {{ form.product|add_class:"form-select" }}
+                    {% if form.product.errors %}
+                    <div class="invalid-feedback d-block">{{ form.product.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.quantity.label }}</label>
+                    {{ form.quantity|add_class:"form-control" }}
+                    {% if form.quantity.errors %}
+                    <div class="invalid-feedback d-block">{{ form.quantity.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.unit_price.label }}</label>
+                    {{ form.unit_price|add_class:"form-control" }}
+                    {% if form.unit_price.errors %}
+                    <div class="invalid-feedback d-block">{{ form.unit_price.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">Transaction Date</label>
+                    <input type="datetime-local" name="transaction_date" class="form-control" 
+                           value="{% now 'Y-m-dTH:i' %}">
+                </div>
+            </div>
+            
+            <div class="alert alert-info">
+                <strong>Note:</strong> The total amount will be calculated automatically as Quantity × Unit Price
+            </div>
+            
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save mr-2"></i> Record Sale
+                </button>
+                <a href="{% url 'agent:sales_list' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

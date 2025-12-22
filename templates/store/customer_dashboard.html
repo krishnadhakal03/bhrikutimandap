@@ -1,0 +1,245 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Customer Dashboard - Bhrikutimandap{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <!-- Page Header -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2>Welcome, {{ user.first_name|default:user.username }}!</h2>
+      <p class="text-muted">Manage your account, orders, addresses, and more</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <a href="{% url 'store:profile_detail' %}" class="btn btn-primary">
+        <i class="fas fa-user-edit"></i> Edit Profile
+      </a>
+    </div>
+  </div>
+
+  <!-- Dashboard Cards -->
+  <div class="row mb-5">
+    <!-- Total Orders Card -->
+    <div class="col-md-3 mb-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="text-muted mb-2">Total Orders</h6>
+              <h3 class="mb-0">{{ total_orders }}</h3>
+            </div>
+            <i class="fas fa-shopping-bag fa-3x text-primary" style="opacity: 0.3;"></i>
+          </div>
+          <a href="{% url 'store:order_history' %}" class="text-primary text-decoration-none small mt-2 d-inline-block">
+            View Orders →
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Addresses Card -->
+    <div class="col-md-3 mb-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="text-muted mb-2">Addresses</h6>
+              <h3 class="mb-0">{{ total_addresses }}</h3>
+            </div>
+            <i class="fas fa-map-marker-alt fa-3x text-success" style="opacity: 0.3;"></i>
+          </div>
+          <a href="{% url 'store:address_list' %}" class="text-success text-decoration-none small mt-2 d-inline-block">
+            Manage Addresses →
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Methods Card -->
+    <div class="col-md-3 mb-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="text-muted mb-2">Payment Methods</h6>
+              <h3 class="mb-0">{{ total_payment_methods }}</h3>
+            </div>
+            <i class="fas fa-credit-card fa-3x text-info" style="opacity: 0.3;"></i>
+          </div>
+          <a href="{% url 'store:payment_method_list' %}" class="text-info text-decoration-none small mt-2 d-inline-block">
+            Manage Payments →
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wishlist Card -->
+    <div class="col-md-3 mb-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="text-muted mb-2">Wishlist Items</h6>
+              <h3 class="mb-0">{{ wishlist.item_count|default:"0" }}</h3>
+            </div>
+            <i class="fas fa-heart fa-3x text-danger" style="opacity: 0.3;"></i>
+          </div>
+          <a href="{% url 'store:wishlist' %}" class="text-danger text-decoration-none small mt-2 d-inline-block">
+            View Wishlist →
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Section -->
+  <div class="row mb-5">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light border-bottom">
+          <h5 class="mb-0">Profile Information</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p class="mb-2">
+                <strong>Name:</strong><br>
+                {{ user.first_name }} {{ user.last_name|default:"" }}
+              </p>
+              <p class="mb-2">
+                <strong>Email:</strong><br>
+                {{ user.email }}
+              </p>
+            </div>
+            <div class="col-md-6">
+              <p class="mb-2">
+                <strong>Phone:</strong><br>
+                {{ user.phone|default:"Not set" }}
+              </p>
+              <p class="mb-2">
+                <strong>Member Since:</strong><br>
+                {{ user.date_joined|date:"M d, Y" }}
+              </p>
+            </div>
+          </div>
+          <hr>
+          <a href="{% url 'store:profile_detail' %}" class="btn btn-sm btn-outline-primary">
+            Edit Profile
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Links Sidebar -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light border-bottom">
+          <h5 class="mb-0">Quick Links</h5>
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled">
+            <li class="mb-3">
+              <a href="{% url 'store:profile_detail' %}" class="text-decoration-none">
+                <i class="fas fa-user"></i> Update Profile
+              </a>
+            </li>
+            <li class="mb-3">
+              <a href="{% url 'store:address_list' %}" class="text-decoration-none">
+                <i class="fas fa-map-marker-alt"></i> Manage Addresses
+              </a>
+            </li>
+            <li class="mb-3">
+              <a href="{% url 'store:payment_method_list' %}" class="text-decoration-none">
+                <i class="fas fa-credit-card"></i> Payment Methods
+              </a>
+            </li>
+            <li class="mb-3">
+              <a href="{% url 'store:order_history' %}" class="text-decoration-none">
+                <i class="fas fa-shopping-bag"></i> Order History
+              </a>
+            </li>
+            <li class="mb-3">
+              <a href="{% url 'store:wishlist' %}" class="text-decoration-none">
+                <i class="fas fa-heart"></i> My Wishlist
+              </a>
+            </li>
+            <li>
+              <a href="{% url 'store:product_list' %}" class="text-decoration-none">
+                <i class="fas fa-store"></i> Continue Shopping
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Orders -->
+  {% if recent_orders %}
+  <div class="row">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light border-bottom d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Recent Orders</h5>
+          <a href="{% url 'store:order_history' %}" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Order ID</th>
+                <th>Date</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for order in recent_orders %}
+              <tr>
+                <td>#{{ order.id }}</td>
+                <td>{{ order.created_at|date:"M d, Y" }}</td>
+                <td>{{ order.items.count }}</td>
+                <td>₹{{ order.total }}</td>
+                <td>
+                  {% if order.status == 'pending' %}
+                    <span class="badge bg-warning">Pending</span>
+                  {% elif order.status == 'confirmed' %}
+                    <span class="badge bg-info">Confirmed</span>
+                  {% elif order.status == 'shipped' %}
+                    <span class="badge bg-primary">Shipped</span>
+                  {% elif order.status == 'delivered' %}
+                    <span class="badge bg-success">Delivered</span>
+                  {% elif order.status == 'cancelled' %}
+                    <span class="badge bg-danger">Cancelled</span>
+                  {% else %}
+                    <span class="badge bg-secondary">{{ order.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <a href="{% url 'store:order_detail' order.id %}" class="btn btn-sm btn-outline-primary">
+                    View
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="row">
+    <div class="col-12">
+      <div class="alert alert-info">
+        <i class="fas fa-shopping-bag"></i> You haven't placed any orders yet.
+        <a href="{% url 'store:product_list' %}" class="alert-link">Start shopping!</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

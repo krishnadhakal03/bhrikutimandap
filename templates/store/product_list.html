@@ -1,0 +1,169 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block content %}
+<section class="section-margin" style="padding: 60px 0;">
+  <div class="container">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4" style="flex-wrap: wrap; gap: 20px;">
+      <div>
+        <p style="color: #667eea; font-weight: 600; letter-spacing: 1px; margin: 0;">PRODUCTS</p>
+        <h2 style="margin: 0; font-size: 2.5rem;">Available <span class="section-intro__style">Items</span></h2>
+      </div>
+      <div>
+        <a href="{% url 'store:home' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+      </div>
+    </div>
+
+    <!-- Search & Filter Section -->
+    <div style="background: white; padding: 24px; border-radius: 10px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+      <form method="get" class="row g-3">
+        <!-- Search Input -->
+        <div class="col-md-4">
+          <div style="position: relative;">
+            <input type="text" name="search" class="form-control" placeholder="Search by product name..." 
+                   value="{{ request.GET.search }}" style="padding: 12px 16px 12px 40px; border-radius: 8px; border: 2px solid #e0e0e0;">
+            <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #999;"></i>
+          </div>
+        </div>
+
+        <!-- Price Filter -->
+        <div class="col-md-3">
+          <select name="sort_price" class="form-control" style="padding: 12px 16px; border-radius: 8px; border: 2px solid #e0e0e0;">
+            <option value="">Sort by Price</option>
+            <option value="low_to_high" {% if request.GET.sort_price == 'low_to_high' %}selected{% endif %}>Low to High</option>
+            <option value="high_to_low" {% if request.GET.sort_price == 'high_to_low' %}selected{% endif %}>High to Low</option>
+          </select>
+        </div>
+
+        <!-- Agent Filter -->
+        <div class="col-md-3">
+          <select name="agent" class="form-control" style="padding: 12px 16px; border-radius: 8px; border: 2px solid #e0e0e0;">
+            <option value="">All Suppliers</option>
+            {% for agent in agents %}
+            <option value="{{ agent.id }}" {% if request.GET.agent|add:"0" == agent.id|add:"0" %}selected{% endif %}>
+              {{ agent.company_name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary w-100" style="padding: 12px 16px; border-radius: 8px;">
+            <i class="fas fa-search"></i> Filter
+          </button>
+          <a href="{% url 'store:product_list' %}" class="btn btn-outline-secondary" style="padding: 12px 16px; border-radius: 8px;" title="Clear filters">
+            <i class="fas fa-times"></i>
+          </a>
+        </div>
+      </form>
+
+      <!-- Active Filters Display -->
+      {% if request.GET.search or request.GET.sort_price or request.GET.agent %}
+      <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px;">
+        {% if request.GET.search %}
+        <span style="background: #e3f2fd; color: #1976d2; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">
+          <i class="fas fa-search"></i> "{{ request.GET.search }}"
+        </span>
+        {% endif %}
+        {% if request.GET.sort_price %}
+        <span style="background: #f3e5f5; color: #6f42c1; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">
+          <i class="fas fa-sort"></i> 
+          {% if request.GET.sort_price == 'low_to_high' %}
+            Low to High
+          {% elif request.GET.sort_price == 'high_to_low' %}
+            High to Low
+          {% else %}
+            {{ request.GET.sort_price|title }}
+          {% endif %}
+        </span>
+        {% endif %}
+        {% if request.GET.agent %}
+        <span style="background: #e8f5e9; color: #2e7d32; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">
+          <i class="fas fa-store"></i> Selected Supplier
+        </span>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    {% if products %}
+    <div style="margin-bottom: 16px; color: #6c757d; font-weight: 500;">
+      Showing <strong>{{ products|length }}</strong> product(s)
+    </div>
+    <div class="row g-4">
+      {% for product in products %}
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="card card-product h-100" style="border-radius: 10px; overflow: hidden;">
+          <div class="card-product__img" style="position: relative;">
+            {% if product.image %}
+              <img src="{{ product.image.url }}" alt="{{ product.title }}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 200%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-family=%22Arial%22 font-size=%2212%22%3ENo Image%3C/text%3E%3C/svg%3E'" style="width:100%; height:220px; object-fit:cover; display:block;">
+            {% else %}
+              <div style="width: 100%; height: 220px; background: linear-gradient(135deg, #f0f0f0 0%, #e8e8e8 100%); display: flex; align-items: center; justify-content: center;">
+                <span style="color: #999; font-size: 0.9rem;">No Image</span>
+              </div>
+            {% endif %}
+            <div style="position:absolute; top:10px; right:10px; display:flex; gap:8px;">
+              <a class="btn btn-sm" title="View" href="{% url 'store:product_detail' product.pk %}" style="background: rgba(255,255,255,0.95); color: #667eea; width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%;"><i class="ti-search"></i></a>
+              <button class="btn btn-sm add-to-cart" data-product-id="{{ product.pk }}" title="Add to cart" style="background: rgba(102,126,234,0.9); color: white; width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%;"><i class="ti-shopping-cart"></i></button>
+              <button class="btn btn-sm add-to-wishlist-btn" data-product-id="{{ product.pk }}" title="Add to wishlist" style="background: rgba(255,107,107,0.9); color: white; width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%;"><i class="ti-heart"></i></button>
+            </div>
+          </div>
+          <div class="card-body d-flex flex-column" style="padding: 12px 14px;">
+            <!-- Agent/Supplier Name -->
+            <p style="margin:0 0 6px 0; color:#667eea; font-size:0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+              {% if product.agent %}
+                <i class="fas fa-store"></i> {{ product.agent.company_name }}
+              {% elif product.supplier %}
+                <i class="fas fa-store"></i> {{ product.supplier.company|default:product.supplier.username }}
+              {% else %}
+                <i class="fas fa-store"></i> Vendor
+              {% endif %}
+            </p>
+            <h5 style="margin:0 0 8px 0; font-size:1rem; font-weight:600; line-height:1.2;">
+              <a href="{% url 'store:product_detail' product.pk }}" style="color:#212529; text-decoration:none;">{{ product.title }}</a>
+            </h5>
+            <p style="flex:1; margin:0 0 8px 0; color:#495057; font-size:0.9rem;">{{ product.description|truncatewords:14 }}</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span style="font-size:1.1rem; font-weight:700; color:#667eea;">₹{{ product.price }}</span>
+              </div>
+              <div>
+                {% if product.stock > 5 %}
+                  <span class="badge badge-success">In stock</span>
+                {% elif product.stock > 0 %}
+                  <span class="badge" style="background:#ffc107; color:#212529;">Only {{ product.stock }}</span>
+                {% else %}
+                  <span class="badge badge-danger">Out</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="mt-4 d-flex justify-content-center">
+      <!-- pagination could be added here -->
+    </div>
+    {% else %}
+      <div class="alert alert-info text-center" role="alert" style="padding: 40px;">
+        <i class="fas fa-inbox" style="font-size: 3rem; color: #667eea; margin-bottom: 20px;"></i>
+        <h5>No products found</h5>
+        <p class="mb-0">
+          {% if request.GET.search %}
+            Try adjusting your search terms
+          {% elif request.GET.agent %}
+            No products from this supplier
+          {% else %}
+            Check back later or try browsing other categories.
+          {% endif %}
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
