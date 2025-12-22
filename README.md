@@ -89,6 +89,23 @@ python manage.py runserver 8000
 
 ---
 
+## 🚀 Deployment
+
+### Deploy to Hostinger
+
+Ready to deploy your application to production? Check out our comprehensive deployment guide:
+
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** 🚀
+  - Step-by-step guide for deploying to Hostinger
+  - Both shared hosting and VPS deployment options
+  - Database configuration (MySQL/PostgreSQL)
+  - Static files and media handling
+  - SSL/HTTPS setup
+  - Security best practices
+  - Troubleshooting and maintenance
+
+---
+
 ## 📖 Documentation
 
 ### Complete User Journeys
