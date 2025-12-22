@@ -1,3 +1,7 @@
 django>=4.2
 mysqlclient
-Pillowdjango-widget-tweaks
+Pillow
+django-widget-tweaks
+gunicorn
+whitenoise
+python-dotenv
