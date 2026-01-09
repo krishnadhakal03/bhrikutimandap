@@ -28,7 +28,7 @@ class RegistrationActivationTest(TestCase):
 class CartMergeTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='buyer', password='pass')
-        self.prod = Product.objects.create(title='P', price=1.0, inventory=10)
+        self.prod = Product.objects.create(title='P', price=1.0, stock=10)
 
     def test_merge_session_cart(self):
         c = Client()
@@ -36,8 +36,9 @@ class CartMergeTest(TestCase):
         session = c.session
         session['cart'] = {str(self.prod.pk): 2}
         session.save()
-        # login should merge
-        c.login(username='buyer', password='pass')
+        # login view should merge
+        resp = c.post(reverse('store:login'), {'username': 'buyer', 'password': 'pass'})
+        self.assertIn(resp.status_code, (302, 301))
         # ensure cart exists
         cart = Cart.objects.get(user=self.user)
         ci = CartItem.objects.get(cart=cart, product=self.prod)

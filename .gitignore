@@ -43,3 +43,5 @@ db.sqlite3
 # Environment
 .env
 .env.local
+.env.prod
+.env.staging

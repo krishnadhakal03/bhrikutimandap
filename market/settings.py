@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -6,14 +7,27 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables
 if os.path.exists(BASE_DIR / '.env'):
-    from dotenv import load_dotenv
-    load_dotenv(BASE_DIR / '.env')
+    try:
+        import importlib
+
+        dotenv = importlib.import_module('dotenv')
+        dotenv.load_dotenv(BASE_DIR / '.env')
+    except Exception:
+        pass
 
 # Quick-start development settings - unsuitable for production
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-secret-key-change-this-in-production')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# Make the test environment behave like development (avoid SSL redirects, etc.)
+if 'test' in sys.argv:
+    DEBUG = True
+
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+    if host.strip()
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -100,14 +114,60 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+]
+
+# Internationalization
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'UTC'
+USE_I18N = True
+USE_TZ = True
+
+# Static files
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Security Settings for Production
-SECURE_SSL_REDIRECT = os.environ.get('DJANGO_DEBUG', 'False') != 'True'
-SESSION_COOKIE_SECURE = os.environ.get('DJANGO_DEBUG', 'False') != 'True'
-CSRF_COOKIE_SECURE = os.environ.get('DJANGO_DEBUG', 'False') != 'True'
-SECURE_BROWSER_X- use console for development, SMTP for production
-if DEBUG:
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Authentication
+AUTH_USER_MODEL = 'store.User'
+
+# Security / proxy settings
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
+# Security settings for production
+SECURE_SSL_REDIRECT = (not DEBUG) and (os.environ.get('SECURE_SSL_REDIRECT', 'True') == 'True')
+SESSION_COOKIE_SECURE = (not DEBUG) and (os.environ.get('SESSION_COOKIE_SECURE', 'True') == 'True')
+CSRF_COOKIE_SECURE = (not DEBUG) and (os.environ.get('CSRF_COOKIE_SECURE', 'True') == 'True')
+
+SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '31536000' if not DEBUG else '0'))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = (not DEBUG)
+SECURE_HSTS_PRELOAD = (not DEBUG)
+SECURE_REFERRER_POLICY = 'same-origin'
+
+# CSRF trusted origins (required when using HTTPS and a real domain)
+_default_csrf_trusted = ''
+if not DEBUG:
+    _default_csrf_trusted = 'https://bhrikutimandap.com,https://www.bhrikutimandap.com'
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', _default_csrf_trusted).split(',')
+    if origin.strip()
+]
+
+# WhiteNoise for static files (simple production setup behind Nginx)
+if not DEBUG:
+    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Email backend
+import sys
+if 'test' in sys.argv:
+    EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+elif DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -118,34 +178,6 @@ else:
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@bhrikutimandap.com')
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-
-# Whitenoise for static files
-if not DEBUG:
-    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-]
-
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
-USE_I18N = True
-USE_L10N = True
-USE_TZ = True
-
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# Authentication
-AUTH_USER_MODEL = 'store.User'
-
-# Email backend for development: prints emails to console
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'no-reply@market.local'
 
 # Site URL used in activation links
 SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')

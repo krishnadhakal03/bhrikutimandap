@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-bhrikuti_db}
+      POSTGRES_USER: ${DATABASE_USER:-bhrikuti_user}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-change-me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  web:
+    image: ${APP_IMAGE:-ghcr.io/krishnadhakal03/bhrikutimandap:latest}
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      DATABASE_ENGINE: postgresql
+      DATABASE_HOST: db
+      DATABASE_PORT: "5432"
+    depends_on:
+      - db
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+
+volumes:
+  postgres_data:
+  media_data:
+  static_data:
