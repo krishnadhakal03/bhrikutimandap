@@ -161,7 +161,7 @@ CSRF_TRUSTED_ORIGINS = [
 # WhiteNoise for static files (simple production setup behind Nginx)
 if not DEBUG:
     MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # Email backend
 import sys
