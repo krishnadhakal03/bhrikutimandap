@@ -99,12 +99,10 @@ jobs:
               exit 1
             fi
 
-            # Pull and run the specific image for this commit
-            export APP_IMAGE="ghcr.io/krishnadhakal03/bhrikutimandap:${{ github.sha }}"
+            # Build the image on the VPS (avoids needing registry credentials)
+            docker build -t bhrikutimandap:deploy .
+            export APP_IMAGE="bhrikutimandap:deploy"
 
-            docker login ghcr.io -u krishnadhakal03 -p "${{ secrets.GHCR_READ_TOKEN }}" || true
-
-            docker compose --env-file .env.prod -f compose.prod.yml pull
             docker compose --env-file .env.prod -f compose.prod.yml up -d
 
             docker compose --env-file .env.prod -f compose.prod.yml exec -T web python manage.py migrate
