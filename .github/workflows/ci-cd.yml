@@ -104,12 +104,12 @@ jobs:
 
             docker login ghcr.io -u krishnadhakal03 -p "${{ secrets.GHCR_READ_TOKEN }}" || true
 
-            docker compose -f compose.prod.yml pull
-            docker compose -f compose.prod.yml up -d
+            docker compose --env-file .env.prod -f compose.prod.yml pull
+            docker compose --env-file .env.prod -f compose.prod.yml up -d
 
-            docker compose -f compose.prod.yml exec -T web python manage.py migrate
-            docker compose -f compose.prod.yml exec -T web python manage.py collectstatic --noinput
+            docker compose --env-file .env.prod -f compose.prod.yml exec -T web python manage.py migrate
+            docker compose --env-file .env.prod -f compose.prod.yml exec -T web python manage.py collectstatic --noinput
 
             # Basic health check
-            curl -fsS http://127.0.0.1:8000/ >/dev/null
+            curl -fsS -H "Host: bhrikutimandap.com" -H "X-Forwarded-Proto: https" http://127.0.0.1:8000/ >/dev/null
             echo "Deploy OK"
