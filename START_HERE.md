@@ -20,6 +20,11 @@
 
 ## 🎯 THREE WAYS TO DEPLOY
 
+### Option 0: Docker + GitHub Actions CI/CD (RECOMMENDED) ⭐
+- Uses `Dockerfile` + `compose.prod.yml` for production
+- Uses GitHub Actions workflow `.github/workflows/ci-cd.yml` to test, build, and deploy
+- Best for: easy repeatable deploys + future staging
+
 ### Option 1: Copy & Paste (EASIEST) ⭐
 Use [DEPLOYMENT_COMMANDS.md](DEPLOYMENT_COMMANDS.md)
 - Just copy commands and paste into SSH
