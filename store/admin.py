@@ -30,8 +30,51 @@ def _admin_db_tools_view(request):
     if not request.user.is_superuser:
         raise PermissionDenied
 
+    backup_dir = os.environ.get('ADMIN_BACKUP_DIR') or str(settings.BASE_DIR / 'backups')
+    os.makedirs(backup_dir, exist_ok=True)
+
     if request.method == 'POST':
         action = request.POST.get('action')
+
+        if action == 'create_server_dump':
+            stamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+            filename = f'bhrikutimandap_fixture_{stamp}.json'
+            out_path = os.path.join(backup_dir, filename)
+            try:
+                with open(out_path, 'w', encoding='utf-8') as fp:
+                    call_command(
+                        'dumpdata',
+                        '--natural-foreign',
+                        '--natural-primary',
+                        '--exclude',
+                        'contenttypes',
+                        '--exclude',
+                        'auth.permission',
+                        '--exclude',
+                        'admin.logentry',
+                        '--indent',
+                        '2',
+                        stdout=fp,
+                    )
+                messages.success(request, f'Server backup created: {filename}')
+            except Exception as exc:
+                messages.error(request, f'Backup failed: {exc}')
+
+        if action == 'download_server_dump':
+            requested = (request.POST.get('filename') or '').strip()
+            safe_name = os.path.basename(requested)
+            if not safe_name or safe_name != requested or not safe_name.endswith('.json'):
+                messages.error(request, 'Invalid backup filename.')
+            else:
+                file_path = os.path.join(backup_dir, safe_name)
+                if not os.path.isfile(file_path):
+                    messages.error(request, 'Backup file not found.')
+                else:
+                    with open(file_path, 'rb') as fp:
+                        payload = fp.read()
+                    resp = HttpResponse(payload, content_type='application/json; charset=utf-8')
+                    resp['Content-Disposition'] = f'attachment; filename="{safe_name}"'
+                    return resp
 
         if action == 'dump_json':
             out = io.StringIO()
@@ -97,8 +140,26 @@ def _admin_db_tools_view(request):
         **admin.site.each_context(request),
         'title': 'DB Tools',
         'media_root': str(settings.MEDIA_ROOT),
+        'backup_dir': backup_dir,
+        'server_backups': _list_server_backups(backup_dir),
     }
     return TemplateResponse(request, 'admin/db_tools.html', context)
+
+
+def _list_server_backups(backup_dir: str) -> list[str]:
+    try:
+        candidates: list[tuple[float, str]] = []
+        for name in os.listdir(backup_dir):
+            if not name.endswith('.json'):
+                continue
+            path = os.path.join(backup_dir, name)
+            if not os.path.isfile(path):
+                continue
+            candidates.append((os.path.getmtime(path), name))
+        candidates.sort(reverse=True)
+        return [name for _mtime, name in candidates[:20]]
+    except Exception:
+        return []
 
 
 _original_admin_get_urls = admin.site.get_urls

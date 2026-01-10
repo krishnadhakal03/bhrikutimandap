@@ -25,6 +25,7 @@ services:
     volumes:
       - ./media:/app/media
       - ./staticfiles:/app/staticfiles
+      - ./backups:/app/backups
 
 volumes:
   postgres_data:
