@@ -71,8 +71,8 @@ jobs:
             ghcr.io/krishnadhakal03/bhrikutimandap:${{ github.sha }}
 
   deploy:
-    if: github.event_name == 'push'
-    needs: build-and-push
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to VPS via SSH
