@@ -1,0 +1,13 @@
+[Unit]
+Description=Bhrikutimandap production backup
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/bhrikutimandap
+ExecStart=/opt/bhrikutimandap/tools/backup_prod.sh
+
+# Optional overrides:
+# Environment=INCLUDE_MEDIA=1
+# Environment=KEEP_DAYS=14

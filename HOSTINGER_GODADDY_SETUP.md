@@ -258,6 +258,55 @@ ExecReload=/bin/kill -s HUP $MAINPID
 KillMode=mixed
 KillSignal=SIGTERM
 Restart=always
+
+---
+
+## (Optional but Recommended) Automated Production Backups (DB + Media)
+
+Because production uses PostgreSQL in Docker, you can make reliable backups using `pg_dump` from the DB container.
+
+This repo includes:
+- `tools/backup_prod.sh` (creates DB backup, optional media zip)
+- `tools/restore_prod.sh` (restores from a backup)
+- `tools/backup-prod.service` + `tools/backup-prod.timer` (systemd timer for daily backups)
+
+### One-time manual backup (VPS)
+```bash
+cd /opt/bhrikutimandap
+bash tools/backup_prod.sh
+```
+
+To include media in the same run:
+```bash
+cd /opt/bhrikutimandap
+INCLUDE_MEDIA=1 bash tools/backup_prod.sh
+```
+
+Backups are stored in:
+- `/opt/bhrikutimandap/backups/`
+
+### Restore a backup (VPS)
+```bash
+cd /opt/bhrikutimandap
+bash tools/restore_prod.sh backups/db_YYYY-MM-DD_HHMMSS.dump
+```
+
+### Enable daily automatic backups (systemd timer)
+```bash
+cd /opt/bhrikutimandap
+sudo cp tools/backup-prod.service /etc/systemd/system/backup-prod.service
+sudo cp tools/backup-prod.timer /etc/systemd/system/backup-prod.timer
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now backup-prod.timer
+
+systemctl list-timers | grep backup-prod
+```
+
+To see recent runs:
+```bash
+journalctl -u backup-prod.service --no-pager -n 100
+```
 RestartSec=5s
 
 [Install]
