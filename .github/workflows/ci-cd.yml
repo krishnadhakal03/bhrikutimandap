@@ -80,6 +80,7 @@ jobs:
         shell: bash
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_KEY_B64: ${{ secrets.VPS_SSH_KEY_B64 }}
           VPS_SSH_PASSPHRASE: ${{ secrets.VPS_SSH_PASSPHRASE }}
         run: |
           set -euo pipefail
@@ -90,11 +91,33 @@ jobs:
             exit 1
           fi
 
-          # Write key to file. If the secret contains literal \n, convert them to real newlines.
-          printf '%s' "$VPS_SSH_KEY" | sed 's/\\n/\n/g' > "$KEY_PATH"
+          # Write key to file.
+          # Prefer base64 form (avoids newline/formatting issues in GitHub Secrets) if provided.
+          if [ -n "${VPS_SSH_KEY_B64:-}" ]; then
+            printf '%s' "$VPS_SSH_KEY_B64" | base64 -d > "$KEY_PATH"
+          else
+            if [ -z "${VPS_SSH_KEY:-}" ]; then
+              echo "ERROR: GitHub Secret VPS_SSH_KEY is empty or missing." >&2
+              exit 1
+            fi
+            # If the secret contains literal \n, convert them to real newlines.
+            printf '%s' "$VPS_SSH_KEY" | sed 's/\\n/\n/g' > "$KEY_PATH"
+          fi
+
+          # Normalize Windows CRLF and ensure trailing newline.
+          # (Does not change key material, just line endings.)
+          tr -d '\r' < "$KEY_PATH" > "$KEY_PATH.tmp"
+          mv "$KEY_PATH.tmp" "$KEY_PATH"
+          printf '\n' >> "$KEY_PATH"
           # Note: appleboy/ssh-action runs inside a Docker container; the mounted workspace file
           # must be readable by the container user. Keep it non-writable and avoid printing it.
           chmod 644 "$KEY_PATH"
+
+          echo "SSH key diagnostics (safe):"
+          echo "- bytes: $(wc -c < "$KEY_PATH" | tr -d ' ' )"
+          echo "- lines: $(wc -l < "$KEY_PATH" | tr -d ' ' )"
+          echo "- first: $(head -n 1 "$KEY_PATH" || true)"
+          echo "- last:  $(tail -n 1 "$KEY_PATH" || true)"
 
           # Validate key (works for both encrypted and unencrypted keys) without printing it.
           # If the key is passphrase-protected, set GitHub Secret VPS_SSH_PASSPHRASE.
