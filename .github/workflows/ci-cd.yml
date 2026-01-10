@@ -136,6 +136,28 @@ jobs:
             exit 1
           fi
 
+      - name: SSH auth smoke test
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -euo pipefail
+          # OpenSSH is strict about private key file permissions; use a temp 0600 copy.
+          cp ./.deploy_ssh_key /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+
+          echo "Testing SSH auth to VPS (no commands executed beyond 'echo ok')..."
+          # Print verbose auth diagnostics (host/user are masked by GitHub secrets).
+          ssh -vvv \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -i /tmp/deploy_key \
+            "${VPS_USER}@${VPS_HOST}" \
+            "echo ok"
+
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
