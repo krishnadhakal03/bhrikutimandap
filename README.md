@@ -111,6 +111,9 @@ Comprehensive testing documentation for all user flows:
 - **[ISSUES_FOUND.md](ISSUES_FOUND.md)** - Known issues with detailed reproduction steps (10 issues tracked)
 - **[TESTING_EXECUTION_SUMMARY.md](TESTING_EXECUTION_SUMMARY.md)** - Executive summary of all deliverables
 
+### Deployment
+- **[docs/CICD_FLOW.md](docs/CICD_FLOW.md)** - End-to-end CI/CD (local dev → git push → GitHub Actions → VPS deploy)
+
 ---
 
 ## 🏗️ Project Structure
