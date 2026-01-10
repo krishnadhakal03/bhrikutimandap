@@ -362,18 +362,24 @@
       }, 3000);
     }
 
-    // Search Modal Functionality
-    document.getElementById('searchBtn').addEventListener('click', function() {
-      document.getElementById('searchModal').classList.add('active');
-      document.querySelector('.search-form input').focus();
+    // Search Modal Functionality (guarded: agent pages may not render search UI)
+    const searchBtn = document.getElementById('searchBtn');
+    const searchModal = document.getElementById('searchModal');
+    const searchModalClose = document.getElementById('searchModalClose');
+    const searchInput = document.querySelector('.search-form input');
+
+    searchBtn?.addEventListener('click', function() {
+      if (!searchModal) return;
+      searchModal.classList.add('active');
+      searchInput?.focus();
     });
 
-    document.getElementById('searchModalClose').addEventListener('click', function() {
-      document.getElementById('searchModal').classList.remove('active');
+    searchModalClose?.addEventListener('click', function() {
+      searchModal?.classList.remove('active');
     });
 
     // Close modal when clicking outside the content
-    document.getElementById('searchModal').addEventListener('click', function(e) {
+    searchModal?.addEventListener('click', function(e) {
       if (e.target === this) {
         this.classList.remove('active');
       }
@@ -382,7 +388,7 @@
     // Close modal on Escape key
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
-        document.getElementById('searchModal').classList.remove('active');
+        searchModal?.classList.remove('active');
       }
     });
   </script>

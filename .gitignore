@@ -50,3 +50,6 @@ db.sqlite3
 
 # Local deploy keys (never commit)
 /.deploy/
+
+# Never commit SSH keys accidentally created in repo root
+/bhrikuti_actions*
