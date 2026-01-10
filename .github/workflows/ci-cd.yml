@@ -76,12 +76,35 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
+      - name: Prepare SSH key
+        shell: bash
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          KEY_PATH="$GITHUB_WORKSPACE/.deploy_ssh_key"
+
+          if [ -z "${VPS_SSH_KEY:-}" ]; then
+            echo "ERROR: GitHub Secret VPS_SSH_KEY is empty or missing." >&2
+            exit 1
+          fi
+
+          # Write key to file. If the secret contains literal \n, convert them to real newlines.
+          printf '%s' "$VPS_SSH_KEY" | sed 's/\\n/\n/g' > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+
+          # Validate key format without printing it.
+          if ! ssh-keygen -lf "$KEY_PATH" >/dev/null 2>&1; then
+            echo "ERROR: VPS_SSH_KEY is not a valid SSH private key. Re-add it with correct PEM/OpenSSH format and preserved newlines." >&2
+            exit 1
+          fi
+
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          key_path: ./.deploy_ssh_key
           port: 22
           script: |
             set -euo pipefail
