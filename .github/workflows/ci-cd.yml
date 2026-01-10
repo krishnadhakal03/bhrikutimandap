@@ -80,6 +80,7 @@ jobs:
         shell: bash
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_PASSPHRASE: ${{ secrets.VPS_SSH_PASSPHRASE }}
         run: |
           set -euo pipefail
           KEY_PATH="$GITHUB_WORKSPACE/.deploy_ssh_key"
@@ -95,9 +96,10 @@ jobs:
           # must be readable by the container user. Keep it non-writable and avoid printing it.
           chmod 644 "$KEY_PATH"
 
-          # Validate key format without printing it.
-          if ! ssh-keygen -lf "$KEY_PATH" >/dev/null 2>&1; then
-            echo "ERROR: VPS_SSH_KEY is not a valid SSH private key. Re-add it with correct PEM/OpenSSH format and preserved newlines." >&2
+          # Validate key (works for both encrypted and unencrypted keys) without printing it.
+          # If the key is passphrase-protected, set GitHub Secret VPS_SSH_PASSPHRASE.
+          if ! ssh-keygen -y -P "${VPS_SSH_PASSPHRASE:-}" -f "$KEY_PATH" >/dev/null 2>&1; then
+            echo "ERROR: VPS_SSH_KEY is invalid or the passphrase is missing/wrong. Ensure VPS_SSH_KEY is a PRIVATE key and set VPS_SSH_PASSPHRASE if encrypted." >&2
             exit 1
           fi
 
@@ -107,6 +109,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key_path: ./.deploy_ssh_key
+          passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
           port: 22
           script: |
             set -euo pipefail
