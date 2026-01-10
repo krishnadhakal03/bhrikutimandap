@@ -298,6 +298,34 @@ table tbody tr:hover {
   background: #fff;
 }
 
+/* Widen Django nav sidebar so names don't get truncated */
+/* Django default is 275px; we use 320px for better readability */
+#nav-sidebar {
+  flex: 0 0 320px;
+  left: -321px;
+  margin-left: -321px;
+}
+
+[dir="rtl"] #nav-sidebar {
+  right: -321px;
+  margin-right: -321px;
+  left: 0;
+  margin-left: 0;
+}
+
+.main.shifted > #nav-sidebar + .content {
+  max-width: calc(100% - 343px);
+}
+
+/* Allow wrapping instead of cutting off long labels */
+#nav-sidebar .module td {
+  white-space: normal;
+}
+
+#nav-sidebar a {
+  overflow-wrap: anywhere;
+}
+
 #nav-sidebar a,
 #sidebar a {
   border-radius: 8px;
