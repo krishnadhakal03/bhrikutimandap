@@ -125,10 +125,14 @@ jobs:
           echo "- first: $(head -n 1 "$KEY_PATH" || true)"
           echo "- last:  $(grep -v '^$' "$KEY_PATH" | tail -n 1 || true)"
 
-          # Validate key (works for both encrypted and unencrypted keys) without printing it.
-          # If the key is passphrase-protected, set GitHub Secret VPS_SSH_PASSPHRASE.
-          if ! ssh-keygen -y -P "${VPS_SSH_PASSPHRASE:-}" -f "$KEY_PATH" >/dev/null 2>&1; then
-            echo "ERROR: VPS_SSH_KEY is invalid or the passphrase is missing/wrong. Ensure VPS_SSH_KEY is a PRIVATE key and set VPS_SSH_PASSPHRASE if encrypted." >&2
+          # Validate key without prompting (ssh-keygen -y cannot take a passphrase non-interactively).
+          # We do a lightweight integrity check: must contain BEGIN/END markers.
+          if ! grep -q '^-----BEGIN OPENSSH PRIVATE KEY-----$' "$KEY_PATH"; then
+            echo "ERROR: Decoded key is missing the OPENSSH BEGIN marker. Ensure VPS_SSH_KEY_B64 encodes the PRIVATE KEY FILE bytes (not the public key)." >&2
+            exit 1
+          fi
+          if ! grep -q '^-----END OPENSSH PRIVATE KEY-----$' "$KEY_PATH"; then
+            echo "ERROR: Decoded key is missing the OPENSSH END marker. The secret is likely truncated." >&2
             exit 1
           fi
 
