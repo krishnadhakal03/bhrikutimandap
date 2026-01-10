@@ -144,6 +144,7 @@ jobs:
           key_path: ./.deploy_ssh_key
           passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
           port: 22
+          debug: true
           script: |
             set -euo pipefail
             APP_DIR="/opt/bhrikutimandap"
