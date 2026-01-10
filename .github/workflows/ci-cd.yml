@@ -86,6 +86,12 @@ jobs:
           set -euo pipefail
           KEY_PATH="$GITHUB_WORKSPACE/.deploy_ssh_key"
 
+          if [ -n "${VPS_SSH_KEY_B64:-}" ]; then
+            echo "Using VPS_SSH_KEY_B64 (chars: ${#VPS_SSH_KEY_B64})"
+          else
+            echo "Using VPS_SSH_KEY (chars: ${#VPS_SSH_KEY})"
+          fi
+
           if [ -z "${VPS_SSH_KEY:-}" ]; then
             echo "ERROR: GitHub Secret VPS_SSH_KEY is empty or missing." >&2
             exit 1
