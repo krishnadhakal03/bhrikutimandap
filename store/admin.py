@@ -445,6 +445,20 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         ('Site Branding', {'fields': ('site_title', 'site_description', 'logo', 'favicon')}),
         ('Colors', {'fields': ('primary_color', 'secondary_color')}),
         ('Contact Info', {'fields': ('contact_email', 'contact_phone', 'store_address', 'store_hours')}),
+        (
+            'Social Links',
+            {
+                'fields': (
+                    'facebook_url',
+                    'instagram_url',
+                    'tiktok_url',
+                    'youtube_url',
+                    'twitter_url',
+                    'linkedin_url',
+                    'whatsapp_url',
+                )
+            },
+        ),
         ('Footer', {'fields': ('footer_text',)}),
     )
 

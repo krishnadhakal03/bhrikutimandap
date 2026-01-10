@@ -224,19 +224,67 @@
                 <span class="fa fa-location-arrow"></span>
                 Address
               </p>
-              <p>Bhrikutimandap Store</p>
+              <p>{{ site_settings.store_address|default:"Bhrikutimandap Store" }}</p>
 
               <p class="sm-head">
                 <span class="fa fa-phone"></span>
                 Phone
               </p>
-              <p>+91 XXXXX XXXXX</p>
+              <p>{{ site_settings.contact_phone|default:"+91 XXXXX XXXXX" }}</p>
 
               <p class="sm-head">
                 <span class="fa fa-envelope"></span>
                 Email
               </p>
-              <p>info@bhrikutimandap.com</p>
+              <p>{{ site_settings.contact_email|default:"info@bhrikutimandap.com" }}</p>
+
+              {% if site_settings %}
+                {% if site_settings.facebook_url or site_settings.instagram_url or site_settings.tiktok_url or site_settings.youtube_url or site_settings.twitter_url or site_settings.linkedin_url or site_settings.whatsapp_url %}
+                  <div style="margin-top: 16px;">
+                    <p class="sm-head" style="margin-bottom: 10px;">
+                      <span class="fa fa-share-alt"></span>
+                      Follow Us
+                    </p>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                      {% if site_settings.facebook_url %}
+                        <a href="{{ site_settings.facebook_url }}" target="_blank" rel="noopener noreferrer" title="Facebook" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
+                          <i class="fab fa-facebook-f"></i>
+                        </a>
+                      {% endif %}
+                      {% if site_settings.instagram_url %}
+                        <a href="{{ site_settings.instagram_url }}" target="_blank" rel="noopener noreferrer" title="Instagram" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
+                          <i class="fab fa-instagram"></i>
+                        </a>
+                      {% endif %}
+                      {% if site_settings.tiktok_url %}
+                        <a href="{{ site_settings.tiktok_url }}" target="_blank" rel="noopener noreferrer" title="TikTok" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
+                          <i class="fab fa-tiktok"></i>
+                        </a>
+                      {% endif %}
+                      {% if site_settings.youtube_url %}
+                        <a href="{{ site_settings.youtube_url }}" target="_blank" rel="noopener noreferrer" title="YouTube" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
+                          <i class="fab fa-youtube"></i>
+                        </a>
+                      {% endif %}
+                      {% if site_settings.twitter_url %}
+                        <a href="{{ site_settings.twitter_url }}" target="_blank" rel="noopener noreferrer" title="X / Twitter" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
+                          <i class="fab fa-twitter"></i>
+                        </a>
+                      {% endif %}
+                      {% if site_settings.linkedin_url %}
+                        <a href="{{ site_settings.linkedin_url }}" target="_blank" rel="noopener noreferrer" title="LinkedIn" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
+                          <i class="fab fa-linkedin-in"></i>
+                        </a>
+                      {% endif %}
+                      {% if site_settings.whatsapp_url %}
+                        <a href="{{ site_settings.whatsapp_url }}" target="_blank" rel="noopener noreferrer" title="WhatsApp" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
+                          <i class="fab fa-whatsapp"></i>
+                        </a>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endif %}
+              {% endif %}
             </div>
           </div>
         </div>
@@ -285,7 +333,11 @@
     <div class="container">
       <div class="row d-flex">
         <p class="col-lg-12 footer-text text-center">
-          Copyright &copy;<script>document.write(new Date().getFullYear());</script> All rights reserved | Bhrikutimandap Store
+          {% if site_settings and site_settings.footer_text %}
+            {{ site_settings.footer_text }}
+          {% else %}
+            Copyright &copy;<script>document.write(new Date().getFullYear());</script> All rights reserved | Bhrikutimandap Store
+          {% endif %}
         </p>
       </div>
     </div>

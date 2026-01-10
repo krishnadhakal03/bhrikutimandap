@@ -10,10 +10,27 @@
           {% if site_settings %}{{ site_settings.site_description }}{% else %}Your trusted marketplace for quality products from verified suppliers.{% endif %}
         </p>
         <div class="footer-social">
-          <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
-          <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
-          <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
-          <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+          {% if site_settings and site_settings.facebook_url %}
+            <a href="{{ site_settings.facebook_url }}" target="_blank" rel="noopener noreferrer" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+          {% endif %}
+          {% if site_settings and site_settings.twitter_url %}
+            <a href="{{ site_settings.twitter_url }}" target="_blank" rel="noopener noreferrer" title="X / Twitter"><i class="fab fa-twitter"></i></a>
+          {% endif %}
+          {% if site_settings and site_settings.instagram_url %}
+            <a href="{{ site_settings.instagram_url }}" target="_blank" rel="noopener noreferrer" title="Instagram"><i class="fab fa-instagram"></i></a>
+          {% endif %}
+          {% if site_settings and site_settings.linkedin_url %}
+            <a href="{{ site_settings.linkedin_url }}" target="_blank" rel="noopener noreferrer" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+          {% endif %}
+          {% if site_settings and site_settings.youtube_url %}
+            <a href="{{ site_settings.youtube_url }}" target="_blank" rel="noopener noreferrer" title="YouTube"><i class="fab fa-youtube"></i></a>
+          {% endif %}
+          {% if site_settings and site_settings.tiktok_url %}
+            <a href="{{ site_settings.tiktok_url }}" target="_blank" rel="noopener noreferrer" title="TikTok"><i class="fab fa-tiktok"></i></a>
+          {% endif %}
+          {% if site_settings and site_settings.whatsapp_url %}
+            <a href="{{ site_settings.whatsapp_url }}" target="_blank" rel="noopener noreferrer" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+          {% endif %}
         </div>
       </div>
 

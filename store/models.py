@@ -156,6 +156,20 @@ class SiteSettings(models.Model):
     footer_text = models.TextField(default="© 2025 Bhrikutimandap. All rights reserved.")
     contact_email = models.EmailField(default="contact@bhrikutimandap.com")
     contact_phone = models.CharField(max_length=20, default="+123 456 7890")
+
+    # Social links
+    facebook_url = models.URLField(max_length=500, blank=True, default="")
+    instagram_url = models.URLField(max_length=500, blank=True, default="")
+    tiktok_url = models.URLField(max_length=500, blank=True, default="")
+    youtube_url = models.URLField(max_length=500, blank=True, default="")
+    twitter_url = models.URLField(max_length=500, blank=True, default="")
+    linkedin_url = models.URLField(max_length=500, blank=True, default="")
+    whatsapp_url = models.URLField(
+        max_length=500,
+        blank=True,
+        default="",
+        help_text="Full WhatsApp URL (e.g., https://wa.me/<number> or https://api.whatsapp.com/send?phone=<number>)",
+    )
     
     # Store info
     store_address = models.TextField(default="123 Main Street, Your City")

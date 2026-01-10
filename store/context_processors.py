@@ -29,8 +29,8 @@ def site_settings(request):
                 # Table doesn't exist yet
                 return {'site_settings': None}
         
-        settings = SiteSettings.objects.get(pk=1)
-        return {'site_settings': settings}
+        settings_obj = SiteSettings.get_instance()
+        return {'site_settings': settings_obj}
     except Exception as e:
         # Return None if anything fails
         return {'site_settings': None}
