@@ -15,10 +15,15 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.conf import settings
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from .services import process_order_created, process_return_approval
 from .models import ReturnRequest
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def product_list(request):
@@ -399,6 +404,8 @@ def register_view(request):
 
         if not username or not password:
             messages.error(request, 'Username and password required')
+        elif not email:
+            messages.error(request, 'Email address is required')
         elif User.objects.filter(username=username).exists():
             messages.error(request, 'Username already taken')
         else:
@@ -426,10 +433,28 @@ def register_view(request):
             user.save()
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
-            activation_link = f"{settings.SITE_URL}/accounts/activate/{uid}/{token}/"
-            # Send activation email to provided email (console backend prints it)
-            send_mail('Activate your account', f'Activate at: {activation_link}', settings.DEFAULT_FROM_EMAIL, [email])
-            messages.success(request, 'Registered. Check console email for activation link (dev).')
+            activation_path = reverse('store:activate', kwargs={'uidb64': uid, 'token': token})
+            activation_link = request.build_absolute_uri(activation_path)
+
+            # Send activation email. In production, missing/incorrect SMTP settings should not 500 the request.
+            try:
+                send_mail(
+                    'Activate your account',
+                    f'Activate at: {activation_link}',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                    fail_silently=False,
+                )
+                messages.success(request, 'Registered. Please check your email to activate your account.')
+            except Exception:
+                logger.exception('Registration email failed for username=%s', username)
+                # Fallback: activate immediately so registration still works.
+                user.is_active = True
+                user.save(update_fields=['is_active'])
+                if getattr(settings, 'DEBUG', False):
+                    messages.warning(request, f'Email send failed (dev). Activation link: {activation_link}')
+                else:
+                    messages.warning(request, 'Account created, but we could not send the activation email. You can login now.')
             return redirect('store:product_list')
     return render(request, 'store/register.html')
 
