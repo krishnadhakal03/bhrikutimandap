@@ -332,24 +332,36 @@
     min-height: 120px;
   }
 
-  /* Filters & Search */
-  #searchbar {
+  /* Changelist Search (avoid styling the input#searchbar as a container) */
+  #changelist-search {
     background: white;
-    padding: 20px;
-    border-radius: 8px;
+    padding: 16px;
+    border-radius: 10px;
     margin-bottom: 20px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
     border: 1px solid var(--gray-light);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
   }
 
-  #searchbar input {
+  #changelist-search label {
+    margin: 0;
+    font-weight: 600;
+    color: var(--gray-dark);
+  }
+
+  #changelist-search #searchbar {
     border: 2px solid var(--gray-light);
     border-radius: 6px;
     padding: 12px 15px;
     font-size: 14px;
+    min-width: 280px;
+    flex: 1 1 320px;
   }
 
-  #searchbar input:focus {
+  #changelist-search #searchbar:focus {
     border-color: var(--primary-color);
   }
 
@@ -468,7 +480,12 @@
 
 {% block branding %}
 <div style="padding: 10px 0;">
-  <h1><a href="{% url 'admin:index' %}">Bhrikutimandap Admin</a></h1>
+  <h1>
+    <a href="{% url 'admin:index' %}">
+      <img src="{% static 'img/Fevicon.png' %}" alt="Bhrikutimandap" style="height: 28px; width: 28px; border-radius: 6px; background: rgba(255,255,255,0.18); padding: 3px;" />
+      <span>Bhrikutimandap Admin</span>
+    </a>
+  </h1>
 </div>
 {% endblock %}
 
