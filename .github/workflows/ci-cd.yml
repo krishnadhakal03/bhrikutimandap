@@ -91,7 +91,9 @@ jobs:
 
           # Write key to file. If the secret contains literal \n, convert them to real newlines.
           printf '%s' "$VPS_SSH_KEY" | sed 's/\\n/\n/g' > "$KEY_PATH"
-          chmod 600 "$KEY_PATH"
+          # Note: appleboy/ssh-action runs inside a Docker container; the mounted workspace file
+          # must be readable by the container user. Keep it non-writable and avoid printing it.
+          chmod 644 "$KEY_PATH"
 
           # Validate key format without printing it.
           if ! ssh-keygen -lf "$KEY_PATH" >/dev/null 2>&1; then
