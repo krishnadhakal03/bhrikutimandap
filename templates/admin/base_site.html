@@ -8,8 +8,11 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
   :root {
-    --primary-color: #2e7d32;
-    --accent-color: #00bfa5;
+    /* Match public site (Aroma) primary palette */
+    --primary-color: #384aeb;
+    --primary-color-dark: #2a3fb8;
+    --primary-color-light: #8894ff;
+    --accent-color: var(--primary-color-light);
     --danger-color: #d32f2f;
     --warning-color: #f57c00;
     --info-color: #1976d2;
@@ -27,13 +30,13 @@
 
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: #F1F6F7;
     color: var(--gray-dark);
   }
 
   /* Header Styling */
   #header {
-    background: linear-gradient(135deg, var(--primary-color) 0%, #1b5e20 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
     padding: 20px 30px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     border-bottom: 4px solid var(--accent-color);
@@ -54,18 +57,13 @@
     gap: 12px;
   }
 
-  #header h1 a:before {
-    content: "🛍️";
-    font-size: 28px;
-  }
-
   #header h1 a:hover {
     opacity: 0.9;
   }
 
   /* Navigation Bar */
   #user-tools {
-    background: linear-gradient(to right, rgba(46, 125, 50, 0.95), rgba(0, 191, 165, 0.95));
+    background: linear-gradient(to right, rgba(56, 74, 235, 0.95), rgba(136, 148, 255, 0.95));
     padding: 12px 30px;
     color: white;
     font-size: 14px;
@@ -95,7 +93,7 @@
   }
 
   .module h2 {
-    background: linear-gradient(135deg, var(--primary-color), #66bb6a);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-color-light));
     color: white;
     padding: 12px 15px;
     margin: 0;
@@ -175,7 +173,7 @@
   }
 
   table thead {
-    background: linear-gradient(135deg, var(--primary-color), #66bb6a);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-color-light));
     color: white;
     font-weight: 600;
   }
@@ -195,7 +193,7 @@
   }
 
   table tbody tr:hover {
-    background: #f0f7f4;
+    background: #f5f6ff;
     box-shadow: inset 4px 0 0 var(--accent-color);
   }
 
@@ -226,7 +224,7 @@
   /* Buttons */
   .button, input[type="submit"], input[type="button"],
   .submit-row input[type="submit"] {
-    background: linear-gradient(135deg, var(--primary-color), #66bb6a);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-color-light));
     color: white;
     border: none;
     padding: 10px 24px;
@@ -239,9 +237,9 @@
   }
 
   .button:hover, input[type="submit"]:hover, input[type="button"]:hover {
-    background: linear-gradient(135deg, #1b5e20, #2e7d32);
+    background: linear-gradient(135deg, var(--primary-color-dark), var(--primary-color));
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+    box-shadow: 0 4px 12px rgba(56, 74, 235, 0.3);
   }
 
   .button:active, input[type="submit"]:active {
@@ -327,7 +325,7 @@
   select:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 8px rgba(46, 125, 50, 0.1);
+    box-shadow: 0 0 8px rgba(56, 74, 235, 0.12);
     background: #fafafa;
   }
 
@@ -472,7 +470,7 @@
 
 {% block branding %}
 <div style="padding: 10px 0;">
-  <h1><a href="{% url 'admin:index' %}">🛍️ Bhrikutimandap Admin</a></h1>
+  <h1><a href="{% url 'admin:index' %}">Bhrikutimandap Admin</a></h1>
 </div>
 {% endblock %}
 

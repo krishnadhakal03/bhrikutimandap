@@ -1,0 +1,24 @@
+:root {
+  /* Match public site (Aroma) primary palette */
+  --primary-color: #384aeb;
+  --primary-color-dark: #2a3fb8;
+  --primary-color-light: #8894ff;
+
+  /* Supporting colors */
+  --danger-color: #d32f2f;
+  --warning-color: #f57c00;
+  --info-color: #1976d2;
+  --success-color: #388e3c;
+
+  --gray-dark: #37474f;
+  --gray-light: #eceff1;
+  --border-color: #bdbdbd;
+
+  /* For borders/accents in admin */
+  --accent-color: var(--primary-color-light);
+}
+
+/* Keep admin background consistent with site */
+body {
+  background: #F1F6F7;
+}
