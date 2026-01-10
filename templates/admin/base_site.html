@@ -478,6 +478,9 @@
 
 {% block nav-global %}
 <div style="background: var(--primary-color); padding: 10px 30px; text-align: right;">
+  {% if request.user.is_superuser %}
+  <a href="{% url 'admin:db_tools' %}" style="color: white; text-decoration: none; margin-right: 20px; font-weight: 500;">DB Tools</a>
+  {% endif %}
   <a href="{% url 'store:home' %}" style="color: white; text-decoration: none; margin-right: 20px; font-weight: 500;">← Back to Shop</a>
 </div>
 {% endblock %}

@@ -1,4 +1,16 @@
-from django.contrib import admin
+import io
+import os
+import zipfile
+from tempfile import NamedTemporaryFile
+
+from django.conf import settings
+from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
+from django.core.management import call_command
+from django.http import HttpResponse
+from django.template.response import TemplateResponse
+from django.urls import path
+from django.utils import timezone
 from django.utils.html import format_html
 from .models import (
     User, Product, ProductImage, Order, OrderItem, Cart, CartItem, SiteSettings, 
@@ -12,6 +24,95 @@ from .models import (
 admin.site.site_header = "🛍️ Bhrikutimandap Administration"
 admin.site.site_title = "Bhrikutimandap Admin"
 admin.site.index_title = "Welcome to Bhrikutimandap Admin Panel"
+
+
+def _admin_db_tools_view(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'dump_json':
+            out = io.StringIO()
+            call_command(
+                'dumpdata',
+                '--natural-foreign',
+                '--natural-primary',
+                '--exclude',
+                'contenttypes',
+                '--exclude',
+                'auth.permission',
+                '--exclude',
+                'admin.logentry',
+                '--indent',
+                '2',
+                stdout=out,
+            )
+            payload = out.getvalue().encode('utf-8')
+            stamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+            resp = HttpResponse(payload, content_type='application/json; charset=utf-8')
+            resp['Content-Disposition'] = f'attachment; filename="bhrikutimandap_dump_{stamp}.json"'
+            return resp
+
+        if action == 'download_media_zip':
+            media_root = str(settings.MEDIA_ROOT)
+            if not os.path.isdir(media_root):
+                messages.warning(request, f"MEDIA_ROOT not found: {media_root}")
+            else:
+                buf = io.BytesIO()
+                with zipfile.ZipFile(buf, 'w', compression=zipfile.ZIP_DEFLATED) as zf:
+                    for root, _dirs, files in os.walk(media_root):
+                        for filename in files:
+                            abs_path = os.path.join(root, filename)
+                            rel_path = os.path.relpath(abs_path, media_root)
+                            zf.write(abs_path, arcname=rel_path)
+                buf.seek(0)
+                stamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+                resp = HttpResponse(buf.getvalue(), content_type='application/zip')
+                resp['Content-Disposition'] = f'attachment; filename="bhrikutimandap_media_{stamp}.zip"'
+                return resp
+
+        if action == 'load_json':
+            uploaded = request.FILES.get('fixture')
+            if not uploaded:
+                messages.error(request, 'Please choose a .json file to load.')
+            else:
+                with NamedTemporaryFile(delete=False, suffix='.json') as tmp:
+                    for chunk in uploaded.chunks():
+                        tmp.write(chunk)
+                    tmp_path = tmp.name
+                try:
+                    call_command('loaddata', tmp_path)
+                    messages.success(request, 'Data loaded successfully.')
+                except Exception as exc:
+                    messages.error(request, f'Load failed: {exc}')
+                finally:
+                    try:
+                        os.remove(tmp_path)
+                    except OSError:
+                        pass
+
+    context = {
+        **admin.site.each_context(request),
+        'title': 'DB Tools',
+        'media_root': str(settings.MEDIA_ROOT),
+    }
+    return TemplateResponse(request, 'admin/db_tools.html', context)
+
+
+_original_admin_get_urls = admin.site.get_urls
+
+
+def _admin_get_urls_with_tools():
+    urls = _original_admin_get_urls()
+    custom = [
+        path('db-tools/', admin.site.admin_view(_admin_db_tools_view), name='db_tools'),
+    ]
+    return custom + urls
+
+
+admin.site.get_urls = _admin_get_urls_with_tools
 
 
 @admin.register(User)

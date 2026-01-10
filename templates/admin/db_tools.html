@@ -1,0 +1,55 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+  <div id="content-main">
+    <h1>DB Tools</h1>
+
+    <p style="max-width: 900px;">
+      Use this page to export/import Django data fixtures (works for moving data from local SQLite to production PostgreSQL).
+      Only superusers can access this page.
+    </p>
+
+    <div class="module" style="max-width: 900px;">
+      <h2>Export</h2>
+      <div style="padding: 16px 20px;">
+        <form method="post" style="display: inline-block; margin-right: 12px;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="dump_json">
+          <button type="submit" class="button default">Download data (JSON)</button>
+        </form>
+
+        <form method="post" style="display: inline-block;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="download_media_zip">
+          <button type="submit" class="button">Download media (ZIP)</button>
+        </form>
+
+        <p style="margin-top: 10px; color: #555;">
+          Media root: <strong>{{ media_root }}</strong>
+        </p>
+      </div>
+    </div>
+
+    <div class="module" style="max-width: 900px; margin-top: 20px;">
+      <h2>Import</h2>
+      <div style="padding: 16px 20px;">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="load_json">
+          <div class="form-row">
+            <label for="id_fixture"><strong>Fixture (.json)</strong></label><br>
+            <input id="id_fixture" type="file" name="fixture" accept="application/json,.json" required>
+          </div>
+          <div style="margin-top: 12px;">
+            <button type="submit" class="button default">Load data</button>
+          </div>
+          <p style="margin-top: 10px; color: #a33;">
+            Warning: Loading fixtures can create duplicates if you load the same file multiple times.
+          </p>
+        </form>
+      </div>
+    </div>
+
+  </div>
+{% endblock %}
