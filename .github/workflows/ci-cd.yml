@@ -117,7 +117,7 @@ jobs:
           echo "- bytes: $(wc -c < "$KEY_PATH" | tr -d ' ' )"
           echo "- lines: $(wc -l < "$KEY_PATH" | tr -d ' ' )"
           echo "- first: $(head -n 1 "$KEY_PATH" || true)"
-          echo "- last:  $(tail -n 1 "$KEY_PATH" || true)"
+          echo "- last:  $(grep -v '^$' "$KEY_PATH" | tail -n 1 || true)"
 
           # Validate key (works for both encrypted and unencrypted keys) without printing it.
           # If the key is passphrase-protected, set GitHub Secret VPS_SSH_PASSPHRASE.
