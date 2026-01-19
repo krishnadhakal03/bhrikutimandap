@@ -1070,4 +1070,3 @@ class BlogAdmin(admin.ModelAdmin):
         if not change:  # Creating new blog
             obj.author = request.user
         super().save_model(request, obj, form, change)
-    status_badge.short_description = 'Status'
