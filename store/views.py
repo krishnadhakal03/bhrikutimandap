@@ -602,21 +602,6 @@ def contact_view(request):
     return render(request, 'store/contact.html', {'sent': sent})
 
 
-def blog_view(request):
-    """Simple blog list — use Product entries as demo blog cards for the prototype."""
-    posts = Product.objects.all().order_by('-created_at')[:12]
-    # Map products to lightweight post-like dicts for template
-    posts_data = []
-    for p in posts:
-        posts_data.append({
-            'title': p.title,
-            'excerpt': (p.description[:140] + '...') if p.description else '',
-            'image': p.image.url if p.image else None,
-            'url': '#',
-        })
-    return render(request, 'store/blog.html', {'posts': posts_data})
-
-
 def api_cart_add(request):
     # Expects POST with product_id and qty (int)
     if request.method != 'POST':
