@@ -61,6 +61,19 @@ def _get_from_email():
         return settings.DEFAULT_FROM_EMAIL
 
 
+def _get_email_template(template_name):
+    """
+    Get email template from database.
+    Falls back to None if template doesn't exist.
+    """
+    try:
+        from .models import EmailTemplate
+        template = EmailTemplate.objects.get(name=template_name, is_active=True)
+        return template
+    except Exception:
+        return None
+
+
 def _send_email(subject, message, from_email, recipient_list, fail_silently=False):
     """
     Send email using dynamic SMTP configuration from SiteSettings.
@@ -199,6 +212,7 @@ def contact_view(request):
         email = request.POST.get('email', '')
         subject_input = request.POST.get('subject', 'Contact Form Inquiry')
         message = request.POST.get('message', '')
+        phone = request.POST.get('phone', '')
         
         # Send email to admin
         if email and message:
@@ -211,13 +225,79 @@ def contact_view(request):
                 except Exception:
                     contact_email = settings.CONTACT_EMAIL
                 
+                # Use admin email as from_email to ensure SMTP validation passes
+                try:
+                    from_email = _get_from_email()
+                except Exception:
+                    from_email = settings.DEFAULT_FROM_EMAIL
+                
+                # Try to use email template from database, fallback to hardcoded template
+                email_template = _get_email_template('contact_admin')
+                if email_template:
+                    subject = email_template.subject.format(subject_input=subject_input)
+                    contact_form_body = email_template.render(
+                        name=name,
+                        email=email,
+                        phone=phone if phone else 'Not provided',
+                        subject_input=subject_input,
+                        message=message
+                    )
+                else:
+                    # Fallback to default template
+                    subject = f'Contact Form: {subject_input}'
+                    contact_form_body = f"""New Contact Form Submission
+
+Name: {name}
+Email: {email}
+Phone: {phone if phone else 'Not provided'}
+Subject: {subject_input}
+
+Message:
+{message}
+"""
                 _send_email(
-                    f'Contact Form: {subject_input}',
-                    f'From: {name} ({email})\n\nMessage:\n{message}',
-                    email,
+                    subject,
+                    contact_form_body,
+                    from_email,
                     [contact_email],
                     fail_silently=False,
                 )
+                
+                # Send confirmation email to the person who submitted the form
+                from datetime import datetime
+                confirmation_email_template = _get_email_template('contact_confirmation')
+                if confirmation_email_template:
+                    confirmation_subject = confirmation_email_template.subject
+                    confirmation_body = confirmation_email_template.render(
+                        name=name,
+                        subject_input=subject_input,
+                        date=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    )
+                else:
+                    # Fallback to default template
+                    confirmation_subject = 'We received your message'
+                    confirmation_body = f"""Hello {name},
+
+Thank you for contacting Bhrikutimandap!
+
+We have received your email and appreciate you reaching out to us. Our team will review your message and get back to you shortly.
+
+Your Message Details:
+Subject: {subject_input}
+
+We typically respond within 24-48 hours.
+
+Best regards,
+Bhrikutimandap Team"""
+                
+                _send_email(
+                    confirmation_subject,
+                    confirmation_body,
+                    from_email,
+                    [email],
+                    fail_silently=False,
+                )
+                
                 messages.success(request, 'Thanks for contacting us. We will reply soon.')
             except Exception as e:
                 error_msg = str(e)
@@ -230,6 +310,48 @@ def contact_view(request):
             messages.error(request, 'Please fill in all required fields.')
         return redirect('store:contact')
     return render(request, 'store/contact.html')
+
+
+# Custom Password Reset View with Email Template Support
+from django.contrib.auth.views import PasswordResetView as DjangoPasswordResetView
+
+class CustomPasswordResetView(DjangoPasswordResetView):
+    """Custom password reset view that uses email templates from database"""
+    
+    def send_mail(self, subject, message, from_email, to_email, html_message=None, **kwargs):
+        """Override to use custom email template if available"""
+        try:
+            user = User.objects.get(email=to_email)
+            reset_link = self.request.build_absolute_uri(
+                self.request.path.replace('password-reset/', 'password-reset/') + 
+                f"../{kwargs.get('uid', 'uid')}/{kwargs.get('token', 'token')}/"
+            )
+            
+            email_template = _get_email_template('password_reset')
+            if email_template:
+                template_subject = email_template.subject
+                template_body = email_template.render(
+                    username=user.username,
+                    email=user.email,
+                    reset_link=message.split('\n')[-1] if message else reset_link
+                )
+            else:
+                # Fallback to default
+                template_subject = subject
+                template_body = message
+            
+            from_email = _get_from_email()
+            _send_email(
+                template_subject,
+                template_body,
+                from_email,
+                [to_email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            logger.exception(f'Password reset email failed: {e}')
+            # Fall back to Django's default email sending
+            super().send_mail(subject, message, from_email, to_email, html_message, **kwargs)
 
 
 def blog_view(request):
@@ -547,9 +669,44 @@ def register_view(request):
             # Send activation email. In production, missing/incorrect SMTP settings should not 500 the request.
             try:
                 from_email = _get_from_email()
+                
+                # Try to use email template from database, fallback to hardcoded template
+                email_template = _get_email_template('activation')
+                if email_template:
+                    subject = email_template.subject.format(username=username)
+                    activation_email_body = email_template.render(
+                        username=username,
+                        email=email,
+                        user_id=user.id,
+                        activation_link=activation_link
+                    )
+                else:
+                    # Fallback to default template
+                    subject = 'Activate your account'
+                    activation_email_body = f"""Welcome to Bhrikutimandap!
+
+Hello {username},
+
+Thank you for registering with us. To activate your account, please click the link below:
+
+{activation_link}
+
+User Details:
+Username: {username}
+User ID: {user.id}
+Email: {email}
+
+This activation link will expire in 24 hours.
+
+If you did not create this account, please ignore this email.
+
+Best regards,
+Bhrikutimandap Team
+"""
+                
                 _send_email(
-                    'Activate your account',
-                    f'Activate at: {activation_link}',
+                    subject,
+                    activation_email_body,
                     from_email,
                     [email],
                     fail_silently=False,

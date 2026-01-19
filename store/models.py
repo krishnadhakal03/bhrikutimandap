@@ -762,3 +762,46 @@ class Blog(models.Model):
     
     def __str__(self):
         return self.title
+
+
+class EmailTemplate(models.Model):
+    """Email templates that can be edited from admin"""
+    TEMPLATE_TYPES = [
+        ('activation', 'Account Activation'),
+        ('contact_admin', 'Contact Form to Admin'),
+        ('password_reset', 'Password Reset'),
+        ('welcome', 'Welcome Email'),
+    ]
+    
+    name = models.CharField(max_length=100, unique=True, help_text="Internal name (e.g., 'activation', 'contact_admin')")
+    template_type = models.CharField(max_length=50, choices=TEMPLATE_TYPES)
+    subject = models.CharField(
+        max_length=200, 
+        help_text="Email subject. Use variables like {username}, {email}, etc."
+    )
+    body = models.TextField(
+        help_text="""Email body template. Available variables depend on template type:
+        
+Activation: {username}, {email}, {user_id}, {activation_link}
+Contact Admin: {name}, {email}, {phone}, {subject_input}, {message}
+Password Reset: {username}, {email}, {reset_link}
+Welcome: {username}, {email}
+        """
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Email Template"
+        verbose_name_plural = "Email Templates"
+    
+    def __str__(self):
+        return f"{self.get_template_type_display()} - {self.name}"
+    
+    def render(self, **context):
+        """Render the email template with context variables"""
+        try:
+            return self.body.format(**context)
+        except KeyError as e:
+            return f"[Template Error: Missing variable {e}]"

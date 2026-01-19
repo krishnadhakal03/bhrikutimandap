@@ -18,7 +18,7 @@ from .models import (
     User, Product, ProductImage, Order, OrderItem, Cart, CartItem, SiteSettings, 
     CustomerProfile, Address, PaymentMethod, Wishlist, WishlistItem,
     AgentProfile, StockHistory, SalesTransaction, StockAlert, MarketDemandSuggestion,
-    DeliveryPartner, Vehicle, OrderDelivery, DeliveryTracking, ReturnRequest, Blog
+    DeliveryPartner, Vehicle, OrderDelivery, DeliveryTracking, ReturnRequest, Blog, EmailTemplate
 )
 
 
@@ -1085,3 +1085,25 @@ class BlogAdmin(admin.ModelAdmin):
         if obj:  # Editing existing object
             return self.readonly_fields + ('author',)
         return self.readonly_fields
+
+
+@admin.register(EmailTemplate)
+class EmailTemplateAdmin(admin.ModelAdmin):
+    list_display = ('name', 'template_type', 'is_active', 'updated_at')
+    list_filter = ('template_type', 'is_active', 'created_at')
+    search_fields = ('name', 'subject', 'body')
+    readonly_fields = ('created_at', 'updated_at')
+    
+    fieldsets = (
+        ('Template Information', {
+            'fields': ('name', 'template_type', 'is_active')
+        }),
+        ('Email Content', {
+            'fields': ('subject', 'body'),
+            'description': 'Use template variables in curly braces like {username}, {email}, {activation_link}, etc.'
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
