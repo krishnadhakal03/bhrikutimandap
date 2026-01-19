@@ -64,10 +64,13 @@ def _get_from_email():
 def _send_email(subject, message, from_email, recipient_list, fail_silently=False):
     """
     Send email using dynamic SMTP configuration from SiteSettings.
+    In DEBUG/test mode, uses locmem or console backend.
+    In production, uses SMTP with dynamic settings from SiteSettings.
     """
     try:
-        # In DEBUG mode, use console backend regardless of SiteSettings
-        if settings.DEBUG:
+        import sys
+        # In DEBUG mode or test mode, use configured test backend (locmem/console)
+        if settings.DEBUG or 'test' in sys.argv:
             send_mail(subject, message, from_email, recipient_list, fail_silently=fail_silently)
         else:
             # Get connection with dynamic settings
