@@ -175,6 +175,35 @@ class SiteSettings(models.Model):
     store_address = models.TextField(default="123 Main Street, Your City")
     store_hours = models.CharField(max_length=100, default="Mon-Fri: 9am-6pm")
     
+    # Email Configuration (SMTP)
+    email_host = models.CharField(
+        max_length=255,
+        default="smtp.hostinger.com",
+        help_text="SMTP server host (e.g., smtp.hostinger.com)"
+    )
+    email_port = models.PositiveIntegerField(
+        default=587,
+        help_text="SMTP port (usually 587 for TLS or 465 for SSL)"
+    )
+    email_use_tls = models.BooleanField(
+        default=True,
+        help_text="Use TLS for SMTP connection"
+    )
+    email_host_user = models.EmailField(
+        default="admin@bhrikutimandap.com",
+        help_text="SMTP username (usually your email address)"
+    )
+    email_host_password = models.CharField(
+        max_length=255,
+        default="",
+        blank=True,
+        help_text="SMTP password (stored securely)"
+    )
+    default_from_email = models.EmailField(
+        default="admin@bhrikutimandap.com",
+        help_text="Default sender email address"
+    )
+    
     # Meta
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -712,3 +741,24 @@ class AgentDeliveryPartner(models.Model):
     
     def __str__(self):
         return f"{self.agent.company_name} - {self.delivery_partner.name}"
+
+
+class Blog(models.Model):
+    """Blog posts for the website"""
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, help_text="URL-friendly version of the title")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blogs')
+    content = models.TextField()  # Will use RichTextUploadingField in admin
+    featured_image = models.ImageField(upload_to='blog/', null=True, blank=True)
+    excerpt = models.TextField(max_length=500, blank=True, help_text="Short summary for blog listing")
+    is_published = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Blog Post"
+        verbose_name_plural = "Blog Posts"
+    
+    def __str__(self):
+        return self.title

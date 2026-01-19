@@ -7,6 +7,9 @@ Pillow>=10.0.0
 # Django Extensions
 django-widget-tweaks>=1.4.12
 
+# Rich Text Editor
+django-ckeditor>=6.5.1
+
 # Production Web Server
 gunicorn>=21.0.0
 

@@ -12,11 +12,12 @@ from django.template.response import TemplateResponse
 from django.urls import path
 from django.utils import timezone
 from django.utils.html import format_html
+from ckeditor_uploader.fields import RichTextUploadingField
 from .models import (
     User, Product, ProductImage, Order, OrderItem, Cart, CartItem, SiteSettings, 
     CustomerProfile, Address, PaymentMethod, Wishlist, WishlistItem,
     AgentProfile, StockHistory, SalesTransaction, StockAlert, MarketDemandSuggestion,
-    DeliveryPartner, Vehicle, OrderDelivery, DeliveryTracking, ReturnRequest
+    DeliveryPartner, Vehicle, OrderDelivery, DeliveryTracking, ReturnRequest, Blog
 )
 
 
@@ -460,6 +461,20 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             },
         ),
         ('Footer', {'fields': ('footer_text',)}),
+        (
+            'Email Configuration (SMTP)',
+            {
+                'fields': (
+                    'email_host',
+                    'email_port',
+                    'email_use_tls',
+                    'email_host_user',
+                    'email_host_password',
+                    'default_from_email',
+                ),
+                'description': 'Configure SMTP settings for sending emails. Leave password empty to use .env value.',
+            },
+        ),
     )
 
     def has_delete_permission(self, request, obj=None):
@@ -1022,4 +1037,37 @@ class ReturnRequestAdmin(admin.ModelAdmin):
             color,
             obj.get_status_display()
         )
+
+
+@admin.register(Blog)
+class BlogAdmin(admin.ModelAdmin):
+    list_display = ('title', 'author', 'is_published', 'created_at')
+    list_filter = ('is_published', 'created_at', 'author')
+    search_fields = ('title', 'excerpt', 'content')
+    prepopulated_fields = {'slug': ('title',)}
+    readonly_fields = ('created_at', 'updated_at')
+    
+    fieldsets = (
+        ('Blog Information', {
+            'fields': ('title', 'slug', 'author', 'featured_image')
+        }),
+        ('Content', {
+            'fields': ('excerpt', 'content'),
+            'description': 'Use the rich text editor below to format your content with images, links, and styling.'
+        }),
+        ('Publishing', {
+            'fields': ('is_published', 'created_at', 'updated_at')
+        }),
+    )
+    
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        # Replace content field with RichTextUploadingField
+        form.base_fields['content'] = RichTextUploadingField()
+        return form
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # Creating new blog
+            obj.author = request.user
+        super().save_model(request, obj, form, change)
     status_badge.short_description = 'Status'

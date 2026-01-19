@@ -1,0 +1,116 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}{{ blog.title }} - Bhrikutimandap{% endblock %}
+
+{% block content %}
+<div class="blog-detail-section">
+    <div class="container">
+        <div class="row mb-5">
+            <div class="col-lg-8 mx-auto">
+                {% if blog.featured_image %}
+                <img src="{{ blog.featured_image.url }}" class="img-fluid rounded mb-4" alt="{{ blog.title }}" style="max-height: 500px; object-fit: cover; width: 100%;">
+                {% endif %}
+                
+                <article>
+                    <h1 class="mb-3">{{ blog.title }}</h1>
+                    
+                    <div class="blog-meta text-muted mb-4">
+                        <span><i class="far fa-user"></i> {{ blog.author.get_full_name|default:blog.author.username }}</span>
+                        <span class="ms-3"><i class="far fa-calendar"></i> {{ blog.created_at|date:"F d, Y" }}</span>
+                        <span class="ms-3"><i class="far fa-clock"></i> {% widthratio blog.content|length 200 1 %} min read</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="blog-content mt-4">
+                        {{ blog.content|safe }}
+                    </div>
+                    
+                    <hr class="my-5">
+                </article>
+                
+                <!-- Related Blogs -->
+                {% if related_blogs %}
+                <div class="related-blogs mt-5">
+                    <h3 class="mb-4">Related Articles</h3>
+                    <div class="row">
+                        {% for related in related_blogs %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 blog-card">
+                                {% if related.featured_image %}
+                                <img src="{{ related.featured_image.url }}" class="card-img-top" alt="{{ related.title }}" style="height: 200px; object-fit: cover;">
+                                {% endif %}
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ related.title }}</h5>
+                                    <p class="card-text text-muted small">{{ related.excerpt|truncatewords:20 }}</p>
+                                    <a href="{% url 'store:blog_detail' related.slug %}" class="btn btn-primary btn-sm">Read More</a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .blog-detail-section {
+        padding: 40px 0;
+        background-color: #f8f9fa;
+        min-height: 500px;
+    }
+    
+    .blog-content {
+        font-size: 1.05rem;
+        line-height: 1.8;
+        color: #333;
+    }
+    
+    .blog-content p {
+        margin-bottom: 1.5rem;
+    }
+    
+    .blog-content img {
+        max-width: 100%;
+        height: auto;
+        margin: 2rem 0;
+        border-radius: 8px;
+    }
+    
+    .blog-content a {
+        color: #6c5ce7;
+        text-decoration: none;
+    }
+    
+    .blog-content a:hover {
+        text-decoration: underline;
+    }
+    
+    .blog-content ul, .blog-content ol {
+        margin: 1.5rem 0;
+        padding-left: 2rem;
+    }
+    
+    .blog-content li {
+        margin-bottom: 0.5rem;
+    }
+    
+    .blog-meta {
+        font-size: 0.95rem;
+    }
+    
+    .blog-card {
+        border: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
+    }
+    
+    .blog-card:hover {
+        transform: translateY(-3px);
+    }
+</style>
+{% endblock %}

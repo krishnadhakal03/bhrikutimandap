@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'ckeditor',
+    'ckeditor_uploader',
     'widget_tweaks',
     'store',
 ]
@@ -134,19 +136,24 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Authentication
 AUTH_USER_MODEL = 'store.User'
 
-# Security / proxy settings
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-USE_X_FORWARDED_HOST = True
+# Security / proxy settings (disabled in development to prevent SSL issues)
+if DEBUG:
+    SECURE_PROXY_SSL_HEADER = None
+else:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    
+USE_X_FORWARDED_HOST = not DEBUG
 
-# Security settings for production
+# Security settings for production (disabled in development)
 SECURE_SSL_REDIRECT = (not DEBUG) and (os.environ.get('SECURE_SSL_REDIRECT', 'True') == 'True')
 SESSION_COOKIE_SECURE = (not DEBUG) and (os.environ.get('SESSION_COOKIE_SECURE', 'True') == 'True')
 CSRF_COOKIE_SECURE = (not DEBUG) and (os.environ.get('CSRF_COOKIE_SECURE', 'True') == 'True')
 
-SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '31536000' if not DEBUG else '0'))
+# HSTS settings (disabled in development to avoid browser caching issues)
+SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '0' if DEBUG else '31536000'))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = (not DEBUG)
 SECURE_HSTS_PRELOAD = (not DEBUG)
-SECURE_REFERRER_POLICY = 'same-origin'
+SECURE_REFERRER_POLICY = 'same-origin' if not DEBUG else None
 
 # CSRF trusted origins (required when using HTTPS and a real domain)
 _default_csrf_trusted = ''
@@ -170,7 +177,9 @@ if 'test' in sys.argv:
 elif DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
+    # For production, use SMTP with dynamic configuration
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    # Email settings will be applied dynamically in views via get_email_config()
     EMAIL_HOST = os.environ.get('EMAIL_HOST', 'localhost')
     EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
     EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
@@ -178,6 +187,31 @@ else:
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@bhrikutimandap.com')
+CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'admin@bhrikutimandap.com')
+
+# CKEditor Configuration
+CKEDITOR_BASEPATH = '/static/ckeditor/ckeditor/'
+CKEDITOR_UPLOAD_PATH = 'uploads/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'full',
+        'height': 400,
+        'width': '100%',
+        'toolbar_Custom': [
+            ['Styles', 'Format', 'Bold', 'Italic', 'Underline', 'Strike', '-', 'RemoveFormat'],
+            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight'],
+            ['Link', 'Unlink', 'Anchor'],
+            ['Image', 'Table', '-', 'HorizontalRule'],
+            ['Source'],
+            ['Maximize']
+        ],
+        'toolbar': 'Custom',
+        'extraPlugins': ','.join(['uploadimage', 'div', 'autolink', 'autoembed', 'embedsemantic', 'autogrow', 'widget', 'lineutils', 'clipboard', 'widgetselection', 'elementspath']),
+    }
+}
 
 # Site URL used in activation links
 SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')

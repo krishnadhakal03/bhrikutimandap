@@ -36,6 +36,7 @@ urlpatterns = [
     ), name='password_reset_complete'),
     path('contact/', views.contact_view, name='contact'),
     path('blog/', views.blog_view, name='blog'),
+    path('blog/<slug:slug>/', views.blog_detail_view, name='blog_detail'),
     # Order management routes
     path('order/<int:order_id>/', views.order_detail, name='order_detail'),
     path('order/item/<int:order_item_id>/return/', views.request_return, name='request_return'),

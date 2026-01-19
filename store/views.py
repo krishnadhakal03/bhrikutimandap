@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Product, Order, OrderItem, Address, PaymentMethod
+from .models import Product, Order, OrderItem, Address, PaymentMethod, Blog
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 import json
@@ -13,7 +13,7 @@ from .models import Cart, CartItem, Product
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import send_mail
+from django.core.mail import send_mail, get_connection
 from django.conf import settings
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
@@ -24,6 +24,65 @@ from .models import ReturnRequest
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _get_email_connection():
+    """
+    Get SMTP connection with settings from SiteSettings or environment variables.
+    """
+    try:
+        from .models import SiteSettings
+        site_settings = SiteSettings.get_instance()
+        
+        return get_connection(
+            backend='django.core.mail.backends.smtp.EmailBackend',
+            host=site_settings.email_host or settings.EMAIL_HOST,
+            port=site_settings.email_port or settings.EMAIL_PORT,
+            username=site_settings.email_host_user or settings.EMAIL_HOST_USER,
+            password=site_settings.email_host_password or settings.EMAIL_HOST_PASSWORD,
+            use_tls=site_settings.email_use_tls,
+            fail_silently=False,
+        )
+    except Exception as e:
+        logger.debug(f"Could not get SiteSettings for email connection: {e}. Using default.")
+        # Return None to use Django's default settings
+        return None
+
+
+def _get_from_email():
+    """
+    Get the DEFAULT_FROM_EMAIL from SiteSettings or settings.
+    """
+    try:
+        from .models import SiteSettings
+        site_settings = SiteSettings.get_instance()
+        return site_settings.default_from_email or settings.DEFAULT_FROM_EMAIL
+    except Exception:
+        return settings.DEFAULT_FROM_EMAIL
+
+
+def _send_email(subject, message, from_email, recipient_list, fail_silently=False):
+    """
+    Send email using dynamic SMTP configuration from SiteSettings.
+    """
+    try:
+        # In DEBUG mode, use console backend regardless of SiteSettings
+        if settings.DEBUG:
+            send_mail(subject, message, from_email, recipient_list, fail_silently=fail_silently)
+        else:
+            # Get connection with dynamic settings
+            connection = _get_email_connection()
+            send_mail(
+                subject, 
+                message, 
+                from_email, 
+                recipient_list, 
+                connection=connection,
+                fail_silently=fail_silently
+            )
+    except Exception as e:
+        logger.exception(f"Email send failed: {e}")
+        raise
 
 
 def product_list(request):
@@ -130,15 +189,54 @@ def home(request):
 
 def contact_view(request):
     if request.method == 'POST':
-        # simple echo back for now; in production you'd send email
-        messages.success(request, 'Thanks for contacting us. We will reply soon.')
+        name = request.POST.get('name', 'Not provided')
+        email = request.POST.get('email', '')
+        subject_input = request.POST.get('subject', 'Contact Form Inquiry')
+        message = request.POST.get('message', '')
+        
+        # Send email to admin
+        if email and message:
+            try:
+                # Get contact email from SiteSettings or use default
+                try:
+                    from .models import SiteSettings
+                    site_settings = SiteSettings.get_instance()
+                    contact_email = site_settings.contact_email or settings.CONTACT_EMAIL
+                except Exception:
+                    contact_email = settings.CONTACT_EMAIL
+                
+                _send_email(
+                    f'Contact Form: {subject_input}',
+                    f'From: {name} ({email})\n\nMessage:\n{message}',
+                    email,
+                    [contact_email],
+                    fail_silently=False,
+                )
+                messages.success(request, 'Thanks for contacting us. We will reply soon.')
+            except Exception as e:
+                logger.exception('Contact form email failed')
+                messages.error(request, 'Failed to send message. Please try again later.')
+        else:
+            messages.error(request, 'Please fill in all required fields.')
         return redirect('store:contact')
     return render(request, 'store/contact.html')
 
 
 def blog_view(request):
-    # For prototype show a static blog list from theme
-    return render(request, 'store/blog.html')
+    """Display list of published blog posts"""
+    blogs = Blog.objects.filter(is_published=True).order_by('-created_at')
+    return render(request, 'store/blog.html', {'blogs': blogs})
+
+
+def blog_detail_view(request, slug):
+    """Display a single blog post"""
+    blog = get_object_or_404(Blog, slug=slug, is_published=True)
+    # Get related blogs (same category or recent)
+    related_blogs = Blog.objects.filter(is_published=True).exclude(pk=blog.pk)[:3]
+    return render(request, 'store/blog_detail.html', {
+        'blog': blog,
+        'related_blogs': related_blogs
+    })
 
 
 def product_detail(request, pk):
@@ -438,10 +536,11 @@ def register_view(request):
 
             # Send activation email. In production, missing/incorrect SMTP settings should not 500 the request.
             try:
-                send_mail(
+                from_email = _get_from_email()
+                _send_email(
                     'Activate your account',
                     f'Activate at: {activation_link}',
-                    settings.DEFAULT_FROM_EMAIL,
+                    from_email,
                     [email],
                     fail_silently=False,
                 )
