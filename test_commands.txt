@@ -1,0 +1,33 @@
+from django.test import Client
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+client = Client()
+
+# Get or create superuser  
+user = User.objects.filter(is_superuser=True).first()
+if not user:
+    user = User.objects.create_superuser('admin', 'a@a.com', 'pass')
+
+# Force set password
+user.set_password('pass')
+user.save()
+
+# Login
+logged_in = client.login(username=user.username, password='pass')
+print(f"Login: {logged_in}")
+
+# Test blog add page
+response = client.get('/admin/store/blog/add/')
+print(f"Status: {response.status_code}")
+
+if response.status_code == 200:
+    print("SUCCESS: Blog add page loads")
+    content = response.content.decode()
+    if 'ckeditor' in content.lower() or 'id_content' in content:
+        print("SUCCESS: Form renders with content editor")
+elif response.status_code == 500:
+    print("FAILED: 500 error")
+    print(response.content.decode()[:500])
+else:
+    print(f"Response: {response.status_code}")

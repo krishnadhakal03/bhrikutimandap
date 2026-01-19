@@ -13,6 +13,7 @@ from django.urls import path
 from django.utils import timezone
 from django.utils.html import format_html
 from ckeditor_uploader.fields import RichTextUploadingField
+from ckeditor_uploader.widgets import CKEditorUploadingWidget
 from .models import (
     User, Product, ProductImage, Order, OrderItem, Cart, CartItem, SiteSettings, 
     CustomerProfile, Address, PaymentMethod, Wishlist, WishlistItem,
@@ -1069,7 +1070,7 @@ class BlogAdmin(admin.ModelAdmin):
             model = Blog
             fields = '__all__'
             widgets = {
-                'content': RichTextUploadingField(),
+                'content': CKEditorUploadingWidget(),
             }
     
     form = BlogForm
