@@ -411,4 +411,33 @@
     }
   }
 </style>
+
+<script>
+// Social sharing functionality
+document.addEventListener('DOMContentLoaded', function() {
+  const pageUrl = window.location.href;
+  const pageTitle = document.querySelector('h1.blog-title')?.textContent || document.title;
+  
+  // Facebook Share
+  document.querySelector('.share-facebook')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`;
+    window.open(facebookUrl, 'facebook-share', 'width=600,height=400');
+  });
+  
+  // Twitter Share
+  document.querySelector('.share-twitter')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    const twitterUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent(pageTitle)}`;
+    window.open(twitterUrl, 'twitter-share', 'width=600,height=400');
+  });
+  
+  // LinkedIn Share
+  document.querySelector('.share-linkedin')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(pageUrl)}`;
+    window.open(linkedinUrl, 'linkedin-share', 'width=600,height=400');
+  });
+});
+</script>
 {% endblock %}
