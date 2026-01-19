@@ -98,6 +98,9 @@ def _send_email(subject, message, from_email, recipient_list, fail_silently=Fals
             )
     except Exception as e:
         error_msg = f"Email send failed: {str(e)}"
+        logger.error(error_msg)
+        if not fail_silently:
+            raise
         logger.exception(error_msg)
         # Don't re-raise in production, just log
         if not fail_silently:
@@ -234,14 +237,28 @@ def contact_view(request):
                 # Try to use email template from database, fallback to hardcoded template
                 email_template = _get_email_template('contact_admin')
                 if email_template:
-                    subject = email_template.subject.format(subject_input=subject_input)
-                    contact_form_body = email_template.render(
-                        name=name,
-                        email=email,
-                        phone=phone if phone else 'Not provided',
-                        subject_input=subject_input,
-                        message=message
-                    )
+                    try:
+                        subject = email_template.subject.format(subject_input=subject_input)
+                        contact_form_body = email_template.render(
+                            name=name,
+                            email=email,
+                            phone=phone if phone else 'Not provided',
+                            subject_input=subject_input,
+                            message=message
+                        )
+                    except Exception as template_error:
+                        logger.warning(f'Template rendering failed: {template_error}. Using fallback.')
+                        subject = f'Contact Form: {subject_input}'
+                        contact_form_body = f"""New Contact Form Submission
+
+Name: {name}
+Email: {email}
+Phone: {phone if phone else 'Not provided'}
+Subject: {subject_input}
+
+Message:
+{message}
+"""
                 else:
                     # Fallback to default template
                     subject = f'Contact Form: {subject_input}'
@@ -260,19 +277,36 @@ Message:
                     contact_form_body,
                     from_email,
                     [contact_email],
-                    fail_silently=False,
+                    fail_silently=True,  # Changed to fail_silently=True to prevent 500 errors
                 )
                 
                 # Send confirmation email to the person who submitted the form
                 from datetime import datetime
                 confirmation_email_template = _get_email_template('contact_confirmation')
                 if confirmation_email_template:
-                    confirmation_subject = confirmation_email_template.subject
-                    confirmation_body = confirmation_email_template.render(
-                        name=name,
-                        subject_input=subject_input,
-                        date=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    )
+                    try:
+                        confirmation_subject = confirmation_email_template.subject
+                        confirmation_body = confirmation_email_template.render(
+                            name=name,
+                            subject_input=subject_input,
+                            date=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        )
+                    except Exception as template_error:
+                        logger.warning(f'Confirmation template rendering failed: {template_error}. Using fallback.')
+                        confirmation_subject = 'We received your message'
+                        confirmation_body = f"""Hello {name},
+
+Thank you for contacting Bhrikutimandap!
+
+We have received your email and appreciate you reaching out to us. Our team will review your message and get back to you shortly.
+
+Your Message Details:
+Subject: {subject_input}
+
+We typically respond within 24-48 hours.
+
+Best regards,
+Bhrikutimandap Team"""
                 else:
                     # Fallback to default template
                     confirmation_subject = 'We received your message'
@@ -295,17 +329,15 @@ Bhrikutimandap Team"""
                     confirmation_body,
                     from_email,
                     [email],
-                    fail_silently=False,
+                    fail_silently=True,  # Changed to fail_silently=True to prevent 500 errors
                 )
                 
                 messages.success(request, 'Thanks for contacting us. We will reply soon.')
             except Exception as e:
                 error_msg = str(e)
-                logger.exception(f'Contact form email failed: {error_msg}')
+                logger.exception(f'Contact form processing failed: {error_msg}')
                 # User-friendly error message
-                messages.error(request, 'Failed to send message. Please check your email or try again later.')
-                # Log the actual error for debugging
-                print(f'EMAIL ERROR: {error_msg}')
+                messages.error(request, 'Failed to process your message. Please try again later.')
         else:
             messages.error(request, 'Please fill in all required fields.')
         return redirect('store:contact')
@@ -322,19 +354,27 @@ class CustomPasswordResetView(DjangoPasswordResetView):
         """Override to use custom email template if available"""
         try:
             user = User.objects.get(email=to_email)
-            reset_link = self.request.build_absolute_uri(
-                self.request.path.replace('password-reset/', 'password-reset/') + 
-                f"../{kwargs.get('uid', 'uid')}/{kwargs.get('token', 'token')}/"
-            )
             
             email_template = _get_email_template('password_reset')
             if email_template:
-                template_subject = email_template.subject
-                template_body = email_template.render(
-                    username=user.username,
-                    email=user.email,
-                    reset_link=message.split('\n')[-1] if message else reset_link
-                )
+                try:
+                    template_subject = email_template.subject
+                    # Extract reset link from the Django message (it's usually in format: ...\nhttp://...)
+                    reset_link = ''
+                    for line in message.split('\n'):
+                        if 'http' in line:
+                            reset_link = line.strip()
+                            break
+                    
+                    template_body = email_template.render(
+                        username=user.username,
+                        email=user.email,
+                        reset_link=reset_link or message
+                    )
+                except Exception as render_error:
+                    logger.warning(f'Password reset template rendering failed: {render_error}. Using default.')
+                    template_subject = subject
+                    template_body = message
             else:
                 # Fallback to default
                 template_subject = subject
@@ -346,12 +386,15 @@ class CustomPasswordResetView(DjangoPasswordResetView):
                 template_body,
                 from_email,
                 [to_email],
-                fail_silently=False,
+                fail_silently=True,  # Changed to fail_silently=True to prevent 500 errors
             )
         except Exception as e:
             logger.exception(f'Password reset email failed: {e}')
             # Fall back to Django's default email sending
-            super().send_mail(subject, message, from_email, to_email, html_message, **kwargs)
+            try:
+                super().send_mail(subject, message, from_email, to_email, html_message, **kwargs)
+            except Exception as fallback_error:
+                logger.error(f'Password reset fallback also failed: {fallback_error}')
 
 
 def blog_view(request):
