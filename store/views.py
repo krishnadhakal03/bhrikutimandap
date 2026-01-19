@@ -84,8 +84,11 @@ def _send_email(subject, message, from_email, recipient_list, fail_silently=Fals
                 fail_silently=fail_silently
             )
     except Exception as e:
-        logger.exception(f"Email send failed: {e}")
-        raise
+        error_msg = f"Email send failed: {str(e)}"
+        logger.exception(error_msg)
+        # Don't re-raise in production, just log
+        if not fail_silently:
+            raise
 
 
 def product_list(request):
@@ -217,8 +220,12 @@ def contact_view(request):
                 )
                 messages.success(request, 'Thanks for contacting us. We will reply soon.')
             except Exception as e:
-                logger.exception('Contact form email failed')
-                messages.error(request, 'Failed to send message. Please try again later.')
+                error_msg = str(e)
+                logger.exception(f'Contact form email failed: {error_msg}')
+                # User-friendly error message
+                messages.error(request, 'Failed to send message. Please check your email or try again later.')
+                # Log the actual error for debugging
+                print(f'EMAIL ERROR: {error_msg}')
         else:
             messages.error(request, 'Please fill in all required fields.')
         return redirect('store:contact')

@@ -4,87 +4,285 @@
 {% block title %}Blog - Bhrikutimandap{% endblock %}
 
 {% block content %}
-  <section class="section-margin">
-    <div class="container">
-      <div class="section-intro pb-60px">
-        <p>Read and Learn</p>
-        <h2>Latest <span class="section-intro__style">Articles</span></h2>
+<section class="blog-listing-section">
+  <div class="container">
+    <!-- Header -->
+    <div class="section-header mb-5">
+      <div class="text-center mb-4">
+        <p class="section-subtitle">Blog & Articles</p>
+        <h1>Read and Learn</h1>
+        <p class="section-description">Discover insights, tips, and stories from our community</p>
       </div>
+    </div>
 
-      {% if blogs %}
-      <div class="row">
-        {% for blog in blogs %}
-        <div class="col-md-6 col-lg-4 mb-4 mb-lg-0">
-          <div class="card card-blog">
-            {% if blog.featured_image %}
-            <div class="card-blog__img">
-              <img class="card-img rounded-0" src="{{ blog.featured_image.url }}" alt="{{ blog.title }}">
-            </div>
-            {% endif %}
-            <div class="card-body">
-              <ul class="card-blog__info">
-                <li><a href="#">By {{ blog.author.get_full_name|default:blog.author.username }}</a></li>
-                <li><a href="#">{{ blog.created_at|date:"M d, Y" }}</a></li>
-              </ul>
-              <a href="{% url 'store:blog_detail' blog.slug %}"><h5>{{ blog.title }}</h5></a>
-              <p>{{ blog.excerpt }}</p>
-              <a href="{% url 'store:blog_detail' blog.slug %}" class="blog__link">
-                Read More <i class="fas fa-arrow-right"></i>
+    {% if blogs %}
+    <div class="row">
+      {% for blog in blogs %}
+      <div class="col-md-6 col-lg-4 mb-4">
+        <div class="blog-card h-100">
+          {% if blog.featured_image %}
+          <div class="blog-card__img">
+            <img src="{{ blog.featured_image.url }}" alt="{{ blog.title }}" class="img-fluid">
+            <div class="blog-card__overlay">
+              <a href="{% url 'store:blog_detail' blog.slug %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-arrow-right"></i> Read Article
               </a>
             </div>
           </div>
-        </div>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="alert alert-info" role="alert">
-        <h4 class="alert-heading">No Blog Posts Yet</h4>
-        <p>Check back soon for updates and articles from Bhrikutimandap!</p>
-      </div>
-      {% endif %}
-                <li><a href="#"><i class="ti-comments-smiley"></i> 2 Comments</a></li>
-              </ul>
-              <h4 class="card-blog__title"><a href="#">The Richland Center Shopping News</a></h4>
-              <p>Let one fifth i bring fly to divided face for bearing divide unto seed. Winged divided light Forth.</p>
-              <a class="card-blog__link" href="#">Read More <i class="ti-arrow-right"></i></a>
+          {% else %}
+          <div class="blog-card__img bg-light">
+            <div class="placeholder-img d-flex align-items-center justify-content-center h-100">
+              <i class="fas fa-newspaper fa-3x text-muted"></i>
             </div>
           </div>
-        </div>
-
-        <div class="col-md-6 col-lg-4 mb-4 mb-lg-0">
-          <div class="card card-blog">
-            <div class="card-blog__img">
-              <img class="card-img rounded-0" src="{% static 'img/blog/blog2.png' %}" alt="">
+          {% endif %}
+          
+          <div class="blog-card__content">
+            <div class="blog-card__meta">
+              <span class="meta-item">
+                <i class="far fa-user"></i> {{ blog.author.get_full_name|default:blog.author.username }}
+              </span>
+              <span class="meta-item">
+                <i class="far fa-calendar"></i> {{ blog.created_at|date:"M d, Y" }}
+              </span>
             </div>
-            <div class="card-body">
-              <ul class="card-blog__info">
-                <li><a href="#">By Admin</a></li>
-                <li><a href="#"><i class="ti-comments-smiley"></i> 2 Comments</a></li>
-              </ul>
-              <h4 class="card-blog__title"><a href="#">The Shopping News also offers top-quality services</a></h4>
-              <p>Let one fifth i bring fly to divided face for bearing divide unto seed. Winged divided light Forth.</p>
-              <a class="card-blog__link" href="#">Read More <i class="ti-arrow-right"></i></a>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-6 col-lg-4 mb-4 mb-lg-0">
-          <div class="card card-blog">
-            <div class="card-blog__img">
-              <img class="card-img rounded-0" src="{% static 'img/blog/blog3.png' %}" alt="">
-            </div>
-            <div class="card-body">
-              <ul class="card-blog__info">
-                <li><a href="#">By Admin</a></li>
-                <li><a href="#"><i class="ti-comments-smiley"></i> 2 Comments</a></li>
-              </ul>
-              <h4 class="card-blog__title"><a href="#">Professional design staff and efficient equipment</a></h4>
-              <p>Let one fifth i bring fly to divided face for bearing divide unto seed. Winged divided light Forth.</p>
-              <a class="card-blog__link" href="#">Read More <i class="ti-arrow-right"></i></a>
+            
+            <h5 class="blog-card__title">
+              <a href="{% url 'store:blog_detail' blog.slug %}">{{ blog.title }}</a>
+            </h5>
+            
+            <p class="blog-card__excerpt">{{ blog.excerpt|truncatewords:20 }}</p>
+            
+            <div class="blog-card__footer">
+              <a href="{% url 'store:blog_detail' blog.slug %}" class="blog-card__link">
+                Read More <i class="fas fa-arrow-right ms-2"></i>
+              </a>
+              {% if not blog.is_published %}
+              <span class="badge bg-warning ms-2">Draft</span>
+              {% endif %}
             </div>
           </div>
         </div>
       </div>
+      {% endfor %}
     </div>
-  </section>
+    {% else %}
+    <div class="empty-state text-center py-5">
+      <i class="fas fa-book fa-4x text-muted mb-3"></i>
+      <h4>No Blog Posts Yet</h4>
+      <p class="text-muted">Check back soon for insights and articles from Bhrikutimandap!</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<style>
+  .blog-listing-section {
+    padding: 80px 0;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background-attachment: fixed;
+  }
+
+  .section-header {
+    animation: fadeInDown 0.6s ease;
+  }
+
+  .section-subtitle {
+    color: #6c5ce7;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .section-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2d3436;
+    margin-bottom: 15px;
+  }
+
+  .section-description {
+    color: #636e72;
+    font-size: 1.1rem;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .blog-card {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: white;
+  }
+
+  .blog-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .blog-card__img {
+    position: relative;
+    height: 220px;
+    overflow: hidden;
+    background-color: #f0f0f0;
+  }
+
+  .blog-card__img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+
+  .blog-card:hover .blog-card__img img {
+    transform: scale(1.08);
+  }
+
+  .blog-card__overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(108, 92, 231, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .blog-card:hover .blog-card__overlay {
+    opacity: 1;
+  }
+
+  .blog-card__overlay .btn {
+    background: white;
+    color: #6c5ce7;
+    font-weight: 600;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+  }
+
+  .blog-card__overlay .btn:hover {
+    background: #f0f0f0;
+    transform: scale(1.05);
+  }
+
+  .placeholder-img {
+    background: #f8f9fa;
+  }
+
+  .blog-card__content {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .blog-card__meta {
+    display: flex;
+    gap: 12px;
+    font-size: 0.85rem;
+    color: #95a5a6;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .blog-card__title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2d3436;
+    margin-bottom: 12px;
+    line-height: 1.4;
+    flex-grow: 1;
+  }
+
+  .blog-card__title a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  .blog-card__title a:hover {
+    color: #6c5ce7;
+  }
+
+  .blog-card__excerpt {
+    color: #636e72;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 16px;
+    flex-grow: 1;
+  }
+
+  .blog-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #ecf0f1;
+    padding-top: 12px;
+  }
+
+  .blog-card__link {
+    color: #6c5ce7;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .blog-card__link:hover {
+    color: #5a4fcf;
+  }
+
+  .empty-state {
+    background: white;
+    border-radius: 12px;
+    padding: 60px 20px;
+  }
+
+  .empty-state h4 {
+    font-size: 1.5rem;
+    color: #2d3436;
+    margin-top: 20px;
+  }
+
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 576px) {
+    .section-header h1 {
+      font-size: 2rem;
+    }
+
+    .blog-card__meta {
+      font-size: 0.8rem;
+    }
+
+    .blog-card__title {
+      font-size: 1.05rem;
+    }
+  }
+</style>
 {% endblock %}

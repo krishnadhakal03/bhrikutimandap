@@ -4,113 +4,411 @@
 {% block title %}{{ blog.title }} - Bhrikutimandap{% endblock %}
 
 {% block content %}
-<div class="blog-detail-section">
+<div class="blog-detail-wrapper">
+  <!-- Featured Image Banner -->
+  {% if blog.featured_image %}
+  <div class="blog-banner">
+    <img src="{{ blog.featured_image.url }}" alt="{{ blog.title }}" class="blog-banner__img">
+    <div class="blog-banner__overlay"></div>
+  </div>
+  {% endif %}
+
+  <!-- Main Content -->
+  <div class="blog-detail-section">
     <div class="container">
-        <div class="row mb-5">
-            <div class="col-lg-8 mx-auto">
-                {% if blog.featured_image %}
-                <img src="{{ blog.featured_image.url }}" class="img-fluid rounded mb-4" alt="{{ blog.title }}" style="max-height: 500px; object-fit: cover; width: 100%;">
-                {% endif %}
-                
-                <article>
-                    <h1 class="mb-3">{{ blog.title }}</h1>
-                    
-                    <div class="blog-meta text-muted mb-4">
-                        <span><i class="far fa-user"></i> {{ blog.author.get_full_name|default:blog.author.username }}</span>
-                        <span class="ms-3"><i class="far fa-calendar"></i> {{ blog.created_at|date:"F d, Y" }}</span>
-                        <span class="ms-3"><i class="far fa-clock"></i> {% widthratio blog.content|length 200 1 %} min read</span>
-                    </div>
-                    
-                    <hr>
-                    
-                    <div class="blog-content mt-4">
-                        {{ blog.content|safe }}
-                    </div>
-                    
-                    <hr class="my-5">
-                </article>
-                
-                <!-- Related Blogs -->
-                {% if related_blogs %}
-                <div class="related-blogs mt-5">
-                    <h3 class="mb-4">Related Articles</h3>
-                    <div class="row">
-                        {% for related in related_blogs %}
-                        <div class="col-md-6 col-lg-4 mb-3">
-                            <div class="card h-100 blog-card">
-                                {% if related.featured_image %}
-                                <img src="{{ related.featured_image.url }}" class="card-img-top" alt="{{ related.title }}" style="height: 200px; object-fit: cover;">
-                                {% endif %}
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ related.title }}</h5>
-                                    <p class="card-text text-muted small">{{ related.excerpt|truncatewords:20 }}</p>
-                                    <a href="{% url 'store:blog_detail' related.slug %}" class="btn btn-primary btn-sm">Read More</a>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <!-- Article Header -->
+          <article class="blog-article">
+            <div class="blog-header">
+              <h1 class="blog-title">{{ blog.title }}</h1>
+              
+              <div class="blog-meta-info">
+                <div class="meta-author">
+                  <i class="fas fa-user-circle"></i>
+                  <span>{{ blog.author.get_full_name|default:blog.author.username }}</span>
                 </div>
-                {% endif %}
+                <div class="meta-date">
+                  <i class="far fa-calendar-alt"></i>
+                  <span>{{ blog.created_at|date:"F d, Y" }}</span>
+                </div>
+                <div class="meta-read-time">
+                  <i class="far fa-clock"></i>
+                  <span>{% widthratio blog.content|length 200 1 %} min read</span>
+                </div>
+              </div>
+
+              {% if not blog.is_published %}
+              <div class="alert alert-warning mt-3" role="alert">
+                <i class="fas fa-eye-slash me-2"></i>
+                This article is in draft mode and not published yet.
+              </div>
+              {% endif %}
             </div>
+
+            <div class="blog-divider"></div>
+
+            <!-- Article Content -->
+            <div class="blog-content">
+              {{ blog.content|safe }}
+            </div>
+
+            <div class="blog-divider"></div>
+
+            <!-- Article Footer -->
+            <div class="blog-footer">
+              <div class="blog-share">
+                <span class="share-label">Share this article:</span>
+                <a href="#" class="share-btn share-facebook" title="Share on Facebook">
+                  <i class="fab fa-facebook-f"></i>
+                </a>
+                <a href="#" class="share-btn share-twitter" title="Share on Twitter">
+                  <i class="fab fa-twitter"></i>
+                </a>
+                <a href="#" class="share-btn share-linkedin" title="Share on LinkedIn">
+                  <i class="fab fa-linkedin-in"></i>
+                </a>
+              </div>
+            </div>
+          </article>
+
+          <!-- Related Articles -->
+          {% if related_blogs %}
+          <div class="related-section mt-5">
+            <h3 class="related-title">
+              <i class="fas fa-lightbulb me-2"></i> Related Articles
+            </h3>
+            <div class="row">
+              {% for related in related_blogs %}
+              <div class="col-md-6 mb-4">
+                <div class="related-card">
+                  {% if related.featured_image %}
+                  <div class="related-card__img">
+                    <img src="{{ related.featured_image.url }}" alt="{{ related.title }}" class="img-fluid">
+                  </div>
+                  {% endif %}
+                  <div class="related-card__body">
+                    <h5 class="related-card__title">{{ related.title }}</h5>
+                    <p class="related-card__excerpt">{{ related.excerpt|truncatewords:15 }}</p>
+                    <a href="{% url 'store:blog_detail' related.slug %}" class="related-card__link">
+                      Continue Reading <i class="fas fa-arrow-right ms-2"></i>
+                    </a>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
 <style>
-    .blog-detail-section {
-        padding: 40px 0;
-        background-color: #f8f9fa;
-        min-height: 500px;
+  .blog-detail-wrapper {
+    background: #fff;
+  }
+
+  .blog-banner {
+    position: relative;
+    height: 400px;
+    overflow: hidden;
+  }
+
+  .blog-banner__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .blog-banner__overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.3) 100%);
+  }
+
+  .blog-detail-section {
+    padding: 60px 0;
+    background: #f8f9fa;
+    min-height: calc(100vh - 400px);
+  }
+
+  .blog-article {
+    background: white;
+    border-radius: 12px;
+    padding: 50px 40px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .blog-header {
+    margin-bottom: 30px;
+  }
+
+  .blog-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2d3436;
+    line-height: 1.2;
+    margin-bottom: 20px;
+  }
+
+  .blog-meta-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    color: #636e72;
+    font-size: 0.95rem;
+    padding-bottom: 20px;
+  }
+
+  .blog-meta-info > div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .blog-meta-info i {
+    color: #6c5ce7;
+    font-size: 1.1rem;
+  }
+
+  .blog-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #e0e0e0, transparent);
+    margin: 40px 0;
+  }
+
+  .blog-content {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: #444;
+  }
+
+  .blog-content p {
+    margin-bottom: 1.5rem;
+  }
+
+  .blog-content h2 {
+    font-size: 1.8rem;
+    color: #2d3436;
+    margin: 2rem 0 1rem;
+    font-weight: 600;
+  }
+
+  .blog-content h3 {
+    font-size: 1.4rem;
+    color: #34495e;
+    margin: 1.5rem 0 0.75rem;
+    font-weight: 600;
+  }
+
+  .blog-content img {
+    max-width: 100%;
+    height: auto;
+    margin: 2rem 0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .blog-content a {
+    color: #6c5ce7;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .blog-content a:hover {
+    text-decoration: underline;
+  }
+
+  .blog-content ul, 
+  .blog-content ol {
+    margin: 1.5rem 0;
+    padding-left: 2rem;
+  }
+
+  .blog-content li {
+    margin-bottom: 0.75rem;
+  }
+
+  .blog-content blockquote {
+    border-left: 4px solid #6c5ce7;
+    padding: 1rem 1.5rem;
+    background: #f0f0ff;
+    margin: 1.5rem 0;
+    border-radius: 4px;
+    font-style: italic;
+    color: #555;
+  }
+
+  .blog-content code {
+    background: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    color: #d63384;
+  }
+
+  .blog-content pre {
+    background: #f4f4f4;
+    padding: 1.5rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+  }
+
+  .blog-footer {
+    padding-top: 20px;
+  }
+
+  .blog-share {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+
+  .share-label {
+    font-weight: 600;
+    color: #2d3436;
+  }
+
+  .share-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    color: #636e72;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 1.1rem;
+  }
+
+  .share-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .share-facebook:hover {
+    background: #3b5998;
+    color: white;
+  }
+
+  .share-twitter:hover {
+    background: #1da1f2;
+    color: white;
+  }
+
+  .share-linkedin:hover {
+    background: #0077b5;
+    color: white;
+  }
+
+  .related-section {
+    margin-top: 60px;
+    padding-top: 40px;
+    border-top: 2px solid #e0e0e0;
+  }
+
+  .related-title {
+    font-size: 1.5rem;
+    color: #2d3436;
+    font-weight: 600;
+    margin-bottom: 30px;
+  }
+
+  .related-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    height: 100%;
+  }
+
+  .related-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  }
+
+  .related-card__img {
+    height: 180px;
+    overflow: hidden;
+    background: #f0f0f0;
+  }
+
+  .related-card__img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .related-card:hover .related-card__img img {
+    transform: scale(1.05);
+  }
+
+  .related-card__body {
+    padding: 20px;
+  }
+
+  .related-card__title {
+    font-size: 1.1rem;
+    color: #2d3436;
+    margin-bottom: 10px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .related-card__excerpt {
+    color: #636e72;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+    line-height: 1.5;
+  }
+
+  .related-card__link {
+    color: #6c5ce7;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.3s ease;
+  }
+
+  .related-card__link:hover {
+    color: #5a4fcf;
+  }
+
+  @media (max-width: 768px) {
+    .blog-banner {
+      height: 250px;
     }
-    
+
+    .blog-article {
+      padding: 30px 20px;
+    }
+
+    .blog-title {
+      font-size: 1.8rem;
+    }
+
     .blog-content {
-        font-size: 1.05rem;
-        line-height: 1.8;
-        color: #333;
+      font-size: 1rem;
     }
-    
-    .blog-content p {
-        margin-bottom: 1.5rem;
+
+    .blog-meta-info {
+      gap: 12px;
+      font-size: 0.85rem;
     }
-    
-    .blog-content img {
-        max-width: 100%;
-        height: auto;
-        margin: 2rem 0;
-        border-radius: 8px;
-    }
-    
-    .blog-content a {
-        color: #6c5ce7;
-        text-decoration: none;
-    }
-    
-    .blog-content a:hover {
-        text-decoration: underline;
-    }
-    
-    .blog-content ul, .blog-content ol {
-        margin: 1.5rem 0;
-        padding-left: 2rem;
-    }
-    
-    .blog-content li {
-        margin-bottom: 0.5rem;
-    }
-    
-    .blog-meta {
-        font-size: 0.95rem;
-    }
-    
-    .blog-card {
-        border: none;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        transition: transform 0.3s ease;
-    }
-    
-    .blog-card:hover {
-        transform: translateY(-3px);
-    }
+  }
 </style>
 {% endblock %}

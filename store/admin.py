@@ -2,7 +2,7 @@ import io
 import os
 import zipfile
 from tempfile import NamedTemporaryFile
-
+from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied
@@ -1049,24 +1049,38 @@ class BlogAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Blog Information', {
-            'fields': ('title', 'slug', 'author', 'featured_image')
+            'fields': ('title', 'slug', 'featured_image')
         }),
         ('Content', {
             'fields': ('excerpt', 'content'),
-            'description': 'Use the rich text editor below to format your content with images, links, and styling.'
+            'description': 'Use the rich text editor to add formatted content with images, links, and styling.'
         }),
         ('Publishing', {
             'fields': ('is_published', 'created_at', 'updated_at')
         }),
+        ('Author', {
+            'fields': ('author',),
+            'classes': ('collapse',)
+        }),
     )
     
-    def get_form(self, request, obj=None, **kwargs):
-        form = super().get_form(request, obj, **kwargs)
-        # Replace content field with RichTextUploadingField
-        form.base_fields['content'] = RichTextUploadingField()
-        return form
+    class BlogForm(forms.ModelForm):
+        class Meta:
+            model = Blog
+            fields = '__all__'
+            widgets = {
+                'content': RichTextUploadingField(),
+            }
+    
+    form = BlogForm
     
     def save_model(self, request, obj, form, change):
         if not change:  # Creating new blog
             obj.author = request.user
         super().save_model(request, obj, form, change)
+    
+    def get_readonly_fields(self, request, obj=None):
+        """Make author read-only if blog already exists"""
+        if obj:  # Editing existing object
+            return self.readonly_fields + ('author',)
+        return self.readonly_fields
