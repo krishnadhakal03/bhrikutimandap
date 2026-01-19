@@ -221,21 +221,18 @@ def contact_view(request):
         # Send email to admin
         if email and message:
             try:
-                # Get contact email from SiteSettings or use default
-                try:
-                    from .models import SiteSettings
-                    site_settings = SiteSettings.get_instance()
-                    contact_email = site_settings.contact_email or settings.CONTACT_EMAIL
-                except Exception:
-                    contact_email = settings.CONTACT_EMAIL
+                # Get admin email - send to admin@bhrikutimandap.com
+                admin_email = 'admin@bhrikutimandap.com'
                 
-                # Use admin email as from_email to ensure SMTP validation passes
+                # Get from_email to ensure SMTP validation passes
                 try:
                     from_email = _get_from_email()
                 except Exception:
                     from_email = settings.DEFAULT_FROM_EMAIL
                 
-                # Try to use email template from database, fallback to hardcoded template
+                logger.debug(f'Contact form: from_email={from_email}, admin_email={admin_email}, user_email={email}')
+                
+                # Send to ADMIN
                 email_template = _get_email_template('contact_admin')
                 if email_template:
                     try:
@@ -247,8 +244,9 @@ def contact_view(request):
                             subject_input=subject_input,
                             message=message
                         )
+                        logger.debug(f'Using contact_admin template: subject={subject}')
                     except Exception as template_error:
-                        logger.warning(f'Template rendering failed: {template_error}. Using fallback.')
+                        logger.warning(f'contact_admin template rendering failed: {template_error}. Using fallback.')
                         subject = f'Contact Form: {subject_input}'
                         contact_form_body = f"""New Contact Form Submission
 
@@ -258,10 +256,9 @@ Phone: {phone if phone else 'Not provided'}
 Subject: {subject_input}
 
 Message:
-{message}
-"""
+{message}"""
                 else:
-                    # Fallback to default template
+                    logger.warning('contact_admin template not found. Using fallback.')
                     subject = f'Contact Form: {subject_input}'
                     contact_form_body = f"""New Contact Form Submission
 
@@ -271,17 +268,19 @@ Phone: {phone if phone else 'Not provided'}
 Subject: {subject_input}
 
 Message:
-{message}
-"""
+{message}"""
+                
+                logger.debug(f'Sending admin email to {admin_email}')
                 _send_email(
                     subject,
                     contact_form_body,
                     from_email,
-                    [contact_email],
-                    fail_silently=True,  # Changed to fail_silently=True to prevent 500 errors
+                    [admin_email],
+                    fail_silently=False,  # Will raise exception if fails
                 )
+                logger.info('Admin notification email sent successfully')
                 
-                # Send confirmation email to the person who submitted the form
+                # Send CONFIRMATION to USER
                 from datetime import datetime
                 confirmation_email_template = _get_email_template('contact_confirmation')
                 if confirmation_email_template:
@@ -292,8 +291,9 @@ Message:
                             subject_input=subject_input,
                             date=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                         )
+                        logger.debug(f'Using contact_confirmation template: subject={confirmation_subject}')
                     except Exception as template_error:
-                        logger.warning(f'Confirmation template rendering failed: {template_error}. Using fallback.')
+                        logger.warning(f'contact_confirmation template rendering failed: {template_error}. Using fallback.')
                         confirmation_subject = 'We received your message'
                         confirmation_body = f"""Hello {name},
 
@@ -309,7 +309,7 @@ We typically respond within 24-48 hours.
 Best regards,
 Bhrikutimandap Team"""
                 else:
-                    # Fallback to default template
+                    logger.warning('contact_confirmation template not found. Using fallback.')
                     confirmation_subject = 'We received your message'
                     confirmation_body = f"""Hello {name},
 
@@ -325,20 +325,23 @@ We typically respond within 24-48 hours.
 Best regards,
 Bhrikutimandap Team"""
                 
+                logger.debug(f'Sending confirmation email to {email}')
                 _send_email(
                     confirmation_subject,
                     confirmation_body,
                     from_email,
                     [email],
-                    fail_silently=True,  # Changed to fail_silently=True to prevent 500 errors
+                    fail_silently=False,  # Will raise exception if fails
                 )
+                logger.info('User confirmation email sent successfully')
                 
                 messages.success(request, 'Thanks for contacting us. We will reply soon.')
             except Exception as e:
                 error_msg = str(e)
                 logger.exception(f'Contact form processing failed: {error_msg}')
-                # User-friendly error message
-                messages.error(request, 'Failed to process your message. Please try again later.')
+                # User-friendly error message but log the actual error
+                print(f'CONTACT FORM ERROR: {error_msg}')
+                messages.error(request, 'Failed to send message. Please try again later.')
         else:
             messages.error(request, 'Please fill in all required fields.')
         return redirect('store:contact')
@@ -807,24 +810,6 @@ def activate_view(request, uidb64, token):
 
 
 @require_http_methods(['GET', 'POST'])
-def contact_view(request):
-    """Simple contact page: shows a form and on POST sends a console email (dev)."""
-    sent = False
-    if request.method == 'POST':
-        name = request.POST.get('name', '')
-        email = request.POST.get('email', '')
-        message = request.POST.get('message', '')
-        subject = f'Contact form from {name or email}'
-        body = f'From: {name} <{email}>\n\n{message}'
-        try:
-            send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [settings.DEFAULT_FROM_EMAIL])
-            messages.success(request, 'Thanks — your message was sent (dev).')
-            sent = True
-        except Exception:
-            messages.error(request, 'Failed to send message (dev).')
-    return render(request, 'store/contact.html', {'sent': sent})
-
-
 def api_cart_add(request):
     # Expects POST with product_id and qty (int)
     if request.method != 'POST':
