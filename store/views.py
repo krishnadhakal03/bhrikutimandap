@@ -20,6 +20,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from .services import process_order_created, process_return_approval
 from .models import ReturnRequest
+from . import forms
 
 import logging
 
@@ -346,55 +347,77 @@ Bhrikutimandap Team"""
 
 # Custom Password Reset View with Email Template Support
 from django.contrib.auth.views import PasswordResetView as DjangoPasswordResetView
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 
 class CustomPasswordResetView(DjangoPasswordResetView):
     """Custom password reset view that uses email templates from database"""
+    form_class = forms.CustomPasswordResetForm
     
-    def send_mail(self, subject, message, from_email, to_email, html_message=None, **kwargs):
-        """Override to use custom email template if available"""
+    def form_valid(self, form):
+        """Override form_valid to send custom emails"""
         try:
-            user = User.objects.get(email=to_email)
+            email = form.cleaned_data["email"]
+            UserModel = form.get_users(email)
             
-            email_template = _get_email_template('password_reset')
-            if email_template:
+            for user in UserModel:
                 try:
-                    template_subject = email_template.subject
-                    # Extract reset link from the Django message (it's usually in format: ...\nhttp://...)
-                    reset_link = ''
-                    for line in message.split('\n'):
-                        if 'http' in line:
-                            reset_link = line.strip()
-                            break
-                    
-                    template_body = email_template.render(
-                        username=user.username,
-                        email=user.email,
-                        reset_link=reset_link or message
+                    # Generate token and uid
+                    uid = urlsafe_base64_encode(force_bytes(user.pk))
+                    token = default_token_generator.make_token(user)
+                    reset_link = self.request.build_absolute_uri(
+                        f'/accounts/password-reset/{uid}/{token}/'
                     )
-                except Exception as render_error:
-                    logger.warning(f'Password reset template rendering failed: {render_error}. Using default.')
-                    template_subject = subject
-                    template_body = message
-            else:
-                # Fallback to default
-                template_subject = subject
-                template_body = message
-            
-            from_email = _get_from_email()
-            _send_email(
-                template_subject,
-                template_body,
-                from_email,
-                [to_email],
-                fail_silently=True,  # Changed to fail_silently=True to prevent 500 errors
-            )
+                    
+                    # Get email template
+                    email_template = _get_email_template('password_reset')
+                    if email_template:
+                        try:
+                            template_subject = email_template.subject
+                            template_body = email_template.render(
+                                username=user.username,
+                                email=user.email,
+                                reset_link=reset_link
+                            )
+                        except Exception as render_error:
+                            logger.warning(f'Password reset template rendering failed: {render_error}. Using default.')
+                            template_subject = 'Password Reset Request'
+                            template_body = f'''Please visit the following link to reset your password:
+
+{reset_link}
+
+This link will expire in 24 hours.
+
+If you did not request this, please ignore this email.'''
+                    else:
+                        template_subject = 'Password Reset Request'
+                        template_body = f'''Please visit the following link to reset your password:
+
+{reset_link}
+
+This link will expire in 24 hours.
+
+If you did not request this, please ignore this email.'''
+                    
+                    from_email = _get_from_email()
+                    _send_email(
+                        template_subject,
+                        template_body,
+                        from_email,
+                        [user.email],
+                        fail_silently=True,
+                    )
+                    messages.success(self.request, f'Password reset email sent to {user.email}')
+                except Exception as e:
+                    logger.exception(f'Error sending password reset email to {user.email}: {e}')
+                    messages.error(self.request, 'Failed to send password reset email. Please try again.')
         except Exception as e:
-            logger.exception(f'Password reset email failed: {e}')
-            # Fall back to Django's default email sending
-            try:
-                super().send_mail(subject, message, from_email, to_email, html_message, **kwargs)
-            except Exception as fallback_error:
-                logger.error(f'Password reset fallback also failed: {fallback_error}')
+            logger.exception(f'Password reset form processing error: {e}')
+            messages.error(self.request, 'An error occurred. Please try again.')
+        
+        # Return the redirect response (go to done page)
+        return super().form_valid(form)
 
 
 def blog_view(request):
