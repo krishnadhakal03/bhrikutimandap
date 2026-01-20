@@ -194,6 +194,25 @@ class UserAdmin(admin.ModelAdmin):
         ('Role & Permissions', {'fields': ('role', 'is_active', 'is_staff', 'is_superuser', 'verified', 'approved_by_admin')}),
         ('Dates', {'fields': ('date_joined', 'last_login'), 'classes': ('collapse',)}),
     )
+    
+    def get_fieldsets(self, request, obj=None):
+        """
+        Show readonly notice for is_staff and is_superuser when role is admin.
+        """
+        fieldsets = super().get_fieldsets(request, obj)
+        return fieldsets
+    
+    def get_readonly_fields(self, request, obj=None):
+        """
+        Make is_staff and is_superuser readonly when role is 'admin' since they're auto-managed.
+        """
+        readonly = list(super().get_readonly_fields(request, obj))
+        if obj and obj.role == 'admin':
+            if 'is_staff' not in readonly:
+                readonly.append('is_staff')
+            if 'is_superuser' not in readonly:
+                readonly.append('is_superuser')
+        return readonly
 
     def role_badge(self, obj):
         colors = {
@@ -237,12 +256,25 @@ class UserAdmin(admin.ModelAdmin):
     activate_users.short_description = 'Activate selected users'
 
     def save_model(self, request, obj, form, change):
-        """Override save to ensure admin role gets proper permissions"""
-        # The signal will handle most of this, but ensure it's applied before save
+        """
+        Override save to ensure:
+        1. Admin users always have is_staff and is_superuser set
+        2. New admin users are active by default
+        3. Admin credentials are properly synced with role
+        """
+        # If role is 'admin', ensure admin credentials are set
         if obj.role == 'admin':
             obj.is_staff = True
             obj.is_superuser = True
+            # Make admin users active by default
+            if not change:  # New user
+                obj.is_active = True
+                
         super().save_model(request, obj, form, change)
+        
+        # Show helpful message if this is an admin user
+        if obj.role == 'admin':
+            self.message_user(request, f'✓ Admin user "{obj.username}" saved. Admin permissions automatically set.', messages.SUCCESS)
 
 
 @admin.register(Product)
