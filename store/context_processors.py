@@ -1,3 +1,4 @@
+from django.conf import settings
 from .models import Cart, CartItem, SiteSettings
 
 
@@ -13,6 +14,11 @@ def cart_count(request):
         cart = request.session.get('cart', {})
         count = sum(cart.values())
     return {'cart_count': count}
+
+
+def static_version(request):
+    """Add STATIC_VERSION to all template contexts for cache busting."""
+    return {'STATIC_VERSION': getattr(settings, 'STATIC_VERSION', '1.0')}
 
 
 def site_settings(request):

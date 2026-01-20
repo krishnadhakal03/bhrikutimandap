@@ -215,6 +215,13 @@ jobs:
             $COMPOSE --env-file .env.prod -f compose.prod.yml exec -T web python manage.py migrate
             $COMPOSE --env-file .env.prod -f compose.prod.yml exec -T web python manage.py collectstatic --noinput
 
+            # Cache busting: increment version on each deployment
+            # This forces browsers to fetch fresh static files
+            CURRENT_VERSION=$(grep "^STATIC_VERSION=" .env.prod 2>/dev/null || echo "STATIC_VERSION=1.0")
+            TIMESTAMP=$(date +%s)
+            echo "STATIC_VERSION=1.$(($TIMESTAMP))" >> .env.prod
+            echo "Cache busting version updated: 1.$TIMESTAMP"
+
             # Basic health check
             echo "== Health check =="
             for i in $(seq 1 30); do

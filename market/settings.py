@@ -100,6 +100,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Add store context processors
 TEMPLATES[0]['OPTIONS']['context_processors'].append('store.context_processors.cart_count')
+TEMPLATES[0]['OPTIONS']['context_processors'].append('store.context_processors.static_version')
 TEMPLATES[0]['OPTIONS']['context_processors'].append('store.context_processors.site_settings')
 
 # Password validation
@@ -168,12 +169,16 @@ CSRF_TRUSTED_ORIGINS = [
 # WhiteNoise for static files (simple production setup behind Nginx)
 if not DEBUG:
     MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
-    # Use ManifestStaticFilesStorage with WhiteNoise for cache busting
-    # This appends a content hash to static filenames, forcing browsers to refresh on updates
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    # Use compressed static files storage
+    # Cache busting is handled via HTTP headers (set in Nginx) and version parameter in templates
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 else:
     # Development: use default static files storage
     STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
+# Static files version for cache busting (update this on each deployment)
+# Use in templates as: {% static 'file.css' %}?v={{ STATIC_VERSION }}
+STATIC_VERSION = os.environ.get('STATIC_VERSION', '1.0')
 
 # Email backend
 import sys

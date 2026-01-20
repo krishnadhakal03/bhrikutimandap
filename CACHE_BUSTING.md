@@ -3,76 +3,96 @@
 ## Problem
 After CSS/HTML changes are deployed to production, browsers cache the old files. This requires users to clear their browser cache or use incognito mode to see the latest changes.
 
-## Solution: Content-Hash Based Cache Busting
+## Solution: Version-Based Cache Busting
 
-We use Django's **ManifestStaticFilesStorage** (via WhiteNoise's `CompressedManifestStaticFilesStorage`) to automatically append a content hash to static file names.
+We use a simple **version parameter** approach that automatically increments on each deployment. This forces browsers to fetch fresh static files without modifying filenames.
 
 ### How It Works
 
-1. **On Deployment (`collectstatic`)**
-   - During `python manage.py collectstatic`, Django computes a hash of each static file's content
-   - Original file: `static/admin/css/bhrikutimandap-admin.css`
-   - Hashed file: `staticfiles/admin/css/bhrikutimandap-admin.12345abcde.css`
-   - A manifest file (`staticfiles/manifest.json`) maps original names to hashed names
+1. **On Deployment**
+   - CICD generates a unique `STATIC_VERSION` using the deployment timestamp
+   - Version is stored in `.env.prod` and passed to Django settings
+   - Example: `STATIC_VERSION=1.1705801547` (version 1 + unix timestamp)
 
 2. **In Templates**
-   - Instead of hardcoding URLs, use the `{% static %}` template tag:
+   - Use the `{% static %}` template tag (always do this!):
      ```html
      <!-- ✓ Correct (uses cache busting) -->
-     <link rel="stylesheet" href="{% static 'admin/css/bhrikutimandap-admin.css' %}">
+     <link rel="stylesheet" href="{% static 'admin/css/bhrikutimandap-admin.css' %}?v={{ STATIC_VERSION }}">
+     <script src="{% static 'js/main.js' %}?v={{ STATIC_VERSION }}"></script>
      
      <!-- ✗ Avoid (won't use cache busting) -->
      <link rel="stylesheet" href="/static/admin/css/bhrikutimandap-admin.css">
      ```
-   - Django replaces the tag with the hashed filename
+   - The version parameter forces browsers to treat updated files as new
 
 3. **Browser Behavior**
-   - When you push CSS changes → hash changes → filename changes
-   - Browsers see a "new" file URL → fetch fresh copy
-   - No need for users to clear cache!
+   - When you push CSS changes → deployment increments version
+   - URL changes: `/static/style.css?v=1.1705801234` → `/static/style.css?v=1.1705801547`
+   - Browsers see different URL → fetch fresh copy
+   - No manual cache clearing needed!
 
 ## CICD Integration
 
-Your current CICD flow already handles this:
+Your CICD workflow automatically handles this:
 
 ```yaml
 # Deploy step in .github/workflows/ci-cd.yml
-$COMPOSE --env-file .env.prod -f compose.prod.yml exec -T web python manage.py collectstatic --noinput
-```
 
-This runs on **every deployment**, automatically regenerating hashes for changed files.
+# Run migrations and collectstatic
+$COMPOSE --env-file .env.prod -f compose.prod.yml exec -T web python manage.py migrate
+$COMPOSE --env-file .env.prod -f compose.prod.yml exec -T web python manage.py collectstatic --noinput
+
+# Cache busting: increment version on each deployment
+CURRENT_VERSION=$(grep "^STATIC_VERSION=" .env.prod 2>/dev/null || echo "STATIC_VERSION=1.0")
+TIMESTAMP=$(date +%s)
+echo "STATIC_VERSION=1.$(($TIMESTAMP))" >> .env.prod
+echo "Cache busting version updated: 1.$TIMESTAMP"
+```
 
 ## Configuration
 
 In `market/settings.py`:
 
 ```python
-# Production: Use manifest storage for cache busting
-if not DEBUG:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-else:
-    # Development: standard storage (no hashing)
-    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+# Static files version for cache busting
+# Automatically set by CICD on each deployment
+STATIC_VERSION = os.environ.get('STATIC_VERSION', '1.0')
 ```
 
-## Long-Term Cache Headers
+Pass to templates via context processor:
 
-Additionally, configure your web server to set long cache expiration headers:
+```python
+# In store/context_processors.py or similar
+def static_version(request):
+    return {'STATIC_VERSION': settings.STATIC_VERSION}
+```
 
-### Nginx (already reverse-proxying your app)
+## Why This Approach?
+
+✓ **Simple**: Just add `?v=VERSION` to URLs
+✓ **Robust**: Works with any CSS/static file structure
+✓ **No filename changes**: Avoids manifest file issues
+✓ **Automatic**: Increments on every deployment
+✓ **Reliable**: Works across all browsers and CDNs
+
+## HTTP Cache Headers (Nginx)
+
+For even better performance, configure long cache expiration headers:
+
 ```nginx
 # Add to your nginx config (e.g., `/etc/nginx/sites-available/bhrikutimandap`)
 location ~ ^/static/ {
-    # Cache hashed static files for 1 year (they won't change due to hash)
-    expires 365d;
-    add_header Cache-Control "public, immutable";
+    # Cache static files for 30 days since they change with version parameter
+    expires 30d;
+    add_header Cache-Control "public, must-revalidate";
     access_log off;
 }
 
 location ~ ^/media/ {
-    # Cache media files for 30 days
-    expires 30d;
-    add_header Cache-Control "public";
+    # Cache media for 7 days
+    expires 7d;
+    add_header Cache-Control "public, must-revalidate";
 }
 
 location / {
@@ -85,54 +105,52 @@ location / {
 
 1. Push CSS/HTML changes to GitHub
 2. GitHub Actions deploys to VPS
-3. Deploy runs: `python manage.py collectstatic`
-4. Django hashes all files:
-   - `bhrikutimandap-admin.css` → `bhrikutimandap-admin.a1b2c3d4e5f6.css` (new hash)
-5. Browsers see new URL → fetch fresh version
-6. No manual cache clearing needed! ✓
+3. Deploy runs: `collectstatic` and increments `STATIC_VERSION`
+   - Old version: `?v=1.1705801234`
+   - New version: `?v=1.1705801547`
+4. Browsers see new URL → fetch fresh version
+5. No manual cache clearing needed! ✓
 
 ## Testing Locally
 
 To test cache busting locally:
 
 ```bash
-# Enable manifest storage temporarily
-export DEBUG=False
-
-# Collect static files
-python manage.py collectstatic --noinput
-
-# Check generated manifest
-cat staticfiles/manifest.json
+# Set a version manually
+export STATIC_VERSION=1.1234567890
 
 # Run development server
 python manage.py runserver
+
+# Check that the version appears in generated HTML
+# View source in browser and search for ?v=
 ```
 
-You should see hashed filenames in:
-- Network tab (DevTools)
-- Generated HTML (view source)
-
-Then update a CSS file and run `collectstatic` again—the hash should change.
+Update the version and refresh—you should see the new parameter in the HTML.
 
 ## Troubleshooting
 
-### Issue: `{% static %}` tag not updating
-- **Cause**: Not using the template tag in templates
-- **Fix**: Replace hardcoded paths with `{% load static %}` and `{% static 'path/to/file' %}`
+### Issue: Version parameter not appearing in HTML
+- **Cause**: Not using the template tag or context processor not added
+- **Fix**: Use `{% static 'file.css' %}?v={{ STATIC_VERSION }}` in templates
+- **Fix**: Add context processor to pass `STATIC_VERSION` to all templates
 
-### Issue: Changes not showing in production
-- **Cause**: Deploy didn't run `collectstatic`
-- **Fix**: Ensure CICD workflow includes the collectstatic step (it does by default)
+### Issue: Changes not showing after deployment
+- **Cause**: Old version still in browser cache
+- **Fix**: Force refresh (Ctrl+Shift+R or Cmd+Shift+R)
+- **Fix**: Deployment may not have completed; check logs
 
-### Issue: Hashes don't change after CSS update
-- **Cause**: File not actually modified (whitespace, comments, etc.)
-- **Fix**: Make substantive changes; whitespace affects the hash
+### Issue: Version parameter showing as empty
+- **Cause**: `STATIC_VERSION` not set in environment
+- **Fix**: Ensure `.env.prod` has `STATIC_VERSION=1.xxx` after deployment
+- **Fix**: Check CICD deploy logs for errors
 
 ## Benefits
 
 ✓ **No manual cache clearing needed**
 ✓ **Users always get latest version**
-✓ **Reduces support requests**
-✓ **Can set aggressive cache headers** (files won't change unless hash changes)
-✓ **Zero-downtime deployments** (old and new versions can coexist briefly)
+✓ **Reduces support requests** ("Please refresh your browser")
+✓ **Can set aggressive cache headers** (since version changes with updates)
+✓ **Works reliably** across browsers, CDNs, and proxies
+✓ **Simple to implement** and debug
+
