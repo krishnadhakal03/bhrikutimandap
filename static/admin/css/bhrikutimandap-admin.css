@@ -206,6 +206,7 @@ select {
   background: #fff;
   color: var(--gray-dark);
   padding: 10px 12px;
+  height: 3.875rem;
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
@@ -330,7 +331,7 @@ table tbody tr:hover {
 
 /* Allow wrapping instead of cutting off long labels */
 #nav-sidebar .module td {
-  white-space: normal;
+  /* white-space: normal removed for better nav sidebar appearance */
 }
 
 #nav-sidebar a {
