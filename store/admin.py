@@ -5,6 +5,7 @@ from tempfile import NamedTemporaryFile
 from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
+from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 from django.core.exceptions import PermissionDenied
 from django.core.management import call_command
 from django.http import HttpResponse
@@ -20,6 +21,35 @@ from .models import (
     AgentProfile, StockHistory, SalesTransaction, StockAlert, MarketDemandSuggestion,
     DeliveryPartner, Vehicle, OrderDelivery, DeliveryTracking, ReturnRequest, Blog, EmailTemplate
 )
+
+
+# Custom Forms for User Admin with proper password handling
+class CustomUserCreationForm(UserCreationForm):
+    """Custom form for creating users with role field"""
+    role = forms.ChoiceField(
+        choices=User.ROLE_CHOICES,
+        initial='customer',
+        help_text='Select user role: Customer, Agent, or Administrator'
+    )
+    
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name', 'role', 'phone', 'company')
+
+
+class CustomUserChangeForm(UserChangeForm):
+    """Custom form for editing users with role field"""
+    role = forms.ChoiceField(
+        choices=User.ROLE_CHOICES,
+        help_text='Select user role: Customer, Agent, or Administrator'
+    )
+    
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name', 'phone', 'company', 
+                  'address_line1', 'address_line2', 'city', 'state', 'country', 'postal_code',
+                  'role', 'is_active', 'is_staff', 'is_superuser', 'verified', 'approved_by_admin',
+                  'date_joined', 'last_login')
 
 
 # Custom Admin Site Styling
@@ -180,6 +210,9 @@ admin.site.get_urls = _admin_get_urls_with_tools
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
+    form = CustomUserChangeForm
+    add_form = CustomUserCreationForm
+    
     list_display = ('username', 'email', 'role_badge', 'phone', 'company', 'approval_badge', 'status_badge')
     list_filter = ('role', 'approved_by_admin', 'verified', 'is_active', 'date_joined')
     search_fields = ('username', 'email', 'first_name', 'last_name', 'phone', 'company')
@@ -195,12 +228,25 @@ class UserAdmin(admin.ModelAdmin):
         ('Dates', {'fields': ('date_joined', 'last_login'), 'classes': ('collapse',)}),
     )
     
+    add_fieldsets = (
+        (None, {'classes': ('wide',), 'fields': ('username', 'email', 'password1', 'password2', 'role')}),
+        ('Personal', {'fields': ('first_name', 'last_name', 'phone', 'company')}),
+        ('Permissions', {'fields': ('is_active',)}),
+    )
+    
     def get_fieldsets(self, request, obj=None):
-        """
-        Show readonly notice for is_staff and is_superuser when role is admin.
-        """
-        fieldsets = super().get_fieldsets(request, obj)
-        return fieldsets
+        """Use add_fieldsets for new users, fieldsets for existing"""
+        if not obj:  # New user
+            return self.add_fieldsets
+        return super().get_fieldsets(request, obj)
+    
+    def get_form(self, request, obj=None, **kwargs):
+        """Use add_form for new users, form for existing"""
+        if obj is None:  # New user
+            self.form = self.add_form
+        else:
+            self.form = self.form or CustomUserChangeForm
+        return super().get_form(request, obj, **kwargs)
     
     def get_readonly_fields(self, request, obj=None):
         """
