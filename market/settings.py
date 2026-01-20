@@ -168,7 +168,12 @@ CSRF_TRUSTED_ORIGINS = [
 # WhiteNoise for static files (simple production setup behind Nginx)
 if not DEBUG:
     MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+    # Use ManifestStaticFilesStorage with WhiteNoise for cache busting
+    # This appends a content hash to static filenames, forcing browsers to refresh on updates
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+else:
+    # Development: use default static files storage
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # Email backend
 import sys

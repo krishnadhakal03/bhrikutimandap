@@ -80,8 +80,19 @@ Deploy steps (high-level):
 4. Require `.env.prod` to exist
 5. `docker build -t bhrikutimandap:deploy .`
 6. `docker compose --env-file .env.prod -f compose.prod.yml up -d`
-7. Run Django migrations + collectstatic
+7. Run Django migrations + collectstatic (with cache busting via manifest storage)
 8. Health check `curl http://127.0.0.1:8000/`
+
+### Cache Busting on Deployment
+
+Step 7 runs `collectstatic`, which:
+- Computes content hashes for all static files (CSS, JS, images, etc.)
+- Renames files from `bhrikutimandap-admin.css` → `bhrikutimandap-admin.a1b2c3d4e5f6.css`
+- Updates URL references in templates automatically via the `{% static %}` tag
+
+**Result**: When you push CSS/HTML changes, the hashes change → browsers fetch fresh files without manual cache clearing.
+
+See [CACHE_BUSTING.md](../CACHE_BUSTING.md) for detailed explanation and troubleshooting.
 
 ---
 
