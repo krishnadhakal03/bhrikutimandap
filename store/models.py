@@ -805,3 +805,30 @@ Welcome: {username}, {email}
             return self.body.format(**context)
         except KeyError as e:
             return f"[Template Error: Missing variable {e}]"
+
+
+# Signal handlers for User role management
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
+
+
+@receiver(pre_save, sender=User)
+def update_user_permissions_on_role_change(sender, instance, **kwargs):
+    """
+    Automatically set is_staff and is_superuser when role is set to 'admin'.
+    Remove these flags when role is changed from 'admin' to something else.
+    """
+    if instance.role == 'admin':
+        instance.is_staff = True
+        instance.is_superuser = True
+    elif instance.role != 'admin':
+        # Only reset if they're explicitly changing FROM admin to something else
+        # Check if this is an existing user and their role is changing
+        try:
+            old_instance = User.objects.get(pk=instance.pk)
+            if old_instance.role == 'admin':
+                instance.is_staff = False
+                instance.is_superuser = False
+        except User.DoesNotExist:
+            # New user, not changing from admin
+            pass

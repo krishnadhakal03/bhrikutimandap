@@ -236,6 +236,14 @@ class UserAdmin(admin.ModelAdmin):
         self.message_user(request, f'{updated} user(s) activated.')
     activate_users.short_description = 'Activate selected users'
 
+    def save_model(self, request, obj, form, change):
+        """Override save to ensure admin role gets proper permissions"""
+        # The signal will handle most of this, but ensure it's applied before save
+        if obj.role == 'admin':
+            obj.is_staff = True
+            obj.is_superuser = True
+        super().save_model(request, obj, form, change)
+
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
