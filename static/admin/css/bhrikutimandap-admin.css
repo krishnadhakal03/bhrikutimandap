@@ -204,9 +204,20 @@ select {
   border: 1px solid rgba(55, 71, 79, 0.2);
   border-radius: 8px;
   background: #fff;
-  color: inherit;
+  color: var(--gray-dark);
   padding: 10px 12px;
   transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+select option {
+  color: var(--gray-dark);
+  background-color: #fff;
+}
+
+select option:checked {
+  background: linear-gradient(#8894ff, #8894ff);
+  background-color: var(--primary-color-light) !important;
+  color: #fff;
 }
 
 input[type="text"]:focus,
