@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm, PasswordResetForm
-from .models import User, Address, PaymentMethod, AgentProfile, Product, StockHistory, SalesTransaction, StockAlert
+from .models import User, Address, PaymentMethod, AgentProfile, Product, StockHistory, SalesTransaction, StockAlert, Category, ProductReview, ProductMedia
 
 
 class UserProfileForm(forms.ModelForm):
@@ -35,6 +35,25 @@ class UserProfileForm(forms.ModelForm):
         if User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError("This email is already in use.")
         return email
+
+
+class ProductReviewForm(forms.ModelForm):
+    """Form for customer reviews"""
+    
+    class Meta:
+        model = ProductReview
+        fields = ['rating', 'comment']
+        widgets = {
+            'rating': forms.Select(
+                choices=[(i, f'{"★" * i}{"☆" * (5-i)}') for i in range(5, 0, -1)],
+                attrs={'class': 'form-control'}
+            ),
+            'comment': forms.Textarea(attrs={
+                'class': 'form-control',
+                'placeholder': 'Write your product review here...',
+                'rows': 4
+            }),
+        }
 
 
 class AddressForm(forms.ModelForm):
@@ -228,12 +247,13 @@ class AgentProductForm(forms.ModelForm):
     
     class Meta:
         model = Product
-        fields = ['title', 'description', 'price', 'stock', 'delivery_rules', 'payment_methods', 'image', 'expiration_date']
+        fields = ['title', 'category', 'description', 'price', 'stock', 'delivery_rules', 'payment_methods', 'image', 'expiration_date']
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Product Name'
             }),
+            # category widget is handled by the explicit field definition below
             'description': forms.Textarea(attrs={
                 'class': 'form-control',
                 'placeholder': 'Product Description',
@@ -267,6 +287,30 @@ class AgentProductForm(forms.ModelForm):
                 'type': 'datetime-local'
             }),
         }
+
+    category = forms.ModelChoiceField(
+        queryset=Category.objects.all(),
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        empty_label="Select Category"
+    )
+
+    image = forms.ImageField(
+        required=True,
+        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+        error_messages={'required': 'At least one primary product image is required.'}
+    )
+
+    additional_media = forms.FileField(
+        widget=forms.FileInput(attrs={'class': 'form-control'}),
+        required=False,
+        help_text="Upload more images or videos for your product (Hold Ctrl/Cmd to select multiple)."
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Enable multiple file selection for additional_media
+        self.fields['additional_media'].widget.attrs.update({'multiple': True})
 
 
 class StockAdjustmentForm(forms.ModelForm):

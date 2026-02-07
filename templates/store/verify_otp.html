@@ -1,0 +1,57 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Verify OTP - Bhrikutimandap{% endblock %}
+
+{% block content %}
+<section class="login_box_area section-margin">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 offset-lg-3">
+                <div class="login_form_inner"
+                    style="padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 10px; background: white;">
+                    <h3 style="margin-bottom: 20px;">Verify Your Account</h3>
+                    <p>We've sent a 6-digit OTP to <strong>{{ email }}</strong>. Please enter it below to activate your
+                        account.</p>
+                    <form class="row login_form" action="{% url 'store:verify_otp' %}" method="post" id="otpForm">
+                        {% csrf_token %}
+                        <div class="col-md-12 form-group">
+                            <input type="text" class="form-control" id="otp" name="otp" placeholder="Enter 6-digit OTP"
+                                maxlength="6" pattern="\d{6}" required
+                                style="text-align: center; font-size: 24px; letter-spacing: 15px; font-weight: bold; padding: 15px;">
+                        </div>
+                        <div class="col-md-12 form-group">
+                            <button type="submit" value="submit" class="button button-login w-100"
+                                style="padding: 12px; font-size: 1.1rem; font-weight: 600;">
+                                Verify & Activate
+                            </button>
+                        </div>
+                    </form>
+                    <div style="margin-top: 20px; font-size: 0.9rem; color: #666; text-align: center;">
+                        Did't receive the code? 
+                        <form action="{% url 'store:resend_otp' %}" method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" style="background: none; border: none; padding: 0; color: var(--primary-color); font-weight: 600; cursor: pointer; text-decoration: underline;">
+                                Resend OTP
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    // Simple validation and focus
+    document.getElementById('otp').focus();
+
+    document.getElementById('otpForm').addEventListener('submit', function (e) {
+        const otp = document.getElementById('otp').value;
+        if (otp.length !== 6 || !/^\d+$/.test(otp)) {
+            e.preventDefault();
+            alert('Please enter a valid 6-digit OTP.');
+        }
+    });
+</script>
+{% endblock %}

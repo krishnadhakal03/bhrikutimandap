@@ -2,7 +2,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Product, Order, OrderItem, Address, PaymentMethod, Blog
+from .models import Product, Order, OrderItem, Address, PaymentMethod, Blog, ProductMedia, ProductReview
+from .forms import ProductReviewForm
+from django.db import models
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 import json
@@ -19,7 +21,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from .services import process_order_created, process_return_approval
-from .models import ReturnRequest
+from .models import ReturnRequest, HomePage, ContactPage, AuthPage, ProductPageSettings, AgentPageSettings
 from . import forms
 
 import logging
@@ -75,35 +77,68 @@ def _get_email_template(template_name):
         return None
 
 
-def _send_email(subject, message, from_email, recipient_list, fail_silently=False):
+def _send_email(subject, message, from_email, recipient_list, fail_silently=False, html_message=None):
     """
     Send email using dynamic SMTP configuration from SiteSettings.
-    In DEBUG/test mode, uses locmem or console backend.
-    In production, uses SMTP with dynamic settings from SiteSettings.
+    Prioritizes SiteSettings if password is configured, otherwise follows Django settings (DEBUG=Console).
+    Auto-detects HTML content if html_message is not provided.
+    Supports inline images if 'cid:' reference is found in html_message.
     """
     try:
         import sys
-        # In DEBUG mode or test mode, use configured test backend (locmem/console)
-        if settings.DEBUG or 'test' in sys.argv:
-            send_mail(subject, message, from_email, recipient_list, fail_silently=fail_silently)
-        else:
-            # Get connection with dynamic settings
+        from .models import SiteSettings
+        from django.utils.html import strip_tags
+        from django.core.mail import EmailMultiAlternatives
+        from email.mime.image import MIMEImage
+        
+        # Auto-detect HTML if not explicitly provided
+        if not html_message and (str(message).strip().startswith('<') or '&gt;' in str(message)):
+            # Simple heuristic: if it looks like HTML, treat as HTML
+            html_message = message
+            message = strip_tags(message) # Fallback plain text
+            
+        # Check if we have valid SMTP credentials in DB
+        site_settings = SiteSettings.get_instance()
+        has_db_credentials = bool(site_settings.email_host_password)
+        
+        connection = None
+        if has_db_credentials:
             connection = _get_email_connection()
-            send_mail(
-                subject, 
-                message, 
-                from_email, 
-                recipient_list, 
-                connection=connection,
-                fail_silently=fail_silently
-            )
+        elif not (settings.DEBUG or 'test' in sys.argv):
+             # Production default behavior
+            connection = _get_email_connection()
+            
+        # Create EmailMultiAlternatives object
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=message,
+            from_email=from_email,
+            to=recipient_list,
+            connection=connection
+        )
+        
+        if html_message:
+            email.attach_alternative(html_message, "text/html")
+            
+            # Check for inline logo requirement
+            if 'cid:logo' in html_message and site_settings.logo:
+                try:
+                    # Attach logo as inline image
+                    logo_path = site_settings.logo.path
+                    with open(logo_path, 'rb') as f:
+                        logo_data = f.read()
+                        logo = MIMEImage(logo_data)
+                        logo.add_header('Content-ID', '<logo>')
+                        logo.add_header('Content-Disposition', 'inline', filename='logo.png')
+                        email.attach(logo)
+                except Exception as e:
+                    logger.error(f"Failed to attach inline logo: {e}")
+
+        email.send(fail_silently=fail_silently)
+            
     except Exception as e:
         error_msg = f"Email send failed: {str(e)}"
         logger.error(error_msg)
-        if not fail_silently:
-            raise
-        logger.exception(error_msg)
-        # Don't re-raise in production, just log
         if not fail_silently:
             raise
 
@@ -115,6 +150,7 @@ def product_list(request):
     search = request.GET.get('search', '')
     sort_price = request.GET.get('sort_price', '')
     agent_id = request.GET.get('agent', '')
+    category_slug = request.GET.get('category', '')
     
     # Start with all products that are in stock
     products = Product.objects.filter(stock__gt=0)
@@ -128,7 +164,11 @@ def product_list(request):
     
     # Apply agent filter
     if agent_id:
-        products = products.filter(agent_id=agent_id)
+        products = products.filter(supplier_id=agent_id)
+    
+    # Apply category filter
+    if category_slug:
+        products = products.filter(category__slug=category_slug)
     
     # Apply price sorting
     if sort_price == 'low_to_high':
@@ -162,6 +202,7 @@ def home(request):
     search = request.GET.get('search', '')
     sort_price = request.GET.get('sort_price', '')
     agent_id = request.GET.get('agent', '')
+    category_slug = request.GET.get('category', '')
     
     # Start with all products that are in stock
     products = Product.objects.filter(stock__gt=0)
@@ -175,7 +216,11 @@ def home(request):
     
     # Apply agent filter
     if agent_id:
-        products = products.filter(agent_id=agent_id)
+        products = products.filter(supplier_id=agent_id)
+    
+    # Apply category filter
+    if category_slug:
+        products = products.filter(category__slug=category_slug)
     
     # Apply price sorting
     if sort_price == 'low_to_high':
@@ -199,8 +244,12 @@ def home(request):
     
     # Get best sellers (top 8 products)
     best_sellers = Product.objects.filter(stock__gt=0).order_by('-id')[:8]
+
+    # Get Hero Carousel products (Random 5)
+    hero_products = Product.objects.filter(stock__gt=0).order_by('?')[:5]
     
     return render(request, 'store/home.html', {
+        'current_page': HomePage.load(),
         'products': products_list,
         'best_sellers': best_sellers,
         'agents': agents,
@@ -345,7 +394,7 @@ Bhrikutimandap Team"""
         else:
             messages.error(request, 'Please fill in all required fields.')
         return redirect('store:contact')
-    return render(request, 'store/contact.html')
+    return render(request, 'store/contact.html', {'current_page': ContactPage.load()})
 
 
 # Custom Password Reset View with Email Template Support
@@ -377,7 +426,11 @@ class CustomPasswordResetView(DjangoPasswordResetView):
                     email_template = _get_email_template('password_reset')
                     if email_template:
                         try:
-                            template_subject = email_template.subject
+                            template_subject = email_template.render_subject(
+                                username=user.username,
+                                email=user.email,
+                                reset_link=reset_link
+                            )
                             template_body = email_template.render(
                                 username=user.username,
                                 email=user.email,
@@ -443,13 +496,55 @@ def blog_detail_view(request, slug):
 def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk)
     
+    # Get all media (images & videos)
+    media = product.media.all()
+    
+    # Get reviews
+    reviews = product.reviews.all()
+    avg_rating = reviews.aggregate(models.Avg('rating'))['rating__avg'] or 0
+    full_stars = int(avg_rating)
+    half_star = (avg_rating - full_stars) >= 0.5
+    empty_stars = 5 - full_stars - (1 if half_star else 0)
+    
+    review_form = ProductReviewForm()
+    
     # Get related products
     related_products = Product.objects.exclude(pk=pk)[:4]
     
     return render(request, 'store/product_detail.html', {
         'product': product,
+        'media': media,
+        'reviews': reviews,
+        'avg_rating': avg_rating,
+        'full_stars': range(full_stars),
+        'half_star': half_star,
+        'empty_stars': range(empty_stars),
+        'review_form': review_form,
         'related_products': related_products
     })
+
+
+@login_required
+def add_review(request, product_id):
+    """Handle product review submission"""
+    product = get_object_or_404(Product, pk=product_id)
+    
+    if request.method == 'POST':
+        form = ProductReviewForm(request.POST)
+        if form.is_valid():
+            # Check if user already reviewed
+            if ProductReview.objects.filter(product=product, user=request.user).exists():
+                messages.warning(request, "You have already reviewed this product.")
+            else:
+                review = form.save(commit=False)
+                review.product = product
+                review.user = request.user
+                review.save()
+                messages.success(request, "Thank you for your review!")
+        else:
+            messages.error(request, "Error in review submission. Please try again.")
+            
+    return redirect('store:product_detail', pk=product_id)
 
 
 def _get_cart(request):
@@ -620,11 +715,23 @@ def checkout(request):
                 messages.error(request, 'Invalid address selected')
                 return redirect('store:checkout')
             
-            try:
-                selected_payment = PaymentMethod.objects.get(pk=selected_payment_id, user=request.user)
-            except PaymentMethod.DoesNotExist:
-                messages.error(request, 'Invalid payment method selected')
-                return redirect('store:checkout')
+            if selected_payment_id == 'cod':
+                # Handle COD - Get or Create a COD payment method for this user
+                selected_payment, created = PaymentMethod.objects.get_or_create(
+                    user=request.user,
+                    payment_type='cod',
+                    defaults={
+                        'display_name': 'Cash on Delivery',
+                        'token': 'COD',
+                        'is_default': False
+                    }
+                )
+            else:
+                try:
+                    selected_payment = PaymentMethod.objects.get(pk=selected_payment_id, user=request.user)
+                except PaymentMethod.DoesNotExist:
+                    messages.error(request, 'Invalid payment method selected')
+                    return redirect('store:checkout')
         
         # Create order
         order = Order.objects.create(
@@ -678,7 +785,7 @@ def login_view(request):
                 # Customer user - redirect to customer portal
                 return redirect('store:product_list')
         messages.error(request, 'Invalid credentials')
-    return render(request, 'store/login.html')
+    return render(request, 'store/login.html', {'current_page': AuthPage.load()})
 
 
 def logout_view(request):
@@ -718,80 +825,219 @@ def register_view(request):
                 validate_password(password)
             except ValidationError as e:
                 messages.error(request, '; '.join(e.messages))
-                return render(request, 'store/register.html')
+                return render(request, 'store/register.html', {'current_page': AuthPage.load()})
 
-            # Create inactive user and send activation email
-            user = User.objects.create_user(username=username, password=password, email=email, role=role, is_active=False)
-            # store extra profile fields
-            user.phone = phone or None
-            user.company = company or None
-            user.address_line1 = address_line1 or None
-            user.address_line2 = address_line2 or None
-            user.city = city or None
-            user.postal_code = postal_code or None
+            # Create inactive user and send activation email with extra fields
+            user = User.objects.create_user(
+                username=username, 
+                password=password, 
+                email=email, 
+                role=role, 
+                is_active=False,
+                phone=phone or None,
+                company=company or None,
+                address_line1=address_line1 or None,
+                address_line2=address_line2 or None,
+                city=city or None,
+                postal_code=postal_code or None
+            )
+            # Generate OTP instead of activation link
+            import random
+            otp = str(random.randint(100000, 999999))
+            user.otp = otp
+            user.otp_expiry = timezone.now() + timezone.timedelta(minutes=10)
             user.save()
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
-            activation_path = reverse('store:activate', kwargs={'uidb64': uid, 'token': token})
-            activation_link = request.build_absolute_uri(activation_path)
 
-            # Send activation email. In production, missing/incorrect SMTP settings should not 500 the request.
+            # Store user ID in session for OTP verification
+            request.session['registration_user_id'] = user.id
+
+            # Send OTP email using dynamic template
             try:
+                # Try to get the OTP template
+                otp_template = _get_email_template('otp_verification')
+                
                 from_email = _get_from_email()
                 
-                # Try to use email template from database, fallback to hardcoded template
-                email_template = _get_email_template('activation')
-                if email_template:
-                    subject = email_template.subject.format(username=username)
-                    activation_email_body = email_template.render(
-                        username=username,
-                        email=email,
-                        user_id=user.id,
-                        activation_link=activation_link
-                    )
-                else:
-                    # Fallback to default template
-                    subject = 'Activate your account'
-                    activation_email_body = f"""Welcome to Bhrikutimandap!
+                if otp_template:
+                    try:
+                        subject = otp_template.render_subject(username=username)
+                        otp_email_body = otp_template.render(
+                            username=username,
+                            otp=otp,
+                            # logo_url and site_title are auto-injected by render()
+                        )
+                    except Exception as e:
+                        logger.warning(f"OTP template rendering failed: {e}. Using fallback.")
+                        subject = 'Your Verification OTP'
+                        otp_email_body = f"""Welcome to Bhrikutimandap!
 
 Hello {username},
 
-Thank you for registering with us. To activate your account, please click the link below:
+Your verification OTP is: {otp}
 
-{activation_link}
-
-User Details:
-Username: {username}
-User ID: {user.id}
-Email: {email}
-
-This activation link will expire in 24 hours.
+This OTP will expire in 10 minutes.
 
 If you did not create this account, please ignore this email.
 
 Best regards,
-Bhrikutimandap Team
-"""
+Bhrikutimandap Team"""
+                else:
+                    # Fallback if no template exists
+                    subject = 'Your Verification OTP'
+                    otp_email_body = f"""Welcome to Bhrikutimandap!
+
+Hello {username},
+
+Your verification OTP is: {otp}
+
+This OTP will expire in 10 minutes.
+
+If you did not create this account, please ignore this email.
+
+Best regards,
+Bhrikutimandap Team"""
                 
                 _send_email(
                     subject,
-                    activation_email_body,
+                    otp_email_body,
                     from_email,
                     [email],
                     fail_silently=False,
                 )
-                messages.success(request, 'Registered. Please check your email to activate your account.')
+                messages.success(request, 'Registered. Please enter the OTP sent to your email to activate your account.')
             except Exception:
-                logger.exception('Registration email failed for username=%s', username)
-                # Fallback: activate immediately so registration still works.
-                user.is_active = True
-                user.save(update_fields=['is_active'])
-                if getattr(settings, 'DEBUG', False):
-                    messages.warning(request, f'Email send failed (dev). Activation link: {activation_link}')
-                else:
-                    messages.warning(request, 'Account created, but we could not send the activation email. You can login now.')
-            return redirect('store:product_list')
-    return render(request, 'store/register.html')
+                logger.exception('Registration OTP email failed for username=%s', username)
+                # Fallback: for testing/dev, if email fails, we might still want to proceed
+                print(f"DEBUG: OTP for {username} is {otp}")
+                messages.warning(request, f'Account created. For testing, your OTP is {otp}')
+            
+            return redirect('store:verify_otp')
+    return render(request, 'store/register.html', {'current_page': AuthPage.load()})
+
+
+
+def verify_otp(request):
+    """View to verify registration OTP."""
+    user_id = request.session.get('registration_user_id')
+    if not user_id:
+        messages.error(request, 'Session expired. Please register again.')
+        return redirect('store:register')
+    
+    user = get_object_or_404(User, pk=user_id)
+    
+    if request.method == 'POST':
+        otp_input = request.POST.get('otp', '')
+        
+        if not user.otp or user.otp != otp_input:
+            messages.error(request, 'Invalid OTP')
+        elif user.otp_expiry < timezone.now():
+            messages.error(request, 'OTP has expired. Please register again.')
+        else:
+            # OTP is valid
+            user.is_active = True
+            user.otp = None # Clear OTP
+            user.save()
+            
+            # Clear session
+            del request.session['registration_user_id']
+            
+            messages.success(request, 'Account verified! You can now login.')
+            return redirect('store:login')
+            
+    return render(request, 'store/verify_otp.html', {'email': user.email})
+
+
+def resend_otp(request):
+    """View to resend OTP to the user's email."""
+    if request.method != 'POST':
+        # If accessed via GET, redirect to verify_otp
+        # (Though verify_otp might redirect if session missing)
+        return redirect('store:verify_otp')
+        
+    user_id = request.session.get('registration_user_id')
+    if not user_id:
+        messages.error(request, 'Session expired. Please register again.')
+        return redirect('store:register')
+        
+    try:
+        user = User.objects.get(pk=user_id)
+        
+        # Rate limiting check (optional but good practice)
+        # For now, just regenerate and send
+        
+        # Generate new OTP
+        import random
+        otp = str(random.randint(100000, 999999))
+        user.otp = otp
+        user.otp_expiry = timezone.now() + timezone.timedelta(minutes=10)
+        user.save()
+        
+        # Send OTP email
+        try:
+            # Try to get the OTP template
+            otp_template = _get_email_template('otp_verification')
+            
+            from_email = _get_from_email()
+            
+            if otp_template:
+                try:
+                    subject = otp_template.render_subject(username=user.username)
+                    # Allow dynamic subject override for resend (optional, but good for clarity)
+                    if 'Resend' not in subject:
+                        subject = f"Resend: {subject}"
+                        
+                    otp_email_body = otp_template.render(
+                        username=user.username,
+                        otp=otp,
+                        # logo_url and site_title are auto-injected by render()
+                    )
+                except Exception as e:
+                     logger.warning(f"OTP template rendering failed: {e}. Using fallback.")
+                     subject = 'Resend: Your Verification OTP'
+                     otp_email_body = f"""Welcome to Bhrikutimandap!
+
+Hello {user.username},
+
+Your new verification OTP is: {otp}
+
+This OTP will expire in 10 minutes.
+
+If you did not request this code, please ignore this email.
+
+Best regards,
+Bhrikutimandap Team"""
+            else:
+                subject = 'Resend: Your Verification OTP'
+                otp_email_body = f"""Welcome to Bhrikutimandap!
+
+Hello {user.username},
+
+Your new verification OTP is: {otp}
+
+This OTP will expire in 10 minutes.
+
+If you did not request this code, please ignore this email.
+
+Best regards,
+Bhrikutimandap Team"""
+            
+            _send_email(
+                subject,
+                otp_email_body,
+                from_email,
+                [user.email],
+                fail_silently=False,
+            )
+            messages.success(request, f'A new OTP has been sent to {user.email}')
+        except Exception:
+            logger.exception('Resend OTP email failed for username=%s', user.username)
+            messages.error(request, 'Failed to send OTP email. Please try again later.')
+            
+    except User.DoesNotExist:
+        messages.error(request, 'User not found.')
+        return redirect('store:register')
+        
+    return redirect('store:verify_otp')
 
 
 def activate_view(request, uidb64, token):
@@ -807,6 +1053,60 @@ def activate_view(request, uidb64, token):
         return redirect('store:login')
     messages.error(request, 'Activation link invalid')
     return redirect('store:product_list')
+
+
+@require_http_methods(['POST'])
+def api_cart_update(request):
+    """
+    Update cart item quantity to an exact value.
+    If qty <= 0, remove the item.
+    """
+    try:
+        data = json.loads(request.body.decode())
+        product_id = int(data.get('product_id'))
+        qty = int(data.get('qty', 1))
+    except Exception:
+        return JsonResponse({'error': 'Invalid data'}, status=400)
+
+    try:
+        product = Product.objects.get(pk=product_id)
+    except Product.DoesNotExist:
+        return JsonResponse({'error': 'Product not found'}, status=404)
+
+    try:
+        if request.user.is_authenticated:
+            cart, _ = Cart.objects.get_or_create(user=request.user)
+            items = CartItem.objects.filter(cart=cart, product=product)
+            if items.exists():
+                ci = items.first()
+                if qty > 0:
+                    ci.quantity = qty
+                    ci.save()
+                else:
+                    ci.delete()
+                # Clean up duplicates
+                if items.count() > 1:
+                    items.exclude(pk=ci.pk).delete()
+            elif qty > 0:
+                CartItem.objects.create(cart=cart, product=product, quantity=qty)
+            
+            total_count = sum(i.quantity for i in cart.items.all())
+        else:
+            cart = _get_cart(request)
+            if qty > 0:
+                cart[str(product_id)] = qty
+            else:
+                if str(product_id) in cart:
+                    del cart[str(product_id)]
+            request.session['cart'] = cart
+            request.session.modified = True
+            total_count = sum(cart.values())
+
+        return JsonResponse({'ok': True, 'cart_count': total_count})
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @require_http_methods(['GET', 'POST'])
@@ -826,23 +1126,34 @@ def api_cart_add(request):
     except Product.DoesNotExist:
         return JsonResponse({'error': 'Product not found'}, status=404)
 
-    if request.user.is_authenticated:
-        cart, _ = Cart.objects.get_or_create(user=request.user)
-        ci, created = CartItem.objects.get_or_create(cart=cart, product=product)
-        if not created:
-            ci.quantity += qty
+    try:
+        if request.user.is_authenticated:
+            cart, _ = Cart.objects.get_or_create(user=request.user)
+            # Handle potential multiple objects returned for CartItem
+            items = CartItem.objects.filter(cart=cart, product=product)
+            if items.exists():
+                ci = items.first()
+                ci.quantity += qty
+                ci.save()
+                # Clean up duplicates if any
+                if items.count() > 1:
+                    items.exclude(pk=ci.pk).delete()
+            else:
+                CartItem.objects.create(cart=cart, product=product, quantity=qty)
+            
+            total_count = sum(i.quantity for i in cart.items.all())
         else:
-            ci.quantity = qty
-        ci.save()
-        total_count = sum(i.quantity for i in cart.items.all())
-    else:
-        cart = _get_cart(request)
-        cart[str(product_id)] = cart.get(str(product_id), 0) + qty
-        request.session['cart'] = cart
-        request.session.modified = True
-        total_count = sum(cart.values())
+            cart = _get_cart(request)
+            cart[str(product_id)] = cart.get(str(product_id), 0) + qty
+            request.session['cart'] = cart
+            request.session.modified = True
+            total_count = sum(cart.values())
 
-    return JsonResponse({'ok': True, 'cart_count': total_count})
+        return JsonResponse({'ok': True, 'cart_count': total_count})
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 def api_cart_remove(request):

@@ -49,19 +49,35 @@
       gap: 30px;
     }
 
-    .login-cta-box {
-      min-height: auto;
-      text-align: center;
+    .login-container > div:nth-child(1) {
+      order: 2;
+    }
+
+    .login-container > div:nth-child(2) {
+      order: 1;
     }
 
     .cta-button {
       align-self: center;
     }
   }
+
+  /* Responsive Spacing Utilities - More Compact */
+  .hero-padding { padding: 20px 0; }
+  .section-padding-custom { padding: 40px 0; }
+  
+  /* Override global section-margin for this page */
+  .compact-margin { margin: 40px 0 !important; }
+  
+  @media (max-width: 991px) {
+    .hero-padding { padding: 15px 0 !important; }
+    .section-padding-custom { padding: 30px 0 !important; }
+    .compact-margin { margin: 30px 0 !important; }
+  }
 </style>
 
 <!-- Banner Section -->
-<section class="hero-banner" style="padding: 40px 0;">
+<section class="hero-banner hero-padding">
   <div class="container">
     <div class="text-center">
       <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 15px;">Sign In</h1>
@@ -76,13 +92,13 @@
 </section>
 
 <!-- Login Section -->
-<section class="section-margin" style="padding: 80px 0;">
+<section class="compact-margin section-padding-custom">
   <div class="container">
     <div class="login-container">
       <!-- Left Column - Sign Up CTA -->
       <div style="flex: 1; min-width: 0;">
         <div class="login-cta-box">
-          <h3 style="font-size: 2rem; font-weight: 700; margin-bottom: 20px;">New to our platform?</h3>
+          <h3 style="font-size: 2rem; font-weight: 700; margin-bottom: 20px;">{{ auth_page.login_banner_text }}</h3>
           <p style="font-size: 1.1rem; margin-bottom: 30px; opacity: 0.95;">
             Create an account to enjoy faster checkout, order tracking, and personalized recommendations.
           </p>
@@ -109,7 +125,7 @@
       <!-- Right Column - Login Form -->
       <div style="flex: 1; min-width: 0;">
         <div>
-          <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 10px;">Welcome Back!</h2>
+          <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 10px;">{{ auth_page.login_title }}</h2>
           <p style="color: var(--text-secondary); margin-bottom: 30px;">Sign in to access your account and orders.</p>
 
           <form method="post" action="{% url 'store:login' %}">

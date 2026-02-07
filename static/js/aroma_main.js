@@ -2,10 +2,17 @@ $(function() {
   "use strict";
 
   //------- Parallax -------//
+  //------- Parallax -------//
   if(typeof skrollr !== 'undefined') {
-    skrollr.init({
-      forceHeight: false
-    });
+    // Check for mobile devices - check both width and user agent
+    var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // Only init if not mobile and window is wide enough (desktop)
+    if (!isMobile && $(window).width() > 991) {
+      skrollr.init({
+        forceHeight: false
+      });
+    }
   }
 
   //------- Active Nice Select --------//
@@ -25,8 +32,8 @@ $(function() {
     $(".hero-carousel").owlCarousel({
       items:3,
       margin: 10,
-      autoplay:false,
-      autoplayTimeout: 5000,
+      autoplay:true,
+      autoplayTimeout: 3000,
       loop:true,
       nav:false,
       dots:false,

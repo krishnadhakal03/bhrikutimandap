@@ -92,9 +92,20 @@ async function removeFromCart(itemId) {
  * @param {string} message - Message to display
  * @param {string} type - Notification type (success, error, warning, info)
  */
+/**
+ * Show temporary notification to user
+ * @param {string} message - Message to display
+ * @param {string} type - Notification type (success, error, warning, info)
+ */
 function showNotification(message, type = 'info') {
+  // Use the high-quality notification system from base.html if available
+  if (typeof window.showCartNotification === 'function') {
+    window.showCartNotification(message, type);
+    return;
+  }
+
   const notificationDiv = document.createElement('div');
-  notificationDiv.className = `alert alert-${type}`;
+  notificationDiv.className = `alert alert-${type === 'info' ? 'primary' : type}`;
   notificationDiv.setAttribute('role', 'alert');
   notificationDiv.textContent = message;
   notificationDiv.style.cssText = `
@@ -110,7 +121,8 @@ function showNotification(message, type = 'info') {
 
   // Auto-remove after 3 seconds
   setTimeout(() => {
-    notificationDiv.style.animation = 'fadeOut 0.3s ease';
+    notificationDiv.style.opacity = '0';
+    notificationDiv.style.transition = 'opacity 0.3s ease';
     setTimeout(() => notificationDiv.remove(), 300);
   }, 3000);
 }
@@ -147,6 +159,13 @@ async function addToWishlist(productId, button = null) {
         button.classList.add('in-wishlist');
         button.style.color = '#ff6b6b';
       }
+    }
+    
+    // Update wishlist count header if present
+    if (data.wishlist_count !== undefined) {
+      document.querySelectorAll('.wishlist-count').forEach(el => {
+        el.textContent = data.wishlist_count;
+      });
     }
   } catch (error) {
     console.error('Error adding to wishlist:', error);
@@ -195,6 +214,13 @@ async function removeFromWishlist(productId, button = null) {
       }
     } else {
       showNotification(data.message || 'Failed to remove', 'error');
+    }
+    
+    // Update wishlist count header if present
+    if (data.wishlist_count !== undefined) {
+      document.querySelectorAll('.wishlist-count').forEach(el => {
+        el.textContent = data.wishlist_count;
+      });
     }
   } catch (error) {
     console.error('Error removing from wishlist:', error);

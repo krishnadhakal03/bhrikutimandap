@@ -49,14 +49,20 @@
             <strong>Recent backups</strong>
             <ul style="margin-top: 8px;">
               {% for name in server_backups %}
-                <li style="margin: 6px 0;">
+                <li style="margin: 6px 0; display: flex; align-items: center; gap: 10px;">
                   <form method="post" style="display: inline;">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="download_server_dump">
                     <input type="hidden" name="filename" value="{{ name }}">
                     <button type="submit" class="button">Download</button>
-                    <span style="margin-left: 8px;">{{ name }}</span>
                   </form>
+                  <form method="post" style="display: inline;" onsubmit="return confirm('WARNING: This will overwrite your current database with data from ' + '{{ name }}' + '. This action may result in DATA LOSS if the backup is inaccurate. Are you sure?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="restore_server_dump">
+                    <input type="hidden" name="filename" value="{{ name }}">
+                    <button type="submit" class="button" style="background: #ba2121;">Restore</button>
+                  </form>
+                  <span style="color: #333;">{{ name }}</span>
                 </li>
               {% endfor %}
             </ul>
@@ -68,20 +74,40 @@
     </div>
 
     <div class="module" style="max-width: 900px; margin-top: 20px;">
-      <h2>Import</h2>
+      <h2>Import Data</h2>
       <div style="padding: 16px 20px;">
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" onsubmit="return confirm('WARNING: Loading a database fixture will overwrite existing records. This action may result in DATA LOSS if not used properly. Are you sure?');">
           {% csrf_token %}
           <input type="hidden" name="action" value="load_json">
           <div class="form-row">
-            <label for="id_fixture"><strong>Fixture (.json)</strong></label><br>
+            <label for="id_fixture"><strong>Database Fixture (.json)</strong></label><br>
             <input id="id_fixture" type="file" name="fixture" accept="application/json,.json" required>
           </div>
           <div style="margin-top: 12px;">
-            <button type="submit" class="button default">Load data</button>
+            <button type="submit" class="button default">Load Data</button>
           </div>
-          <p style="margin-top: 10px; color: #a33;">
+          <p style="margin-top: 10px; color: #a33; font-size: 0.9em;">
             Warning: Loading fixtures can create duplicates if you load the same file multiple times.
+          </p>
+        </form>
+      </div>
+    </div>
+
+    <div class="module" style="max-width: 900px; margin-top: 20px;">
+      <h2>Import Media</h2>
+      <div style="padding: 16px 20px;">
+        <form method="post" enctype="multipart/form-data" onsubmit="return confirm('WARNING: This will extract and overwrite files in your media directory. This action may result in DATA LOSS of current media files. Are you sure?');">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="restore_media_zip">
+          <div class="form-row">
+            <label for="id_media_zip"><strong>Media ZIP (.zip)</strong></label><br>
+            <input id="id_media_zip" type="file" name="media_zip" accept="application/zip,.zip" required>
+          </div>
+          <div style="margin-top: 12px;">
+            <button type="submit" class="button" style="background: #447e9b;">Restore Media Assets</button>
+          </div>
+          <p style="margin-top: 10px; color: #555; font-size: 0.9em;">
+            Upload a .zip file created by the "Download media (ZIP)" tool to restore images/videos.
           </p>
         </form>
       </div>

@@ -2,208 +2,329 @@
 {% load static %}
 
 {% block content %}
-  <section class="section-margin single-product">
-    <div class="container">
-      <nav aria-label="breadcrumb" style="margin-bottom: 30px;">
-        <ol class="breadcrumb" style="background: transparent; padding: 0;">
-          <li class="breadcrumb-item"><a href="/">Home</a></li>
-          <li class="breadcrumb-item"><a href="{% url 'store:product_list' %}">Products</a></li>
-          <li class="breadcrumb-item active" aria-current="page">{{ product.title }}</li>
-        </ol>
-      </nav>
+<section class="section-margin single-product">
+  <div class="container">
+    <nav aria-label="breadcrumb" style="margin-bottom: 30px;">
+      <ol class="breadcrumb" style="background: transparent; padding: 0;">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'store:product_list' %}">Products</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ product.title }}</li>
+      </ol>
+    </nav>
 
-      <div class="row" style="gap: 40px;">
-        <!-- Product Image -->
-        <div class="col-lg-5">
-          <div class="single-product__img" style="border-radius: 10px; overflow: hidden; box-shadow: var(--shadow-md); background: #f8f9fa;">
+    <div class="row" style="gap: 40px;">
+      <!-- Product Media Gallery -->
+      <div class="col-lg-5 mb-5 mb-lg-0">
+        <!-- Main Media Display -->
+        <div class="single-product__img-container" 
+             style="border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-md); background: #f8f9fa; position: relative; margin-bottom: 15px;">
+          <div id="main-media-display" style="width: 100%; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center;">
             {% if product.image %}
-              <img class="img-fluid" src="{{ product.image.url }}" alt="{{ product.title }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 100%; height: auto; display: block;">
-              <div style="display: none; width: 100%; min-height: 400px; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0f0f0 0%, #e8e8e8 100%);">
-                <span style="color: #999;">Image not found</span>
-              </div>
+            <img id="main-image" class="img-fluid" src="{{ product.image.url }}" alt="{{ product.title }}"
+                 style="max-width: 100%; max-height: 100%; object-fit: contain;">
             {% else %}
-              <div style="width: 100%; min-height: 400px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0f0f0 0%, #e8e8e8 100%);">
-                <span style="color: #999; font-size: 1.1rem;">No image available</span>
-              </div>
+            <div style="text-align: center; color: #999;">
+              <i class="fas fa-image fa-4x mb-2"></i>
+              <p>No image available</p>
+            </div>
             {% endif %}
+            <video id="main-video" controls style="display: none; max-width: 100%; max-height: 100%; object-fit: contain;"></video>
           </div>
         </div>
 
-        <!-- Product Details -->
-        <div class="col-lg-7">
-          <div class="single-product__content">
-            <!-- Agent/Supplier Info -->
-            <div style="margin-bottom: 20px; padding: 16px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea; display: flex; align-items: center; gap: 16px;">
-              {% if product.agent %}
-                {% if product.agent.company_logo %}
-                <img src="{{ product.agent.company_logo.url }}" alt="{{ product.agent.company_name }}" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover;">
-                {% else %}
-                <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #667eea 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 20px;">
-                  {{ product.agent.company_name|first }}
-                </div>
-                {% endif %}
-                <div>
-                  <p style="margin: 0; color: #667eea; font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">Sold by</p>
-                  <h4 style="margin: 4px 0 0 0; color: #212529; font-weight: 700;">{{ product.agent.company_name }}</h4>
-                </div>
-              {% elif product.supplier %}
-                <div>
-                  <p style="margin: 0; color: #667eea; font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">Sold by</p>
-                  <h4 style="margin: 4px 0 0 0; color: #212529; font-weight: 700;">{{ product.supplier.company|default:product.supplier.username }}</h4>
-                </div>
+        <!-- Media Thumbnails -->
+        <div class="media-thumbnails" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px;">
+          <!-- Primary Image Thumbnail -->
+          {% if product.image %}
+          <div class="thumbnail active" onclick="switchMedia('image', '{{ product.image.url }}', this)" 
+               style="width: 70px; height: 70px; border: 2px solid var(--primary-color); border-radius: 8px; overflow: hidden; cursor: pointer; flex-shrink: 0; background: #fff;">
+            <img src="{{ product.image.url }}" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+          {% endif %}
+
+          <!-- Additional Media Thumbnails -->
+          {% for m in media %}
+          <div class="thumbnail" onclick="switchMedia('{{ m.media_type }}', '{{ m.file.url }}', this)"
+               style="width: 70px; height: 70px; border: 2px solid transparent; border-radius: 8px; overflow: hidden; cursor: pointer; flex-shrink: 0; background: #fff; position: relative;">
+            {% if m.media_type == 'image' %}
+            <img src="{{ m.file.url }}" style="width: 100%; height: 100%; object-fit: cover;">
+            {% else %}
+            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #eee;">
+              <i class="fas fa-play-circle text-primary" style="font-size: 24px;"></i>
+            </div>
+            <div style="position: absolute; bottom: 2px; right: 2px; background: rgba(0,0,0,0.6); color: white; font-size: 10px; padding: 1px 3px; border-radius: 2px;">VIDEO</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Product Details -->
+      <div class="col-lg-7">
+        <div class="single-product__content">
+          <!-- Agent/Supplier Info -->
+          <div style="margin-bottom: 20px; padding: 16px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea; display: flex; align-items: center; gap: 16px;">
+            {% if product.agent %}
+              {% if product.agent.company_logo %}
+              <img src="{{ product.agent.company_logo.url }}" alt="{{ product.agent.company_name }}"
+                style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover;">
               {% else %}
-                <div>
-                  <p style="margin: 0; color: #667eea; font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">Sold by</p>
-                  <h4 style="margin: 4px 0 0 0; color: #212529; font-weight: 700;">Vendor</h4>
-                </div>
+              <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #667eea 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 20px;">
+                {{ product.agent.company_name|first }}
+              </div>
+              {% endif %}
+              <div>
+                <p style="margin: 0; color: #667eea; font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">Sold by</p>
+                <h4 style="margin: 4px 0 0 0; color: #212529; font-weight: 700;">{{ product.agent.company_name }}</h4>
+              </div>
+            {% else %}
+              <div>
+                <p style="margin: 0; color: #667eea; font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">Sold by</p>
+                <h4 style="margin: 4px 0 0 0; color: #212529; font-weight: 700;">{{ product.supplier.company|default:product.supplier.username }}</h4>
+              </div>
+            {% endif %}
+          </div>
+
+          <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 15px; line-height: 1.2;">{{ product.title }}</h1>
+
+          <!-- Real Ratings & Reviews -->
+          <div style="margin-bottom: 25px; display: flex; align-items: center; gap: 12px;">
+            <div style="color: #ffc107; font-size: 1.2rem;">
+              {% for _ in full_stars %}<i class="fas fa-star"></i>{% endfor %}
+              {% if half_star %}<i class="fas fa-star-half-alt"></i>{% endif %}
+              {% for _ in empty_stars %}<i class="far fa-star"></i>{% endfor %}
+            </div>
+            <span style="color: #6c757d; font-weight: 500;">
+              {{ avg_rating|floatformat:1 }} ({{ reviews.count }} review{{ reviews.count|pluralize }})
+            </span>
+          </div>
+
+          <!-- Price Section -->
+          <div class="single-product__price" style="margin-bottom: 30px; padding: 25px; background: #fdfdfd; border: 1px solid #eee; border-radius: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 2.8rem; font-weight: 800; color: #212529;">Rs. {{ product.price }}</span>
+              {% if product.stock > 0 %}
+              <span class="badge badge-success" style="padding: 8px 16px; font-size: 0.9rem; border-radius: 20px;">{{ product.stock }} In Stock</span>
+              {% else %}
+              <span class="badge badge-danger" style="padding: 8px 16px; font-size: 0.9rem; border-radius: 20px;">{{ product_page_settings.out_of_stock_label }}</span>
               {% endif %}
             </div>
+          </div>
 
-            <!-- Breadcrumb Navigation -->
-            <p style="color: #667eea; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px;">
-              {% if product.agent %}{{ product.agent.company_name }}{% elif product.supplier %}{{ product.supplier.company|default:product.supplier.username }}{% else %}General{% endif %}
-            </p>
+          <!-- Description (Truncated) -->
+          <div style="margin-bottom: 30px;">
+            <p style="color: #666; font-size: 1.1rem; line-height: 1.6;">{{ product.description|default:"No description for this product available."|truncatewords:50 }}</p>
+            <a href="#full-description" style="color: var(--primary-color); font-weight: 600;">View Details ↓</a>
+          </div>
 
-            <!-- Product Title -->
-            <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 20px; line-height: 1.3;">
-              {{ product.title }}
-            </h1>
+          <!-- Add to Cart -->
+          <div style="display: flex; gap: 15px; margin-bottom: 30px;">
+            <button class="btn add-to-cart" 
+              style="background: {% if product.stock > 0 %}var(--primary-color){% else %}#ccc{% endif %}; color: white; padding: 18px 40px; font-size: 1.2rem; font-weight: 700; border: none; flex: 2; border-radius: 10px; {% if product.stock == 0 %}cursor: not-allowed;{% endif %}"
+              data-product-id="{{ product.pk }}"
+              {% if product.stock == 0 %}disabled{% endif %}>
+              <i class="ti-shopping-cart mr-2"></i> {% if product.stock == 0 %}{{ product_page_settings.out_of_stock_label }}{% else %}{{ product_page_settings.add_to_cart_label|default:"ADD TO CART" }}{% endif %}
+            </button>
+            <button class="btn add-to-wishlist-btn"
+              style="background: #fff; color: #212529; border: 2px solid #ddd; padding: 18px 25px; border-radius: 10px;"
+              data-product-id="{{ product.pk }}">
+              <i class="ti-heart"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-            <!-- Rating & Reviews (placeholder) -->
-            <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
-              <div style="color: #ff6b35;">
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star-half-alt"></i>
-              </div>
-              <span style="color: #6c757d; font-size: 0.95rem;">(124 reviews)</span>
-            </div>
-
-            <!-- Price Section -->
-            <div class="single-product__price" style="margin-bottom: 30px; padding: 20px; background: var(--light-color); border-radius: 10px;">
-              <div style="display: flex; align-items: baseline; gap: 15px;">
-                <span style="font-size: 2.5rem; font-weight: 700; color: var(--primary-color);">₹{{ product.price }}</span>
-                {% if product.stock > 0 %}
-                  <span class="badge badge-success" style="font-size: 0.9rem;">{{ product.stock }} In Stock</span>
-                {% else %}
-                  <span class="badge badge-danger" style="font-size: 0.9rem;">Out of Stock</span>
-                {% endif %}
-              </div>
-            </div>
-
-            <!-- Description -->
-            <div style="margin-bottom: 30px; line-height: 1.8;">
-              <h4 style="font-weight: 600; margin-bottom: 12px; color: #333;">Product Description</h4>
-              <p style="color: var(--text-secondary);">{{ product.description|linebreaks }}</p>
-            </div>
-
-            <!-- Product Details -->
-            {% if product.delivery_rules or product.payment_methods or product.expiration_date %}
-            <div style="margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; border-left: 4px solid var(--primary-color);">
-              <h4 style="font-weight: 600; margin-bottom: 15px;">Product Information</h4>
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+    <!-- Full Description & Info -->
+    <div id="full-description" style="margin-top: 60px;">
+      <div class="row">
+        <div class="col-lg-8">
+          <div class="card border-0 shadow-sm" style="border-radius: 15px; margin-bottom: 40px;">
+            <div class="card-body p-4">
+              <h3 style="font-weight: 700; margin-bottom: 20px;">Product Details</h3>
+              <p style="color: #555; white-space: pre-line;">{{ product.description|default:"No description for this product available." }}</p>
+              
+              <hr class="my-4">
+              
+              <div class="row">
                 {% if product.delivery_rules %}
-                <div>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 5px; font-weight: 600;">Delivery</p>
-                  <p style="margin: 0;">{{ product.delivery_rules }}</p>
+                <div class="col-md-6 mb-3">
+                  <h5 style="font-weight: 600; color: #333;"><i class="fas fa-truck mr-2"></i> Shipping Info</h5>
+                  <p class="text-muted">{{ product.delivery_rules }}</p>
                 </div>
                 {% endif %}
                 {% if product.payment_methods %}
-                <div>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 5px; font-weight: 600;">Payment Methods</p>
-                  <p style="margin: 0;">{{ product.payment_methods }}</p>
-                </div>
-                {% endif %}
-                {% if product.expiration_date %}
-                <div>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 5px; font-weight: 600;">Expiration Date</p>
-                  <p style="margin: 0;">{{ product.expiration_date|date:"M d, Y" }}</p>
+                <div class="col-md-6 mb-3">
+                  <h5 style="font-weight: 600; color: #333;"><i class="fas fa-credit-card mr-2"></i> Payments</h5>
+                  <p class="text-muted">{{ product.payment_methods }}</p>
                 </div>
                 {% endif %}
               </div>
             </div>
+          </div>
+
+          <!-- Review Section -->
+          <div class="review-section" style="margin-bottom: 60px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+              <h3 style="font-weight: 700; margin-bottom: 0;">Customer Reviews</h3>
+              {% if request.user.is_authenticated %}
+              <button class="btn btn-primary" onclick="window.scrollTo({top: document.getElementById('review-form-container').offsetTop - 100, behavior: 'smooth'})">Write a Review</button>
+              {% endif %}
+            </div>
+
+            {% if reviews %}
+              {% for review in reviews %}
+              <div style="padding: 24px; background: #fff; border: 1px solid #eee; border-radius: 12px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                  <span style="font-weight: 700; color: #333;">{{ review.user.username }}</span>
+                  <span style="color: #999; font-size: 0.85rem;">{{ review.created_at|date:"M d, Y" }}</span>
+                </div>
+                <div style="color: #ffc107; margin-bottom: 12px;">
+                  {% for i in "12345"|make_list %}{% if forloop.counter <= review.rating %}<i class="fas fa-star"></i>{% else %}<i class="far fa-star"></i>{% endif %}{% endfor %}
+                </div>
+                <p style="color: #555; margin-bottom: 0;">{{ review.comment }}</p>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div style="padding: 40px; text-align: center; background: #f9f9f9; border-radius: 15px; border: 2px dashed #eee;">
+                <p style="color: #888; margin-bottom: 0;">No reviews yet. Be the first to share your thoughts!</p>
+              </div>
             {% endif %}
 
-            <!-- Add to Cart Section -->
-            <div style="display: flex; gap: 15px; margin-bottom: 30px;">
-              <button class="btn btn-sm add-to-cart" style="background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%); color: white; padding: 15px 40px; font-size: 1.1rem; border: none; flex: 1;" data-product-id="{{ product.pk }}">
-                <i class="ti-shopping-cart"></i> Add to Cart
-              </button>
-              <button class="btn btn-sm add-to-wishlist-btn" style="background: white; color: var(--primary-color); border: 2px solid var(--primary-color); padding: 13px 30px; font-size: 1rem;" data-product-id="{{ product.pk }}">
-                <i class="ti-heart"></i> Wishlist
-              </button>
+            <!-- Add Review Form -->
+            {% if request.user.is_authenticated %}
+            <div id="review-form-container" style="margin-top: 50px; padding: 30px; background: #f8f9fa; border-radius: 15px;">
+              <h4 style="font-weight: 700; margin-bottom: 20px;">Share Your Feedback</h4>
+              <form action="{% url 'store:add_review' product_id=product.id %}" method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                  <label class="form-label" style="font-weight: 600;">Your Rating</label>
+                  {{ review_form.rating }}
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" style="font-weight: 600;">Your Experience</label>
+                  {{ review_form.comment }}
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg px-5">Submit Review</button>
+              </form>
+            </div>
+            {% else %}
+            <div style="margin-top: 50px; padding: 30px; background: #e9ecef; border-radius: 15px; text-align: center;">
+              <p style="margin-bottom: 0;">Please <a href="{% url 'store:login' %}?next={{ request.path }}" style="font-weight: 600;">login</a> to leave a review.</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <!-- Sticky Sidebar CTA -->
+          <div style="position: sticky; top: 100px;">
+            <div class="card border-0 shadow-sm" style="border-radius: 15px; margin-bottom: 20px; border: 1px solid #eee;">
+              <div class="card-body p-4">
+                <div style="text-align: center; margin-bottom: 20px;">
+                  <span style="font-size: 1.8rem; font-weight: 800; color: #212529; display: block;">Rs. {{ product.price }}</span>
+                  {% if product.stock == 0 %}
+                    <span class="badge badge-danger mt-2">{{ product_page_settings.out_of_stock_label }}</span>
+                  {% else %}
+                    <span class="text-success" style="font-weight: 600; font-size: 0.9rem;"><i class="fas fa-check-circle"></i> In Stock</span>
+                  {% endif %}
+                </div>
+                
+                <button class="btn add-to-cart w-100" 
+                  style="background: {% if product.stock > 0 %}var(--primary-color){% else %}#ccc{% endif %}; color: white; padding: 15px; font-size: 1.1rem; font-weight: 700; border: none; border-radius: 30px; transition: all 0.3s ease; {% if product.stock == 0 %}cursor: not-allowed;{% endif %}"
+                  data-product-id="{{ product.pk }}"
+                  {% if product.stock == 0 %}disabled{% endif %}>
+                  {% if product.stock == 0 %}{{ product_page_settings.out_of_stock_label }}{% else %}{{ product_page_settings.add_to_cart_label|default:"ADD TO CART" }}{% endif %}
+                </button>
+              </div>
             </div>
 
-            <!-- Trust Badges -->
-            <div style="padding: 20px; background: #f8f9fa; border-radius: 10px; display: flex; gap: 30px; flex-wrap: wrap;">
-              <div style="text-align: center;">
-                <i class="fas fa-lock" style="font-size: 1.5rem; color: var(--primary-color); margin-bottom: 8px; display: block;"></i>
-                <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">Secure Checkout</p>
+            <!-- Trust Sidebar -->
+            <div class="card border-0 shadow-sm" style="border-radius: 15px;">
+              <div class="card-body p-4">
+                <h5 style="font-weight: 700; margin-bottom: 20px;">Why Shop With Us?</h5>
+              <div style="display: flex; align-items: flex-start; gap: 15px; margin-bottom: 20px;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: #eef1ff; display: flex; align-items: center; justify-content: center; color: var(--primary-color); flex-shrink: 0;">
+                  <i class="fas fa-shield-alt"></i>
+                </div>
+                <div>
+                  <h6 style="margin: 0; font-weight: 600;">Verified Seller</h6>
+                  <p style="font-size: 0.85rem; color: #777; margin: 0;">Trusted by thousands of customers</p>
+                </div>
               </div>
-              <div style="text-align: center;">
-                <i class="fas fa-truck" style="font-size: 1.5rem; color: var(--primary-color); margin-bottom: 8px; display: block;"></i>
-                <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">Fast Delivery</p>
-              </div>
-              <div style="text-align: center;">
-                <i class="fas fa-undo" style="font-size: 1.5rem; color: var(--primary-color); margin-bottom: 8px; display: block;"></i>
-                <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">Easy Returns</p>
+              <div style="display: flex; align-items: flex-start; gap: 15px; margin-bottom: 20px;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: #eef1ff; display: flex; align-items: center; justify-content: center; color: var(--primary-color); flex-shrink: 0;">
+                  <i class="fas fa-history"></i>
+                </div>
+                <div>
+                  <h6 style="margin: 0; font-weight: 600;">7-Day Easy Return</h6>
+                  <p style="font-size: 0.85rem; color: #777; margin: 0;">No-questions-asked guarantee</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Related Products Section -->
-      <div style="margin-top: 80px; padding-top: 40px; border-top: 2px solid var(--border-color);">
-        <div class="section-intro pb-60px">
-          <p style="color: var(--primary-color); font-weight: 600; letter-spacing: 1px;">SUGGESTIONS</p>
-          <h2>You Might <span class="section-intro__style">Also Like</span></h2>
+    <!-- Related Products Section -->
+    {% if related_products %}
+    <div style="margin-top: 80px; padding-top: 40px; border-top: 2px solid var(--border-color);">
+      <div class="section-intro pb-60px">
+        <p style="color: var(--primary-color); font-weight: 600; letter-spacing: 1px;">SUGGESTIONS</p>
+        <h2>You Might <span class="section-intro__style">Also Like</span></h2>
+      </div>
+      <div class="row">
+        {% for rp in related_products %}
+        <div class="col-md-6 col-lg-3 mb-4">
+          <div class="card product-card border-0 shadow-sm h-100" style="border-radius: 12px; transition: transform 0.3s;">
+            <a href="{% url 'store:product_detail' pk=rp.pk %}" style="text-decoration: none; color: inherit;">
+              <div style="height: 200px; overflow: hidden; border-radius: 12px 12px 0 0;">
+                {% if rp.image %}
+                <img src="{{ rp.image.url }}" alt="{{ rp.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                <div style="width: 100%; height: 100%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999;">No Image</div>
+                {% endif %}
+              </div>
+              <div class="card-body p-3">
+                <h6 style="font-weight: 700; margin-bottom: 5px;" class="text-truncate">{{ rp.title }}</h6>
+                <p style="color: var(--primary-color); font-weight: 700; margin: 0;">Rs. {{ rp.price }}</p>
+              </div>
+            </a>
+          </div>
         </div>
-        <!-- Related products carousel could be added here -->
+        {% endfor %}
       </div>
     </div>
-  </section>
+    {% endif %}
+  </div>
+</section>
 
-  <script>
-    // Add to Cart functionality - using global helpers from base.html
-    document.querySelectorAll('.add-to-cart').forEach(btn => {
-      btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        const productId = this.getAttribute('data-product-id');
-        
-        if (!productId) {
-          showCartNotification('Error: Product ID not found');
-          return;
-        }
-        
-        fetch(`{% url 'store:api_cart_add' %}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-          },
-          body: JSON.stringify({
-            product_id: parseInt(productId),
-            qty: 1
-          })
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.ok) {
-            showCartNotification('✓ Product added to cart!');
-            updateCartCount(data.cart_count);
-          } else {
-            showCartNotification('Error: ' + (data.error || 'Could not add to cart'));
-            console.error('Error:', data.error);
-          }
-        })
-        .catch(error => {
-          showCartNotification('Error: ' + error.message);
-          console.error('Error:', error);
-        });
-      });
+<script>
+  // Media Gallery Switcher
+  function switchMedia(type, url, element) {
+    const mainImage = document.getElementById('main-image');
+    const mainVideo = document.getElementById('main-video');
+    
+    // Update active thumbnail styling
+    document.querySelectorAll('.thumbnail').forEach(th => {
+      th.style.border = '2px solid transparent';
+      th.classList.remove('active');
     });
-  </script>
+    element.style.border = '2px solid #384aeb';
+    element.classList.add('active');
+    
+    if (type === 'image') {
+      mainImage.src = url;
+      mainImage.style.display = 'block';
+      mainVideo.style.display = 'none';
+      mainVideo.pause();
+    } else {
+      mainVideo.src = url;
+      mainVideo.style.display = 'block';
+      mainImage.style.display = 'none';
+    }
+  }
+
+</script>
 {% endblock %}

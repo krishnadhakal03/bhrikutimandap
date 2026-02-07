@@ -23,12 +23,28 @@ class User(AbstractUser):
     postal_code = models.CharField(max_length=20, blank=True, null=True)
     verified = models.BooleanField(default=False)  # for agents/suppliers
     approved_by_admin = models.BooleanField(default=False)  # only for agents
+    
+    # OTP fields
+    otp = models.CharField(max_length=6, blank=True, null=True)
+    otp_expiry = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
 
 
+class Category(models.Model):
+    name = models.CharField(max_length=50)
+    slug = models.SlugField(max_length=50, unique=True)
+
+    class Meta:
+        verbose_name_plural = 'categories'
+
+    def __str__(self):
+        return self.name
+
+
 class Product(models.Model):
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
     supplier = models.ForeignKey(User, limit_choices_to={'role': 'agent'}, on_delete=models.CASCADE, related_name='products', null=True, blank=True)
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
@@ -68,13 +84,33 @@ class Product(models.Model):
         return self.supplier.get_full_name() or self.supplier.username if self.supplier else "Unknown"
 
 
-class ProductImage(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='product_images/')
+class ProductMedia(models.Model):
+    MEDIA_TYPES = [
+        ('image', 'Image'),
+        ('video', 'Video'),
+    ]
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='media')
+    file = models.FileField(upload_to='product_media/')
+    media_type = models.CharField(max_length=10, choices=MEDIA_TYPES, default='image')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Image for {self.product.title}"
+        return f"{self.get_media_type_display()} for {self.product.title}"
+
+
+class ProductReview(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    rating = models.PositiveSmallIntegerField(default=5)
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('product', 'user')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Review for {self.product.title} by {self.user.username}"
 
 
 class Order(models.Model):
@@ -148,6 +184,10 @@ class SiteSettings(models.Model):
     logo = models.ImageField(upload_to='settings/', null=True, blank=True)
     favicon = models.ImageField(upload_to='settings/', null=True, blank=True)
     
+    # Logo Settings
+    logo_height = models.IntegerField(default=0, help_text="Logo height in pixels. Set to 0 for auto.")
+    logo_width = models.IntegerField(default=200, help_text="Logo width in pixels. Set to 0 for auto.")
+    
     # Colors
     primary_color = models.CharField(max_length=7, default="#6c5ce7")
     secondary_color = models.CharField(max_length=7, default="#00b894")
@@ -175,6 +215,14 @@ class SiteSettings(models.Model):
     store_address = models.TextField(default="123 Main Street, Your City")
     store_hours = models.CharField(max_length=100, default="Mon-Fri: 9am-6pm")
     
+    # Home Page Text
+    home_trending_title = models.CharField(max_length=200, default="Trending Product", help_text="Title for trending section")
+    home_trending_subtitle = models.CharField(max_length=200, default="Popular Item in the market", help_text="Subtitle for trending section")
+    home_bestseller_title = models.CharField(max_length=200, default="Best Sellers Shop", help_text="Title for best seller section")
+    home_bestseller_subtitle = models.CharField(max_length=200, default="Amazon global bestselling products", help_text="Subtitle for best seller section")
+    
+    google_analytics_id = models.CharField(max_length=50, blank=True, default="", help_text="GA Measurement ID (e.g., G-XXXXXXXXXX)")
+
     # Email Configuration (SMTP)
     email_host = models.CharField(
         max_length=255,
@@ -202,6 +250,18 @@ class SiteSettings(models.Model):
     default_from_email = models.EmailField(
         default="admin@bhrikutimandap.com",
         help_text="Default sender email address"
+    )
+    
+    # Legal Content (Rich Text / Long Text)
+    terms_and_conditions = models.TextField(
+        blank=True, 
+        default="", 
+        help_text="Full Terms and Conditions text. Standard HTML or plain text."
+    )
+    privacy_policy = models.TextField(
+        blank=True, 
+        default="", 
+        help_text="Full Privacy Policy text. Standard HTML or plain text."
     )
     
     # Meta
@@ -771,6 +831,7 @@ class EmailTemplate(models.Model):
         ('contact_admin', 'Contact Form to Admin'),
         ('password_reset', 'Password Reset'),
         ('welcome', 'Welcome Email'),
+        ('otp_verification', 'OTP Verification'),
     ]
     
     name = models.CharField(max_length=100, unique=True, help_text="Internal name (e.g., 'activation', 'contact_admin')")
@@ -786,6 +847,7 @@ Activation: {username}, {email}, {user_id}, {activation_link}
 Contact Admin: {name}, {email}, {phone}, {subject_input}, {message}
 Password Reset: {username}, {email}, {reset_link}
 Welcome: {username}, {email}
+OTP Verification: {username}, {otp}, {logo_url}, {site_title}
         """
     )
     is_active = models.BooleanField(default=True)
@@ -800,11 +862,50 @@ Welcome: {username}, {email}
         return f"{self.get_template_type_display()} - {self.name}"
     
     def render(self, **context):
-        """Render the email template with context variables"""
+        """Render the email template with context variables, automatically injecting SiteSettings."""
         try:
+            # Inject global site settings if not present
+            if 'logo_url' not in context or 'site_title' not in context:
+                from .models import SiteSettings
+                from django.conf import settings
+                site_settings = SiteSettings.get_instance()
+                
+                if 'site_title' not in context:
+                    context['site_title'] = site_settings.site_title
+                
+                if 'logo_url' not in context:
+                    if site_settings.logo:
+                        # Use Content-ID for inline image embedding
+                        context['logo_url'] = "cid:logo"
+                    else:
+                        context['logo_url'] = ""
+
             return self.body.format(**context)
         except KeyError as e:
-            return f"[Template Error: Missing variable {e}]"
+            # Return a friendly error in the email itself (or log it)
+            # returning the original body might be safer than crashing
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Template rendering error: Missing variable {e}")
+            return self.body  # Fallback to unrendered body or a safe error message
+        except Exception as e:
+             return f"[Template Error: {e}]"
+
+    def render_subject(self, **context):
+        """Render the email subject with context variables."""
+        try:
+            # Inject global site settings if not present
+            if 'site_title' not in context:
+                from .models import SiteSettings
+                site_settings = SiteSettings.get_instance()
+                context['site_title'] = site_settings.site_title
+                
+            return self.subject.format(**context)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Subject rendering error: {e}")
+            return self.subject
 
 
 # Signal handlers for User role management
@@ -832,3 +933,99 @@ def update_user_permissions_on_role_change(sender, instance, **kwargs):
         except User.DoesNotExist:
             # New user, not changing from admin
             pass
+class SEOModel(models.Model):
+    meta_title = models.CharField(max_length=255, blank=True, help_text='SEO Title')
+    meta_description = models.TextField(blank=True, help_text='SEO Description')
+    meta_keywords = models.CharField(max_length=255, blank=True, help_text='SEO Keywords (comma separated)')
+
+    class Meta:
+        abstract = True
+
+class SingletonModel(models.Model):
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super(SingletonModel, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        pass
+
+    @classmethod
+    def load(cls):
+        obj, created = cls.objects.get_or_create(pk=1)
+        return obj
+
+class HomePage(SEOModel, SingletonModel):
+    trending_title = models.CharField(max_length=200, default='Trending Product')
+    trending_subtitle = models.CharField(max_length=200, default='Popular Item in the market')
+    best_seller_title = models.CharField(max_length=200, default='Best Sellers Shop')
+    best_seller_subtitle = models.CharField(max_length=200, default='Amazon global bestselling products')
+
+    class Meta:
+        verbose_name = 'Home Page Settings'
+        verbose_name_plural = 'Home Page Settings'
+
+class ContactPage(SEOModel, SingletonModel):
+    map_url = models.URLField(max_length=500, blank=True, help_text='Google Maps Embed URL')
+    contact_title = models.CharField(max_length=200, default='Contact Us')
+    success_message = models.TextField(default='Message sent successfully!')
+    
+    class Meta:
+        verbose_name = 'Contact Page Settings'
+        verbose_name_plural = 'Contact Page Settings'
+
+class AuthPage(SEOModel, SingletonModel):
+    login_title = models.CharField(max_length=200, default='Login to your account')
+    register_title = models.CharField(max_length=200, default='Create an Account')
+    login_banner_text = models.TextField(default='New to our website?')
+    register_banner_text = models.TextField(default='Already have an account?')
+
+    class Meta:
+        verbose_name = 'Auth Page Settings'
+        verbose_name_plural = 'Auth Page Settings'
+
+class ProductPageSettings(SEOModel, SingletonModel):
+    add_to_cart_label = models.CharField(max_length=50, default='Add to Cart')
+    out_of_stock_label = models.CharField(max_length=50, default='Out of Stock')
+    description_tab_label = models.CharField(max_length=50, default='Description')
+    reviews_tab_label = models.CharField(max_length=50, default='Reviews')
+
+    class Meta:
+        verbose_name = 'Product Page Settings'
+        verbose_name_plural = 'Product Page Settings'
+
+class AgentPageSettings(SEOModel, SingletonModel):
+    dashboard_welcome_title = models.CharField(max_length=200, default='Agent Dashboard')
+    add_product_button_label = models.CharField(max_length=50, default='Add New Product')
+    products_table_header = models.CharField(max_length=100, default='Your Products')
+
+    class Meta:
+        verbose_name = 'Agent Page Settings'
+        verbose_name_plural = 'Agent Page Settings'
+
+
+# Signals
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created and instance.role == 'agent':
+        AgentProfile.objects.get_or_create(
+            user=instance,
+            defaults={'company_name': instance.company or ''}
+        )
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    if instance.role == 'agent' and hasattr(instance, 'agent_profile'):
+        profile = instance.agent_profile
+        if instance.company and not profile.company_name:
+            profile.company_name = instance.company
+        # Sync approval status from User to Profile
+        if instance.approved_by_admin:
+            profile.approval_status = 'approved'
+            profile.is_verified = True
+        profile.save()

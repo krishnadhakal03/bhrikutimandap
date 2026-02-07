@@ -59,18 +59,38 @@
             
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <label class="form-label">{{ form.image.label }}</label>
+                    <label class="form-label">{{ form.image.label }} <span class="text-danger">*</span></label>
                     {{ form.image|add_class:"form-control" }}
+                    <small class="text-muted">Primary product image (Mandatory)</small>
                     {% if form.image.errors %}
                     <div class="invalid-feedback d-block">{{ form.image.errors }}</div>
                     {% endif %}
                 </div>
                 
                 <div class="col-md-6">
+                    <label class="form-label">Additional Media</label>
+                    {% render_field form.additional_media class="form-control" multiple="multiple" %}
+                    <small class="text-muted">Upload more images or videos (Optional)</small>
+                    {% if form.additional_media.errors %}
+                    <div class="invalid-feedback d-block">{{ form.additional_media.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
                     <label class="form-label">{{ form.payment_methods.label }}</label>
                     {{ form.payment_methods|add_class:"form-select" }}
                     {% if form.payment_methods.errors %}
                     <div class="invalid-feedback d-block">{{ form.payment_methods.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.category.label }} <span class="text-danger">*</span></label>
+                    {{ form.category|add_class:"form-select" }}
+                    {% if form.category.errors %}
+                    <div class="invalid-feedback d-block">{{ form.category.errors }}</div>
                     {% endif %}
                 </div>
             </div>

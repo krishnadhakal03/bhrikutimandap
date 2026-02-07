@@ -41,3 +41,33 @@ def site_settings(request):
         # Return None if anything fails
         return {'site_settings': None}
 
+
+def categories(request):
+    """Add all categories to context."""
+    from .models import Category
+    try:
+        return {'categories': Category.objects.all()}
+    except Exception:
+        return {'categories': []}
+
+def dynamic_pages(request):
+    """Add dynamic page settings to all template contexts."""
+    try:
+        from .models import HomePage, ContactPage, AuthPage, ProductPageSettings, AgentPageSettings
+        
+        # Helper to safely load or create
+        def load_safe(model):
+            try:
+                return model.load()
+            except Exception:
+                return None
+
+        return {
+            'home_page': load_safe(HomePage),
+            'contact_page': load_safe(ContactPage),
+            'auth_page': load_safe(AuthPage),
+            'product_page_settings': load_safe(ProductPageSettings),
+            'agent_page_settings': load_safe(AgentPageSettings),
+        }
+    except Exception:
+        return {}

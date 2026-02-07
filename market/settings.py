@@ -66,6 +66,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'store.context_processors.site_settings',
+                'store.context_processors.cart_count',
+                'store.context_processors.categories',
             ],
         },
     },
@@ -102,6 +105,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 TEMPLATES[0]['OPTIONS']['context_processors'].append('store.context_processors.cart_count')
 TEMPLATES[0]['OPTIONS']['context_processors'].append('store.context_processors.static_version')
 TEMPLATES[0]['OPTIONS']['context_processors'].append('store.context_processors.site_settings')
+TEMPLATES[0]['OPTIONS']['context_processors'].append('store.context_processors.categories')
+TEMPLATES[0]['OPTIONS']['context_processors'].append('store.context_processors.dynamic_pages')
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -110,12 +115,18 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 8,
+        }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
     },
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+    {
+        'NAME': 'store.validators.ComplexPasswordValidator',
     },
 ]
 

@@ -11,6 +11,7 @@ from datetime import timedelta
 from django.http import JsonResponse
 from functools import wraps
 import json
+import os
 
 from store.models import (
     User, Product, Order, OrderItem, StockHistory, SalesTransaction,
@@ -161,6 +162,24 @@ def agent_products_list(request):
     return render(request, 'agent/products_list.html', context)
 
 
+def _handle_additional_media(product, files):
+    """Helper to save additional images and videos"""
+    from store.models import ProductMedia
+    import os
+    
+    for f in files:
+        ext = os.path.splitext(f.name)[1].lower()
+        media_type = 'image'
+        if ext in ['.mp4', '.mov', '.avi', '.mkv', '.webm']:
+            media_type = 'video'
+        
+        ProductMedia.objects.create(
+            product=product,
+            file=f,
+            media_type=media_type
+        )
+
+
 @login_required
 @agent_required
 def agent_product_create(request):
@@ -171,6 +190,12 @@ def agent_product_create(request):
             product = form.save(commit=False)
             product.supplier = request.user
             product.save()
+            
+            # Additional media
+            additional_files = request.FILES.getlist('additional_media')
+            if additional_files:
+                _handle_additional_media(product, additional_files)
+                
             messages.success(request, 'Product created successfully!')
             return redirect('agent:products_list')
     else:
@@ -189,7 +214,13 @@ def agent_product_edit(request, product_id):
     if request.method == 'POST':
         form = AgentProductForm(request.POST, request.FILES, instance=product)
         if form.is_valid():
-            form.save()
+            product = form.save()
+            
+            # Additional media
+            additional_files = request.FILES.getlist('additional_media')
+            if additional_files:
+                _handle_additional_media(product, additional_files)
+                
             messages.success(request, 'Product updated successfully!')
             return redirect('agent:products_list')
     else:

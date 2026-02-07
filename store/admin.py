@@ -16,10 +16,11 @@ from django.utils.html import format_html
 from ckeditor_uploader.fields import RichTextUploadingField
 from ckeditor_uploader.widgets import CKEditorUploadingWidget
 from .models import (
-    User, Product, ProductImage, Order, OrderItem, Cart, CartItem, SiteSettings, 
+    User, Product, ProductMedia, ProductReview, Order, OrderItem, Cart, CartItem, SiteSettings, 
     CustomerProfile, Address, PaymentMethod, Wishlist, WishlistItem,
     AgentProfile, StockHistory, SalesTransaction, StockAlert, MarketDemandSuggestion,
-    DeliveryPartner, Vehicle, OrderDelivery, DeliveryTracking, ReturnRequest, Blog, EmailTemplate
+    DeliveryPartner, Vehicle, OrderDelivery, DeliveryTracking, ReturnRequest, Blog, EmailTemplate,
+    Category, HomePage, ContactPage, AuthPage, ProductPageSettings, AgentPageSettings
 )
 
 
@@ -57,6 +58,33 @@ admin.site.site_header = "🛍️ Bhrikutimandap Administration"
 admin.site.site_title = "Bhrikutimandap Admin"
 admin.site.index_title = "Welcome to Bhrikutimandap Admin Panel"
 
+
+
+class SingletonModelAdmin(admin.ModelAdmin):
+    """
+    Prevents adding new instances if one exists, and prevents deletion.
+    """
+    def has_add_permission(self, request):
+        if self.model.objects.exists():
+            return False
+        return True
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        try:
+            self.model.objects.get(pk=1)
+        except self.model.DoesNotExist:
+            self.model.objects.create(pk=1)
+        
+        # Redirect directly to the change form of the singleton instance
+        # Actually, standard Django Admin might need more tweaks to auto-redirect from list to detail,
+        # but adhering to the existing SiteSettingsAdmin pattern (which stays on list view but ensures creation) is safer.
+        # However, SiteSettingsAdmin provided an 'edit' link or expected user to click.
+        # Let's stick to the current pattern but use this mixin.
+        return super().changelist_view(request, extra_context)
 
 def _admin_db_tools_view(request):
     if not request.user.is_superuser:
@@ -108,6 +136,23 @@ def _admin_db_tools_view(request):
                     resp['Content-Disposition'] = f'attachment; filename="{safe_name}"'
                     return resp
 
+        if action == 'restore_server_dump':
+            requested = (request.POST.get('filename') or '').strip()
+            safe_name = os.path.basename(requested)
+            if not safe_name or safe_name != requested or not safe_name.endswith('.json'):
+                messages.error(request, 'Invalid backup filename.')
+            else:
+                file_path = os.path.join(backup_dir, safe_name)
+                if not os.path.isfile(file_path):
+                    messages.error(request, 'Backup file not found.')
+                else:
+                    try:
+                        call_command('loaddata', file_path)
+                        messages.success(request, f'Successfully restored from server backup: {safe_name}')
+                    except Exception as exc:
+                        logger.exception(f'Server restoration failed: {exc}')
+                        messages.error(request, f'Restoration failed: {exc}')
+
         if action == 'dump_json':
             out = io.StringIO()
             call_command(
@@ -147,6 +192,30 @@ def _admin_db_tools_view(request):
                 resp = HttpResponse(buf.getvalue(), content_type='application/zip')
                 resp['Content-Disposition'] = f'attachment; filename="bhrikutimandap_media_{stamp}.zip"'
                 return resp
+
+        if action == 'restore_media_zip':
+            uploaded = request.FILES.get('media_zip')
+            if not uploaded:
+                messages.error(request, 'Please choose a .zip file to upload.')
+            elif not uploaded.name.endswith('.zip'):
+                messages.error(request, 'Only .zip files are allowed for media restoration.')
+            else:
+                media_root = str(settings.MEDIA_ROOT)
+                # Create media root if it doesn't exist
+                os.makedirs(media_root, exist_ok=True)
+                
+                try:
+                    with zipfile.ZipFile(uploaded) as zf:
+                        # Security check: zipslip prevention
+                        for name in zf.namelist():
+                            if name.startswith('/') or '..' in name:
+                                raise ValueError(f"Malicious path detected in ZIP: {name}")
+                        
+                        zf.extractall(media_root)
+                    messages.success(request, 'Media assets restored successfully.')
+                except Exception as exc:
+                    logger.exception(f'Media restoration failed: {exc}')
+                    messages.error(request, f'Media restoration failed: {exc}')
 
         if action == 'load_json':
             uploaded = request.FILES.get('fixture')
@@ -287,8 +356,8 @@ class UserAdmin(admin.ModelAdmin):
     status_badge.short_description = 'Status'
 
     def approve_users(self, request, queryset):
-        updated = queryset.update(approved_by_admin=True)
-        self.message_user(request, f'{updated} user(s) approved successfully.')
+        updated = queryset.update(verified=True, approved_by_admin=True)
+        self.message_user(request, f'{updated} user(s) approved and verified successfully.')
     approve_users.short_description = 'Approve selected users'
 
     def deactivate_users(self, request, queryset):
@@ -323,6 +392,11 @@ class UserAdmin(admin.ModelAdmin):
             self.message_user(request, f'✓ Admin user "{obj.username}" saved. Admin permissions automatically set.', messages.SUCCESS)
 
 
+class ProductMediaInline(admin.TabularInline):
+    model = ProductMedia
+    extra = 1
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('title', 'supplier', 'price_display', 'stock_status', 'image_preview', 'created_at')
@@ -332,6 +406,7 @@ class ProductAdmin(admin.ModelAdmin):
     list_per_page = 25
     date_hierarchy = 'created_at'
     actions = ['mark_in_stock', 'mark_out_of_stock']
+    inlines = [ProductMediaInline]
     
     fieldsets = (
         ('Product Information', {
@@ -385,36 +460,49 @@ class ProductAdmin(admin.ModelAdmin):
     image_preview.short_description = 'Preview'
 
     def mark_in_stock(self, request, queryset):
-        updated = queryset.update(is_in_stock=True)
-        self.message_user(request, f'{updated} product(s) marked as in stock.')
+        updated = queryset.filter(stock=0).update(stock=10)
+        self.message_user(request, f'{updated} product(s) marked as in stock (stock quantity set to 10).')
     mark_in_stock.short_description = 'Mark selected as in stock'
 
     def mark_out_of_stock(self, request, queryset):
-        updated = queryset.update(is_in_stock=False)
-        self.message_user(request, f'{updated} product(s) marked as out of stock.')
+        updated = queryset.update(stock=0)
+        self.message_user(request, f'{updated} product(s) marked as out of stock (stock quantity set to 0).')
     mark_out_of_stock.short_description = 'Mark selected as out of stock'
 
 
-class ProductImageInline(admin.TabularInline):
-    model = ProductImage
+class ProductMediaInline(admin.TabularInline):
+    model = ProductMedia
     extra = 1
 
 
-@admin.register(ProductImage)
-class ProductImageAdmin(admin.ModelAdmin):
-    list_display = ('product', 'uploaded_at', 'image_preview')
-    list_filter = ('uploaded_at',)
+@admin.register(ProductMedia)
+class ProductMediaAdmin(admin.ModelAdmin):
+    list_display = ('product', 'uploaded_at', 'media_type', 'file_preview')
+    list_filter = ('uploaded_at', 'media_type')
     search_fields = ('product__title',)
-    readonly_fields = ('uploaded_at', 'image_preview')
+    readonly_fields = ('uploaded_at', 'file_preview')
     
-    def image_preview(self, obj):
-        if obj.image:
+    def file_preview(self, obj):
+        if obj.media_type == 'image' and obj.file:
             return format_html(
                 '<img src="{}" style="height:60px; width:60px; border-radius: 4px; object-fit: cover;" />',
-                obj.image.url
+                obj.file.url
             )
-        return format_html('<span style="color: #999;">No image</span>')
-    image_preview.allow_tags = True
+        elif obj.media_type == 'video' and obj.file:
+            return format_html('<span style="color: #2196F3;">🎥 Video File</span>')
+        return format_html('<span style="color: #999;">No file</span>')
+    file_preview.allow_tags = True
+
+
+@admin.register(ProductReview)
+class ProductReviewAdmin(admin.ModelAdmin):
+    list_display = ('product', 'user', 'rating', 'created_at')
+    list_filter = ('rating', 'created_at')
+    search_fields = ('product__title', 'user__username', 'comment')
+    readonly_fields = ('created_at',)
+
+
+
 
 
 class OrderItemInline(admin.TabularInline):
@@ -528,9 +616,11 @@ class CartItemAdmin(admin.ModelAdmin):
 
 
 @admin.register(SiteSettings)
-class SiteSettingsAdmin(admin.ModelAdmin):
+class SiteSettingsAdmin(SingletonModelAdmin):
     fieldsets = (
         ('Site Branding', {'fields': ('site_title', 'site_description', 'logo', 'favicon')}),
+        ('Analytics', {'fields': ('google_analytics_id',)}),
+        ('Legal Content', {'fields': ('terms_and_conditions', 'privacy_policy')}),
         ('Colors', {'fields': ('primary_color', 'secondary_color')}),
         ('Contact Info', {'fields': ('contact_email', 'contact_phone', 'store_address', 'store_hours')}),
         (
@@ -545,6 +635,18 @@ class SiteSettingsAdmin(admin.ModelAdmin):
                     'linkedin_url',
                     'whatsapp_url',
                 )
+            },
+        ),
+        (
+            'Home Page Content',
+            {
+                'fields': (
+                    'home_trending_title',
+                    'home_trending_subtitle',
+                    'home_bestseller_title',
+                    'home_bestseller_subtitle',
+                ),
+                'description': 'Customize titles and subtitles on the homepage.'
             },
         ),
         ('Footer', {'fields': ('footer_text',)}),
@@ -563,12 +665,6 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             },
         ),
     )
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-    def has_add_permission(self, request):
-        return False
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
@@ -848,8 +944,8 @@ class MarketDemandSuggestionAdmin(admin.ModelAdmin):
 
     def confidence_display(self, obj):
         return format_html(
-            '<span style="background: #2196F3; color: white; padding: 4px 8px; border-radius: 3px; font-weight: bold;">{:.0f}%</span>',
-            obj.confidence_score
+            '<span style="background: #2196F3; color: white; padding: 4px 8px; border-radius: 3px; font-weight: bold;">{}%</span>',
+            f'{obj.confidence_score:.0f}'
         )
     confidence_display.short_description = 'Confidence'
 
@@ -1193,3 +1289,50 @@ class EmailTemplateAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug', 'product_count')
+    prepopulated_fields = {'slug': ('name',)}
+    search_fields = ('name',)
+
+    def product_count(self, obj):
+        return obj.products.count()
+    product_count.short_description = 'Products'
+
+@admin.register(HomePage)
+class HomePageAdmin(SingletonModelAdmin):
+    fieldsets = (
+        ('SEO', {'fields': ('meta_title', 'meta_description', 'meta_keywords')}),
+        ('Content', {'fields': ('trending_title', 'trending_subtitle', 'best_seller_title', 'best_seller_subtitle')}),
+    )
+
+@admin.register(ContactPage)
+class ContactPageAdmin(SingletonModelAdmin):
+    fieldsets = (
+        ('SEO', {'fields': ('meta_title', 'meta_description', 'meta_keywords')}),
+        ('Content', {'fields': ('contact_title', 'success_message', 'map_url')}),
+    )
+
+@admin.register(AuthPage)
+class AuthPageAdmin(SingletonModelAdmin):
+    fieldsets = (
+        ('SEO', {'fields': ('meta_title', 'meta_description', 'meta_keywords')}),
+        ('Login Screen', {'fields': ('login_title', 'login_banner_text')}),
+        ('Register Screen', {'fields': ('register_title', 'register_banner_text')}),
+    )
+
+@admin.register(ProductPageSettings)
+class ProductPageSettingsAdmin(SingletonModelAdmin):
+    fieldsets = (
+        ('SEO', {'fields': ('meta_title', 'meta_description', 'meta_keywords')}),
+        ('Labels', {'fields': ('add_to_cart_label', 'out_of_stock_label', 'description_tab_label', 'reviews_tab_label')}),
+    )
+
+@admin.register(AgentPageSettings)
+class AgentPageSettingsAdmin(SingletonModelAdmin):
+    fieldsets = (
+        ('SEO', {'fields': ('meta_title', 'meta_description', 'meta_keywords')}),
+        ('Labels', {'fields': ('dashboard_welcome_title', 'add_product_button_label', 'products_table_header')}),
+    )
+

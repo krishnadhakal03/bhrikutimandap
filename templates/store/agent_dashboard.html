@@ -7,91 +7,99 @@
 <div class="container py-5">
     <div class="row mb-4">
         <div class="col-md-8">
-            <h2 class="mb-0">Agent Dashboard</h2>
+            <h2 class="mb-0">{{ agent_page_settings.dashboard_welcome_title }}</h2>
             <p class="text-muted">Manage your products</p>
         </div>
         <div class="col-md-4 text-end">
-            <a href="{% url 'store:agent_add_product' %}" class="btn btn-success">
-                <i class="fas fa-plus"></i> Add New Product
+            <a href="{% url 'agent:product_create' %}" class="btn btn-success">
+                <i class="fas fa-plus"></i> {{ agent_page_settings.add_product_button_label }}
             </a>
         </div>
     </div>
 
     {% if messages %}
-        <div class="row mb-4">
-            <div class="col-12">
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
+    <div class="row mb-4">
+        <div class="col-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
+            {% endfor %}
         </div>
+    </div>
     {% endif %}
 
     {% if products %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Image</th>
-                        <th>Product Name</th>
-                        <th>Price</th>
-                        <th>Stock</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for product in products %}
-                        <tr>
-                            <td>
-                                {% if product.image %}
-                                    <img src="{{ product.image.url }}" alt="{{ product.title }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
-                                {% else %}
-                                    <div style="width: 50px; height: 50px; background: #f0f0f0; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
-                                        <i class="fas fa-image text-muted"></i>
-                                    </div>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <strong>{{ product.title }}</strong><br>
-                                <small class="text-muted">{{ product.description|truncatewords:10 }}</small>
-                            </td>
-                            <td>
-                                <strong>₹{{ product.price }}</strong>
-                            </td>
-                            <td>
-                                {% if product.stock > 0 %}
-                                    <span class="badge bg-success">{{ product.stock }} units</span>
-                                {% elif product.stock == 0 %}
-                                    <span class="badge bg-warning">Out of stock</span>
-                                {% else %}
-                                    <span class="badge bg-danger">Overstock</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge bg-primary">Active</span>
-                            </td>
-                            <td>
-                                <a href="{% url 'store:agent_edit_product' product.id %}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
-                                <a href="{% url 'store:agent_delete_product' product.id %}" class="btn btn-sm btn-danger">
-                                    <i class="fas fa-trash"></i> Delete
-                                </a>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 80px;">Image</th>
+                    <th>Product Name</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Status</th>
+                    <th style="width: 1%; white-space: nowrap;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td class="align-middle">
+                        {% if product.image %}
+                        <a href="{% url 'store:product_detail' product.id %}">
+                            <img src="{{ product.image.url }}" alt="{{ product.title }}"
+                                style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                        </a>
+                        {% else %}
+                        <a href="{% url 'store:product_detail' product.id %}">
+                            <div
+                                style="width: 50px; height: 50px; background: #f0f0f0; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-image text-muted"></i>
+                            </div>
+                        </a>
+                        {% endif %}
+                    </td>
+                    <td class="align-middle">
+                        <strong class="text-dark">{{ product.title }}</strong><br>
+                        <small class="text-muted">{{ product.description|truncatewords:8 }}</small>
+                    </td>
+                    <td class="align-middle">
+                        <strong>Rs. {{ product.price }}</strong>
+                    </td>
+                    <td class="align-middle">
+                        {% if product.stock > 0 %}
+                        <span class="badge bg-success">{{ product.stock }} units</span>
+                        {% elif product.stock == 0 %}
+                        <span class="badge bg-warning">Out of stock</span>
+                        {% else %}
+                        <span class="badge bg-danger">Overstock</span>
+                        {% endif %}
+                    </td>
+                    <td class="align-middle">
+                        <span class="badge bg-primary">Active</span>
+                    </td>
+                    <td class="align-middle text-end">
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'store:agent_edit_product' product.id %}" class="btn btn-sm btn-outline-warning" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'store:agent_delete_product' product.id %}" class="btn btn-sm btn-outline-danger" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% else %}
-        <div class="alert alert-info" role="alert">
-            <i class="fas fa-info-circle"></i> You haven't added any products yet.
-            <a href="{% url 'store:agent_add_product' %}" class="alert-link">Add your first product</a>
-        </div>
+    <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle"></i> You haven't added any products yet.
+        <a href="{% url 'store:agent_add_product' %}" class="alert-link">Add your first product</a>
+    </div>
     {% endif %}
 </div>
 {% endblock %}

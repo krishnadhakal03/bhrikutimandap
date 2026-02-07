@@ -1,7 +1,9 @@
 {% extends "agent/base.html" %}
 
 {% block agent_content %}
-<!-- Agent Profile Header Card -->
+
+<!-- Agent Profile Header Card (Hidden on Dashboard) -->
+{% if request.resolver_match.url_name != 'dashboard' %}
 <div class="card mb-3" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); border: none;">
     <div class="card-body d-flex align-items-center justify-content-between p-4">
         <div class="d-flex align-items-center gap-3">
@@ -24,6 +26,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 <!-- Page Header -->
 <div class="page-header">
