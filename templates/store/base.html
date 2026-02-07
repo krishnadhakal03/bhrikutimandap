@@ -5,7 +5,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  
+  {% if current_page %}
+  <title>{{ current_page.meta_title|default:site_settings.site_title|default:"Bhrikutimandap - Premium Local Products" }}</title>
+  <meta name="description" content="{{ current_page.meta_description }}">
+  <meta name="keywords" content="{{ current_page.meta_keywords }}">
+  {% else %}
   <title>{% block title %}{{ site_settings.site_title|default:"Bhrikutimandap" }} - Shop{% endblock %}</title>
+  {% endif %}
+
+  <!-- Google Analytics -->
+  {% if site_settings.google_analytics_id %}
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{ site_settings.google_analytics_id }}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '{{ site_settings.google_analytics_id }}');
+  </script>
+  {% endif %}
+  <!-- End Google Analytics -->
   {% if site_settings.favicon %}
     <link rel="icon" href="{{ site_settings.favicon.url }}" type="image/png">
   {% else %}
@@ -19,16 +38,28 @@
   <link rel="stylesheet" href="{% static 'vendors/owl-carousel/owl.carousel.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/aroma_style.css' %}">
   <style>
-    /* Notification animation */
+    :root {
+      --primary-color: {{ site_settings.primary_color|default:"#384aeb" }};
+      --secondary-color: {{ site_settings.secondary_color|default:"#00b894" }};
+    }
+
+    /* Notification Styles */
+    .cart-added-notify {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      background: #43b253;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 5px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+      z-index: 10000;
+      animation: slideIn 0.3s ease;
+    }
+
     @keyframes slideIn {
-      from {
-        transform: translateX(400px);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
+      from { transform: translateX(400px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
     }
 
     /* Search Modal Styles */
@@ -120,6 +151,114 @@
     .nav-shop li button:hover {
       color: #384aeb;
     }
+
+    /* Fix for mobile menu cutoff */
+    @media (max-width: 991px) {
+      .navbar-collapse {
+        max-height: 80vh;
+        overflow-y: auto;
+        padding-bottom: 60px; /* Ensure bottom items are not cut off */
+      }
+      
+      .nav-shop {
+        margin-bottom: 20px;
+      }
+    }
+
+    /* Legal Modal Styles */
+    .legal-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 10001;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(5px);
+    }
+
+    .legal-modal.active {
+      display: flex;
+    }
+
+    .legal-modal-content {
+      background: white;
+      padding: 40px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      position: relative;
+      animation: modalFadeUp 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+
+    @keyframes modalFadeUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .legal-modal-header {
+      border-bottom: 2px solid #f1f6f7;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .legal-modal-header h2 {
+      margin: 0;
+      font-size: 24px;
+      color: var(--primary-color);
+      font-weight: 700;
+    }
+
+    .legal-modal-body {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #555;
+    }
+
+    .legal-modal-body h3, .legal-modal-body h4 {
+      color: #222;
+      margin-top: 20px;
+    }
+
+    .legal-modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #999;
+      cursor: pointer;
+      padding: 5px;
+      line-height: 1;
+      transition: color 0.3s;
+    }
+
+    .legal-modal-close:hover {
+      color: #dc3545;
+    }
+
+    /* Industry Standard Scrollbar for Modal */
+    .legal-modal-content::-webkit-scrollbar {
+      width: 8px;
+    }
+    .legal-modal-content::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    .legal-modal-content::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 10px;
+    }
+    .legal-modal-content::-webkit-scrollbar-thumb:hover {
+      background: #999;
+    }
   </style>
 </head>
 <body>
@@ -128,13 +267,36 @@
   <header class="header_area">
     <div class="main_menu">
       <nav class="navbar navbar-expand-lg navbar-light">
-        <div class="container">
+        <div class="container d-flex flex-column flex-lg-row align-items-center">
           {% if site_settings.logo %}
-            <a class="navbar-brand logo_h" href="{% url 'store:home' %}"><img src="{{ site_settings.logo.url }}" alt="{{ site_settings.site_title|default:'Bhrikutimandap' }}" style="height: auto; max-width: 200px;"></a>
+            <a class="navbar-brand logo_h mx-auto ml-lg-0 mr-lg-3" href="{% url 'store:home' %}"><img src="{{ site_settings.logo.url }}" alt="{{ site_settings.site_title|default:'Bhrikutimandap' }}" style="height: {% if site_settings.logo_height %}{{ site_settings.logo_height }}px{% else %}auto{% endif %}; width: {% if site_settings.logo_width %}{{ site_settings.logo_width }}px{% else %}auto{% endif %}; max-width: none;"></a>
           {% else %}
-            <a class="navbar-brand logo_h" href="{% url 'store:home' %}"><img src="{% static 'img/logo.png' %}" alt="Bhrikutimandap" style="height: auto; max-width: 200px;"></a>
+            <a class="navbar-brand logo_h mx-auto ml-lg-0 mr-lg-3" href="{% url 'store:home' %}"><img src="{% static 'img/logo.png' %}" alt="Bhrikutimandap" style="height: {% if site_settings.logo_height %}{{ site_settings.logo_height }}px{% else %}auto{% endif %}; width: {% if site_settings.logo_width %}{{ site_settings.logo_width }}px{% else %}auto{% endif %}; max-width: none;"></a>
           {% endif %}
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+
+          <div class="d-none d-lg-block">
+            <!-- Desktop Scoped Elements -->
+          </div>
+
+          <!-- Mobile Top Header (Walmart Style) -->
+          <div class="d-flex align-items-center w-100 d-lg-none mt-2 mb-2">
+             <!-- Search Bar (Flexible) -->
+             <form action="{% url 'store:product_list' %}" method="GET" class="flex-grow-1 mx-2" style="position: relative;">
+                <input type="text" name="q" placeholder="Search Bhrikutimandap..." class="form-control" style="border-radius: 20px; padding-right: 40px; background: #f5f5f5; border: none; height: 40px;">
+                <button type="submit" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #777;">
+                   <i class="ti-search"></i>
+                </button>
+             </form>
+
+             <!-- Mobile Cart Icon -->
+             <a href="{% url 'store:cart' %}" style="position: relative; color: #222; font-size: 20px; margin-left: 5px;">
+                <i class="ti-shopping-cart"></i>
+                <span class="nav-shop__circle cart-count" style="top: -8px; right: -8px;">{{ cart_count|default:"0" }}</span>
+             </a>
+          </div>
+
+          <!-- Keep standard toggler hidden/accessible for the 'Menu' button script -->
+          <button class="navbar-toggler d-none" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
             aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
@@ -145,10 +307,20 @@
               <li class="nav-item"><a class="nav-link" href="{% url 'store:home' %}">Home</a></li>
               <li class="nav-item submenu dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                  aria-expanded="false">Categories</a>
+                <ul class="dropdown-menu">
+                  {% for category in categories %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'store:product_list' %}?category={{ category.slug }}">{{ category.name }}</a></li>
+                  {% empty %}
+                    <li class="nav-item"><a class="nav-link" href="#">No Categories</a></li>
+                  {% endfor %}
+                </ul>
+              </li>
+              <li class="nav-item submenu dropdown">
+                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
                   aria-expanded="false">Shop</a>
                 <ul class="dropdown-menu">
                   <li class="nav-item"><a class="nav-link" href="{% url 'store:product_list' %}">Products</a></li>
-                  <li class="nav-item"><a class="nav-link" href="{% url 'store:product_list' %}">Browse</a></li>
                   <li class="nav-item"><a class="nav-link" href="{% url 'store:cart' %}">Cart</a></li>
                 </ul>
               </li>
@@ -157,42 +329,28 @@
             </ul>
 
             <ul class="nav-shop">
-              <li class="nav-item"><a href="{% url 'store:home' %}#search-filter-section" title="Search Products"><button style="background: none; border: none; cursor: pointer;"><i class="ti-search"></i></button></a></li>
-              <li class="nav-item"><a href="{% url 'store:cart' %}" style="text-decoration: none; color: inherit;"><button title="View Cart"><i class="ti-shopping-cart"></i><span class="nav-shop__circle">{{ cart_count|default:"0" }}</span></button></a></li>
+              <li class="nav-item"><button id="searchBtn" title="Search Products"><i class="ti-search"></i></button></li>
+              <li class="nav-item"><a href="{% url 'store:cart' %}"><button title="View Cart"><i class="ti-shopping-cart"></i><span class="nav-shop__circle cart-count">{{ cart_count|default:"0" }}</span></button></a></li>
               {% if user.is_authenticated %}
-                <li class="nav-item"><a href="{% url 'store:wishlist' %}" style="text-decoration: none; color: inherit;"><button title="View Wishlist"><i class="ti-heart"></i><span class="nav-shop__circle wishlist-count">{{ user.wishlist.item_count }}</span></button></a></li>
+                <li class="nav-item"><a href="{% url 'store:wishlist' %}"><button title="View Wishlist"><i class="ti-heart"></i><span class="nav-shop__circle wishlist-count">{{ user.wishlist.item_count }}</span></button></a></li>
               {% endif %}
               <li class="nav-item"><a class="button button-header" href="{% url 'store:product_list' %}">Shop Now</a></li>
               {% if user.is_authenticated %}
                 <li class="nav-item dropdown">
-                  <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="color: #222; font-weight: 500;">
                     <i class="fas fa-user-circle"></i> {{ user.first_name|default:user.username }}
                   </a>
                   <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userDropdown">
-                    <a class="dropdown-item" href="{% url 'store:customer_dashboard' %}">
-                      <i class="fas fa-tachometer-alt"></i> Dashboard
-                    </a>
-                    <a class="dropdown-item" href="{% url 'store:profile_detail' %}">
-                      <i class="fas fa-user"></i> Profile
-                    </a>
-                    <a class="dropdown-item" href="{% url 'store:order_history' %}">
-                      <i class="fas fa-shopping-bag"></i> Orders
-                    </a>
-                    <a class="dropdown-item" href="{% url 'store:address_list' %}">
-                      <i class="fas fa-map-marker-alt"></i> Addresses
-                    </a>
-                    <a class="dropdown-item" href="{% url 'store:wishlist' %}">
-                      <i class="fas fa-heart"></i> Wishlist
-                    </a>
+                    <a class="dropdown-item" href="{% url 'store:customer_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                    <a class="dropdown-item" href="{% url 'store:profile_detail' %}"><i class="fas fa-user"></i> Profile</a>
+                    <a class="dropdown-item" href="{% url 'store:order_history' %}"><i class="fas fa-shopping-bag"></i> Orders</a>
+                    <a class="dropdown-item" href="{% url 'store:wishlist' %}"><i class="fas fa-heart"></i> Wishlist</a>
                     <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" href="{% url 'store:logout' %}">
-                      <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
+                    <a class="dropdown-item" href="{% url 'store:logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
                   </div>
                 </li>
               {% else %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'store:login' %}" style="font-weight: 500;">Login</a></li>
-                <li class="nav-item"><a class="nav-link" href="{% url 'store:register' %}" style="font-weight: 500;">Register</a></li>
+                <li class="nav-item" style="margin-left: 15px;"><a class="button button-header" href="{% url 'store:login' %}" style="padding: 8px 20px; font-size: 13px;">Login</a></li>
               {% endif %}
             </ul>
           </div>
@@ -231,7 +389,7 @@
                 <span class="fa fa-phone"></span>
                 Phone
               </p>
-              <p>{{ site_settings.contact_phone|default:"+91 XXXXX XXXXX" }}</p>
+              <p>{{ site_settings.contact_phone|default:"+977 XXXXX XXXXX" }}</p>
 
               <p class="sm-head">
                 <span class="fa fa-envelope"></span>
@@ -352,7 +510,7 @@
       <button class="search-modal-close" id="searchModalClose">&times;</button>
       <h2>Search Products</h2>
       <form class="search-form" method="GET" action="{% url 'store:product_list' %}">
-        <input type="text" name="q" placeholder="Search for products..." required>
+        <input type="text" name="search" placeholder="Search for products..." required>
         <button type="submit">Search</button>
       </form>
     </div>
@@ -367,6 +525,19 @@
   <script src="{% static 'vendors/mail-script.js' %}"></script>
   <script src="{% static 'js/aroma_main.js' %}"></script>
   <script src="{% static 'store/cart.js' %}"></script>
+
+  <!-- Legal Modal -->
+  <div id="legalModal" class="legal-modal">
+    <div class="legal-modal-content">
+      <div class="legal-modal-header">
+        <h2 id="legalModalTitle">Terms & Conditions</h2>
+        <button class="legal-modal-close" id="legalModalClose">&times;</button>
+      </div>
+      <div class="legal-modal-body" id="legalModalBody">
+        <!-- Content injected by JS -->
+      </div>
+    </div>
+  </div>
 
   <script>
     // Global helper functions for cart operations
@@ -387,32 +558,28 @@
     }
 
     function updateCartCount(count) {
-      const cartElements = document.querySelectorAll('.nav-shop__circle, .cart-count');
+      const cartElements = document.querySelectorAll('.cart-count');
       cartElements.forEach(el => {
         el.textContent = count;
       });
     }
 
-    function showCartNotification(message) {
+    function showCartNotification(message, type = 'success') {
       const notify = document.createElement('div');
       notify.className = 'cart-added-notify';
-      notify.style.cssText = `
-        position: fixed;
-        top: 80px;
-        right: 20px;
-        background: #43b253;
-        color: white;
-        padding: 15px 25px;
-        border-radius: 5px;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
-        z-index: 10000;
-        animation: slideIn 0.3s ease;
-      `;
-      notify.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+      if (type === 'error' || type === 'danger') {
+        notify.style.background = '#e74c3c';
+      } else if (type === 'warning') {
+        notify.style.background = '#f39c12';
+      }
+      
+      notify.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
       document.body.appendChild(notify);
 
       setTimeout(() => {
-        notify.remove();
+        notify.style.opacity = '0';
+        notify.style.transition = 'opacity 0.5s ease';
+        setTimeout(() => notify.remove(), 500);
       }, 3000);
     }
 
@@ -445,6 +612,175 @@
         searchModal?.classList.remove('active');
       }
     });
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        searchModal?.classList.remove('active');
+      }
+    });
+
+    // Mobile Bottom Navigation Active State
+    document.querySelectorAll('.mobile-bottom-nav__item').forEach(item => {
+      if (item.href === window.location.href) {
+        item.classList.add('mobile-bottom-nav__item--active');
+      }
+    });
+
+    // Legal Modal Logic
+    const legalModal = document.getElementById('legalModal');
+    const legalTitle = document.getElementById('legalModalTitle');
+    const legalBody = document.getElementById('legalModalBody');
+    const legalClose = document.getElementById('legalModalClose');
+
+    function showLegalModal(type) {
+      if (!legalModal) return;
+      
+      const termsContent = `{{ site_settings.terms_and_conditions|safe|escapejs }}`;
+      const privacyContent = `{{ site_settings.privacy_policy|safe|escapejs }}`;
+      
+      if (type === 'terms') {
+        legalTitle.textContent = 'Terms & Conditions';
+        legalBody.innerHTML = termsContent || '<p>No terms and conditions provided yet.</p>';
+      } else {
+        legalTitle.textContent = 'Privacy Policy';
+        legalBody.innerHTML = privacyContent || '<p>No privacy policy provided yet.</p>';
+      }
+      
+      legalModal.classList.add('active');
+      document.body.style.overflow = 'hidden'; // Prevent background scroll
+    }
+
+    legalClose?.addEventListener('click', closeLegalModal);
+    legalModal?.addEventListener('click', (e) => {
+      if (e.target === legalModal) closeLegalModal();
+    });
+
+    function closeLegalModal() {
+      legalModal?.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    // Expose globally for clickable links
+    window.showLegalModal = showLegalModal;
   </script>
+
+  <!-- Mobile Bottom Navigation -->
+  <style>
+    .mobile-bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      will-change: transform;
+      transform: translateZ(0);
+      display: flex;
+      height: 60px;
+      box-shadow: 0 -2px 5px -2px rgba(0,0,0,0.1);
+      background-color: #fff;
+      border-top: 1px solid #eee;
+      justify-content: space-around;
+      align-items: center;
+      padding-bottom: env(safe-area-inset-bottom); /* iOS specific */
+    }
+
+    .mobile-bottom-nav__item {
+      flex-grow: 1;
+      text-align: center;
+      font-size: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      color: #777;
+      text-decoration: none;
+      height: 100%;
+    }
+
+    .mobile-bottom-nav__item:hover, .mobile-bottom-nav__item:focus {
+      color: #384aeb;
+      text-decoration: none;
+    }
+
+    .mobile-bottom-nav__item--active {
+      color: #384aeb;
+      font-weight: bold;
+    }
+
+    .mobile-bottom-nav__item-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .mobile-bottom-nav__icon {
+      font-size: 20px;
+      margin-bottom: 2px;
+    }
+
+    /* Padding for page content so bottom nav doesn't cover it */
+    @media (max-width: 991px) {
+        body { padding-bottom: 70px; }
+        .mobile-bottom-nav { display: flex; }
+    }
+    @media (min-width: 992px) {
+        .mobile-bottom-nav { display: none; }
+    }
+  </style>
+
+  <nav class="mobile-bottom-nav">
+    <a href="{% url 'store:home' %}" class="mobile-bottom-nav__item">
+      <div class="mobile-bottom-nav__item-content">
+        <i class="mobile-bottom-nav__icon fas fa-home"></i>
+        <span>Shop</span>
+      </div>
+    </a>
+    
+    <a href="{% url 'store:wishlist' %}" class="mobile-bottom-nav__item">
+      <div class="mobile-bottom-nav__item-content">
+        <i class="mobile-bottom-nav__icon fas fa-heart"></i>
+        <span>Wishlist</span>
+      </div>
+    </a>
+
+    {% if user.is_authenticated %}
+    <a href="{% url 'store:customer_dashboard' %}" class="mobile-bottom-nav__item">
+      <div class="mobile-bottom-nav__item-content">
+        <i class="mobile-bottom-nav__icon fas fa-user"></i>
+        <span>Account</span>
+      </div>
+    </a>
+    {% else %}
+    <a href="{% url 'store:login' %}" class="mobile-bottom-nav__item">
+      <div class="mobile-bottom-nav__item-content">
+        <i class="mobile-bottom-nav__icon fas fa-sign-in-alt"></i>
+        <span>Login</span>
+      </div>
+    </a>
+    {% endif %}
+
+    <!-- Menu Toggle (Triggers the main navigation) -->
+    <a href="#" class="mobile-bottom-nav__item" id="mobileMenuToggle">
+      <div class="mobile-bottom-nav__item-content">
+        <i class="mobile-bottom-nav__icon fas fa-bars"></i>
+        <span>Menu</span>
+      </div>
+    </a>
+  </nav>
+
+  <script>
+    // Mobile Menu Toggle Logic
+    document.getElementById('mobileMenuToggle')?.addEventListener('click', function(e) {
+      e.preventDefault();
+      const navbarToggler = document.querySelector('.navbar-toggler');
+      if (navbarToggler) {
+        // Toggle the Bootstrap collapse menu
+        navbarToggler.click();
+        
+        // Optional: Scroll to top to see the menu if it opens at the top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  </script>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

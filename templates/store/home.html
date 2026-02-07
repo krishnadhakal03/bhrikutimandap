@@ -1,9 +1,29 @@
 {% extends 'store/base.html' %}
 {% load static %}
 
+{% block extra_css %}
+<style>
+  .form-control:focus {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+    outline: none;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5) !important;
+  }
+  .btn-outline-secondary:hover {
+    background: #f8f9fa;
+    border-color: #667eea !important;
+    color: #667eea !important;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <style>
-  .add-to-cart-btn, .quick-view-btn {
+  .add-to-cart-btn,
+  .quick-view-btn {
     cursor: pointer;
     background: none;
     border: none;
@@ -12,182 +32,304 @@
     transition: all 0.3s ease;
   }
 
-  .add-to-cart-btn:hover, .quick-view-btn:hover {
+  .add-to-cart-btn:hover,
+  .quick-view-btn:hover {
     transform: scale(1.2);
     color: var(--primary-color);
   }
 
-  .cart-added-notify {
-    position: fixed;
-    top: 80px;
-    right: 20px;
-    background: #43b253;
-    color: white;
-    padding: 15px 25px;
-    border-radius: 5px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
-    z-index: 10000;
-    animation: slideIn 0.3s ease;
-  }
+    .card-product__imgOverlay li button i,
+    .card-product__imgOverlay li a i {
+      color: white !important;
+    }
 
-  @keyframes slideIn {
-    from {
-      transform: translateX(400px);
-      opacity: 0;
+    /* Fix for Search Icon Visibility */
+    .card-product__imgOverlay li a {
+      background: #8894ff;
+      padding: 7px 12px;
+      display: inline-block;
+      transition: all 0.3s ease;
     }
-    to {
-      transform: translateX(0);
-      opacity: 1;
+    
+    .card-product__imgOverlay li a:hover {
+      background: #384aeb;
+      color: white;
     }
-  }
+
 </style>
 
 <main class="site-main">
-    
-    <!--================ Hero banner start =================-->
-    <section class="hero-banner">
-      <div class="container">
-        <div class="row no-gutters align-items-center pt-60px">
-          <div class="col-5 d-none d-sm-block">
-            <div class="hero-banner__img">
-              <img class="img-fluid" src="{% static 'img/home/hero-banner.png' %}" alt="Hero Banner">
-            </div>
+
+  <!--================ Hero banner start =================-->
+  <section class="hero-banner">
+    <div class="container">
+      <div class="row no-gutters align-items-center pt-60px">
+        <div class="col-5 d-none d-md-block">
+          <div class="hero-banner__img">
+            <img class="img-fluid" src="{% static 'img/home/hero-banner.png' %}" alt="Hero Banner" style="max-height: 450px; width: auto;">
           </div>
-          <div class="col-sm-7 col-lg-6 offset-lg-1 pl-4 pl-md-5 pl-lg-0">
-            <div class="hero-banner__content">
-              <h4>Shop is fun</h4>
-              <h1>Browse Our Premium Product</h1>
-              <p>Discover our amazing collection of high-quality products. We offer the best selection with premium quality and competitive prices.</p>
-              <a class="button button-hero" href="{% url 'store:product_list' %}">Browse Now</a>
-            </div>
+        </div>
+        <div class="col-sm-7 col-lg-6 offset-lg-1 pl-4 pl-md-5 pl-lg-0">
+          <div class="hero-banner__content">
+            <h4>Shop is fun</h4>
+            <h1>Browse Our Premium Product</h1>
+            <p>Discover our amazing collection of high-quality products. We offer the best selection with premium
+              quality and competitive prices.</p>
+            <a class="button button-hero" href="{% url 'store:product_list' %}">Browse Now</a>
           </div>
         </div>
       </div>
-    </section>
-    <!--================ Hero banner end =================-->
+    </div>
+  </section>
+  <!--================ Hero banner end =================-->
 
-    <!--================ Hero Carousel start =================-->
-    <section class="section-margin mt-0">
+  <!--================ Hero Carousel start =================-->
+  <section class="section-margin mt-0">
+    <div class="container">
       <div class="owl-carousel owl-theme hero-carousel">
+        {% for product in hero_products %}
         <div class="hero-carousel__slide">
-          <img src="{% static 'img/home/hero-slide1.png' %}" alt="Wireless Headphone" class="img-fluid">
-          <a href="{% url 'store:product_list' %}" class="hero-carousel__slideOverlay">
-            <h3>Featured Products</h3>
-            <p>Premium Selection</p>
+          {% if product.image %}
+          <img src="{{ product.image.url }}" alt="{{ product.title }}" class="img-fluid" style="width: 100%; height: 300px; object-fit: cover; border-radius: 4px;">
+          {% else %}
+          <img src="{% static 'img/home/hero-slide1.png' %}" alt="{{ product.title }}" class="img-fluid" style="width: 100%; height: 300px; object-fit: cover; border-radius: 4px;">
+          {% endif %}
+          <a href="{% url 'store:product_detail' product.id %}" class="hero-carousel__slideOverlay">
+            <h3>{{ product.title|truncatechars:20 }}</h3>
+            <p>{{ product.category.name|default:"Premium Product" }}</p>
           </a>
         </div>
-        <div class="hero-carousel__slide">
-          <img src="{% static 'img/home/hero-slide2.png' %}" alt="Featured" class="img-fluid">
-          <a href="{% url 'store:product_list' %}" class="hero-carousel__slideOverlay">
-            <h3>Best Sellers</h3>
-            <p>Most Popular Items</p>
-          </a>
-        </div>
-        <div class="hero-carousel__slide">
-          <img src="{% static 'img/home/hero-slide3.png' %}" alt="Special" class="img-fluid">
-          <a href="{% url 'store:product_list' %}" class="hero-carousel__slideOverlay">
-            <h3>Special Offers</h3>
-            <p>Limited Time Deals</p>
-          </a>
-        </div>
+        {% endfor %}
       </div>
-    </section>
-    <!--================ Hero Carousel end =================-->
+    </div>
+  </section>
+  <!--================ Hero Carousel end =================-->
 
-    <!-- ================ Search & Filter Section ================= -->
-    <section class="section-margin calc-60px" id="search-filter-section">
-      <div class="container">
-        <div style="background: white; padding: 24px; border-radius: 10px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-          <form method="get" class="row g-3">
-            <!-- Search Input -->
-            <div class="col-md-4">
-              <div style="position: relative;">
-                <input type="text" name="search" class="form-control" placeholder="Search by product name..." 
-                       value="{{ search }}" style="padding: 12px 16px 12px 40px; border-radius: 8px; border: 2px solid #e0e0e0;">
-                <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #999;"></i>
-              </div>
+  <!-- ================ Search & Filter Section ================= -->
+  <section class="section-margin calc-60px" id="search-filter-section">
+    <div class="container">
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
+        <div style="background: white; padding: 25px; border-radius: 12px;">
+          <h5 style="margin: 0 0 20px 0; color: #333; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-filter" style="color: #667eea;"></i>
+            Filter Products
+          </h5>
+        <form method="get" class="row g-3">
+          <!-- Search Input -->
+          <div class="col-md-3">
+            <label style="font-size: 13px; color: #666; font-weight: 500; margin-bottom: 6px; display: block;">
+              <i class="fas fa-search" style="margin-right: 5px;"></i>Search
+            </label>
+            <div style="position: relative;">
+              <input type="text" name="search" class="form-control" placeholder="Product name..."
+                value="{{ search }}"
+                style="padding: 12px 16px 12px 40px; border-radius: 10px; border: 2px solid #e8e8e8; transition: all 0.3s; font-size: 14px;">
+              <i class="fas fa-search"
+                style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #999;"></i>
             </div>
+          </div>
 
-            <!-- Price Filter -->
-            <div class="col-md-3">
-              <select name="sort_price" class="form-control" style="padding: 12px 16px; border-radius: 8px; border: 2px solid #e0e0e0;">
-                <option value="">Sort by Price</option>
-                <option value="low_to_high" {% if sort_price == 'low_to_high' %}selected{% endif %}>Low to High</option>
-                <option value="high_to_low" {% if sort_price == 'high_to_low' %}selected{% endif %}>High to Low</option>
+          <!-- Category Filter -->
+          <div class="col-md-3">
+            <label style="font-size: 13px; color: #666; font-weight: 500; margin-bottom: 6px; display: block;">
+              <i class="fas fa-tags" style="margin-right: 5px;"></i>Category
+            </label>
+            <div style="position: relative;">
+              <select name="category" class="form-control"
+                style="padding: 12px 40px 12px 16px; border-radius: 10px; border: 2px solid #e8e8e8; -webkit-appearance: none; -moz-appearance: none; appearance: none; background: white; cursor: pointer; transition: all 0.3s; font-size: 14px;">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                <option value="{{ cat.slug }}" {% if category_slug == cat.slug %}selected{% endif %}>
+                  {{ cat.name }}
+                </option>
+                {% endfor %}
               </select>
+              <i class="fas fa-chevron-down" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #999; pointer-events: none;"></i>
             </div>
+          </div>
 
-            <!-- Agent Filter -->
-            <div class="col-md-3">
-              <select name="agent" class="form-control" style="padding: 12px 16px; border-radius: 8px; border: 2px solid #e0e0e0;">
+          <!-- Agent Filter -->
+          <div class="col-md-2">
+            <label style="font-size: 13px; color: #666; font-weight: 500; margin-bottom: 6px; display: block;">
+              <i class="fas fa-store" style="margin-right: 5px;"></i>Supplier
+            </label>
+            <div style="position: relative;">
+              <select name="agent" class="form-control"
+                style="padding: 12px 40px 12px 16px; border-radius: 10px; border: 2px solid #e8e8e8; -webkit-appearance: none; -moz-appearance: none; appearance: none; background: white; cursor: pointer; transition: all 0.3s; font-size: 14px;">
                 <option value="">All Suppliers</option>
                 {% for agent in agents %}
-                <option value="{{ agent.id }}" {% if agent_id|add:"0" == agent.id|add:"0" %}selected{% endif %}>
+                <option value="{{ agent.id }}" {% if request.GET.agent == agent.id|stringformat:'s' %}selected{% endif %}>
                   {{ agent.company_name }}
                 </option>
                 {% endfor %}
               </select>
+              <i class="fas fa-chevron-down" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #999; pointer-events: none;"></i>
             </div>
+          </div>
 
-            <!-- Submit Button -->
-            <div class="col-md-2 d-flex gap-2">
-              <button type="submit" class="btn btn-primary w-100" style="padding: 12px 16px; border-radius: 8px;">
-                <i class="fas fa-search"></i> Filter
+          <!-- Price Filter -->
+          <div class="col-md-2">
+            <label style="font-size: 13px; color: #666; font-weight: 500; margin-bottom: 6px; display: block;">
+              <i class="fas fa-dollar-sign" style="margin-right: 5px;"></i>Price
+            </label>
+            <div style="position: relative;">
+              <select name="sort_price" class="form-control"
+                style="padding: 12px 40px 12px 16px; border-radius: 10px; border: 2px solid #e8e8e8; -webkit-appearance: none; -moz-appearance: none; appearance: none; background: white; cursor: pointer; transition: all 0.3s; font-size: 14px;">
+                <option value="">Sort By</option>
+                <option value="low_to_high" {% if sort_price == 'low_to_high' %}selected{% endif %}>Low to High</option>
+                <option value="high_to_low" {% if sort_price == 'high_to_low' %}selected{% endif %}>High to Low</option>
+              </select>
+              <i class="fas fa-chevron-down" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #999; pointer-events: none;"></i>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="col-md-2">
+            <label style="font-size: 13px; color: transparent; font-weight: 500; margin-bottom: 6px; display: block;">.</label>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary flex-grow-1" 
+                style="padding: 12px 20px; border-radius: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s;">
+                <i class="fas fa-filter"></i> Apply
               </button>
-              <a href="{% url 'store:home' %}" class="btn btn-outline-secondary" style="padding: 12px 16px; border-radius: 8px;" title="Clear filters">
-                <i class="fas fa-times"></i>
+              <a href="{% url 'store:home' %}" class="btn btn-outline-secondary"
+                style="padding: 12px 16px; border-radius: 10px; border: 2px solid #e8e8e8; transition: all 0.3s; margin-left: 8px;" title="Clear">
+                <i class="fas fa-redo"></i>
               </a>
             </div>
-          </form>
-
-          <!-- Active Filters Display -->
-          {% if search or sort_price or agent_id %}
-          <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px;">
-            {% if search %}
-            <span style="background: #e3f2fd; color: #1976d2; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">
-              <i class="fas fa-search"></i> "{{ search }}"
-            </span>
-            {% endif %}
-            {% if sort_price %}
-            <span style="background: #f3e5f5; color: #6f42c1; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">
-              <i class="fas fa-sort"></i> 
-              {% if sort_price == 'low_to_high' %}
-                Low to High
-              {% elif sort_price == 'high_to_low' %}
-                High to Low
-              {% else %}
-                {{ sort_price|title }}
-              {% endif %}
-            </span>
-            {% endif %}
-            {% if agent_id %}
-            <span style="background: #e8f5e9; color: #2e7d32; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">
-              <i class="fas fa-store"></i> Selected Supplier
-            </span>
-            {% endif %}
           </div>
-          {% endif %}
+        </form>
         </div>
       </div>
-    </section>
-    <!-- ================ Search & Filter Section end ================= -->
 
-    <!-- ================ trending product section start ================= -->  
-    <section class="section-margin calc-60px">
-      <div class="container">
-        <div class="section-intro pb-60px">
-          <p>Popular Item in the market</p>
-          <h2>Trending <span class="section-intro__style">Product</span></h2>
+        <!-- Active Filters Display -->
+        {% if search or sort_price or agent_id or category_slug %}
+        <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px;">
+          {% if search %}
+          <span
+            style="background: #e3f2fd; color: #1976d2; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">
+            <i class="fas fa-search"></i> "{{ search }}"
+          </span>
+          {% endif %}
+          {% if category_slug %}
+          <span
+            style="background: #fff3e0; color: #e65100; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">
+            <i class="fas fa-tag"></i> {{ category_slug|title }}
+          </span>
+          {% endif %}
+          {% if sort_price %}
+          <span
+            style="background: #f3e5f5; color: #6f42c1; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">
+            <i class="fas fa-sort"></i>
+            {% if sort_price == 'low_to_high' %}
+            Low to High
+            {% elif sort_price == 'high_to_low' %}
+            High to Low
+            {% else %}
+            {{ sort_price|title }}
+            {% endif %}
+          </span>
+          {% endif %}
+          {% if agent_id %}
+          <span
+            style="background: #e8f5e9; color: #2e7d32; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">
+            <i class="fas fa-store"></i> Selected Supplier
+          </span>
+          {% endif %}
         </div>
-        <div class="row">
-          {% for product in products %}
-          <div class="col-md-6 col-lg-4 col-xl-3">
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ================ Search & Filter Section end ================= -->
+
+  <!-- ================ trending product section start ================= -->
+  <section class="section-margin calc-60px">
+    <div class="container">
+      <div class="section-intro pb-60px">
+        <p>{{ home_page.trending_subtitle }}</p>
+        <h2>{{ home_page.trending_title }}</h2>
+      </div>
+      <div class="row">
+        {% for product in products %}
+        <div class="col-md-6 col-lg-4 col-xl-3">
+          <div class="card text-center card-product">
+            <div class="card-product__img">
+              {% if product.image %}
+              <a href="{% url 'store:product_detail' product.id %}">
+                <img class="card-img" src="{{ product.image.url }}" alt="{{ product.title }}"
+                  style="height: 280px; object-fit: cover;">
+              </a>
+              {% else %}
+              <a href="{% url 'store:product_detail' product.id %}">
+                <img class="card-img" src="{% static 'img/product/product1.png' %}" alt="{{ product.title }}"
+                  style="height: 280px; object-fit: cover;">
+              </a>
+              {% endif %}
+              <ul class="card-product__imgOverlay">
+                <li>
+                  <a href="{% url 'store:product_detail' product.id %}" class="quick-view-btn" title="View Details">
+                    <i class="ti-search"></i>
+                  </a>
+                </li>
+                <li>
+                  <button class="add-to-cart-btn" data-product-id="{{ product.id }}" title="Add to Cart">
+                    <i class="ti-shopping-cart"></i>
+                  </button>
+                </li>
+                <li>
+                  <button class="add-to-wishlist-btn" data-product-id="{{ product.id }}" title="Add to Wishlist">
+                    <i class="ti-heart"></i>
+                  </button>
+                </li>
+              </ul>
+            </div>
+            <div class="card-body">
+              <h4 class="card-product__title"><a href="{% url 'store:product_detail' product.id %}">{{ product.title }}</a></h4>
+              {% if product.agent %}
+              <p
+                style="margin: 6px 0; color: #667eea; font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">
+                <i class="fas fa-store"></i> {{ product.agent.company_name }}
+              </p>
+              {% elif product.supplier %}
+              <p
+                style="margin: 6px 0; color: #667eea; font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">
+                <i class="fas fa-store"></i> {{ product.supplier.company|default:product.supplier.username }}
+              </p>
+              {% endif %}
+              <p class="card-product__price">Rs. {{ product.price }}</p>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  <!--================ trending product section end =================-->
+
+  <!-- ================ Best Seller section start ================= -->
+  <section class="section-margin">
+    <div class="container">
+      <div class="section-intro pb-60px">
+        <p>{{ home_page.best_seller_subtitle }}</p>
+        <h2>{{ home_page.best_seller_title }}</h2>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div id="bestSellerCarousel" class="owl-carousel owl-theme">
+            {% for product in best_sellers %}
             <div class="card text-center card-product">
               <div class="card-product__img">
                 {% if product.image %}
-                <img class="card-img" src="{{ product.image.url }}" alt="{{ product.title }}">
+                <a href="{% url 'store:product_detail' product.id %}">
+                  <img class="card-img" src="{{ product.image.url }}" alt="{{ product.title }}"
+                    style="height: 280px; object-fit: cover;">
+                </a>
                 {% else %}
-                <img class="card-img" src="{% static 'img/product/product1.png' %}" alt="{{ product.title }}">
+                <a href="{% url 'store:product_detail' product.id %}">
+                  <img class="card-img" src="{% static 'img/product/product1.png' %}" alt="{{ product.title }}"
+                    style="height: 280px; object-fit: cover;">
+                </a>
                 {% endif %}
                 <ul class="card-product__imgOverlay">
                   <li>
@@ -208,115 +350,18 @@
                 </ul>
               </div>
               <div class="card-body">
-                <h4 class="card-product__title"><a href="{% url 'store:product_detail' product.id }}">{{ product.title }}</a></h4>
-                {% if product.agent %}
-                <p style="margin: 6px 0; color: #667eea; font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">
-                  <i class="fas fa-store"></i> {{ product.agent.company_name }}
-                </p>
-                {% elif product.supplier %}
-                <p style="margin: 6px 0; color: #667eea; font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">
-                  <i class="fas fa-store"></i> {{ product.supplier.company|default:product.supplier.username }}
-                </p>
-                {% endif %}
-                <p class="card-product__price">₹{{ product.price }}</p>
+                <h4 class="card-product__title"><a href="{% url 'store:product_detail' product.id %}">{{ product.title }}</a></h4>
+                <p class="card-product__price">Rs. {{ product.price }}</p>
               </div>
             </div>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-    </section>
-    <!--================ trending product section end =================-->
-
-    <!-- ================ Best Seller section start ================= -->
-    <section class="section-margin">
-      <div class="container">
-        <div class="section-intro pb-60px">
-          <p>Amazon global bestselling products</p>
-          <h2>Best Sellers <span class="section-intro__style">Shop</span></h2>
-        </div>
-        <div class="row">
-          <div class="col-md-12">
-            <div id="bestSellerCarousel" class="owl-carousel owl-theme">
-              {% for product in best_sellers %}
-              <div class="card text-center card-product">
-                <div class="card-product__img">
-                  {% if product.image %}
-                  <img class="card-img" src="{{ product.image.url }}" alt="{{ product.title }}">
-                  {% else %}
-                  <img class="card-img" src="{% static 'img/product/product1.png' %}" alt="{{ product.title }}">
-                  {% endif %}
-                  <ul class="card-product__imgOverlay">
-                    <li>
-                      <a href="{% url 'store:product_detail' product.id %}" class="quick-view-btn" title="View Details">
-                        <i class="ti-search"></i>
-                      </a>
-                    </li>
-                    <li>
-                      <button class="add-to-cart-btn" data-product-id="{{ product.id }}" title="Add to Cart">
-                        <i class="ti-shopping-cart"></i>
-                      </button>
-                    </li>
-                    <li>
-                      <button class="add-to-wishlist-btn" data-product-id="{{ product.id }}" title="Add to Wishlist">
-                        <i class="ti-heart"></i>
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-                <div class="card-body">
-                  <h4 class="card-product__title"><a href="{% url 'store:product_detail' product.id %}">{{ product.title }}</a></h4>
-                  <p class="card-product__price">₹{{ product.price }}</p>
-                </div>
-              </div>
-              {% endfor %}
-            </div>
+            {% endfor %}
           </div>
         </div>
       </div>
-    </section>
-    <!--================ Best Seller section end =================-->
+    </div>
+  </section>
+  <!--================ Best Seller section end =================-->
 
-  </main>
+</main>
 
-  <script>
-    // Add to Cart functionality from home page
-    document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
-      btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        const productId = this.getAttribute('data-product-id');
-        
-        if (!productId) return; // Skip if no product ID (wishlist button)
-        
-        // Add to cart via AJAX using global helpers from base.html
-        fetch(`{% url 'store:api_cart_add' %}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-          },
-          body: JSON.stringify({
-            product_id: parseInt(productId),
-            qty: 1
-          })
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.ok) {
-            // Show success notification
-            showCartNotification('✓ Product added to cart!');
-            // Update cart count in header
-            updateCartCount(data.cart_count);
-          } else {
-            showCartNotification('Error: ' + (data.error || 'Could not add to cart'));
-            console.error('Error:', data.error);
-          }
-        })
-        .catch(error => {
-          showCartNotification('Error: ' + error.message);
-          console.error('Error:', error);
-        });
-      });
-    });
-  </script>
 {% endblock %}
