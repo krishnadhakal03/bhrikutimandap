@@ -618,7 +618,7 @@ class CartItemAdmin(admin.ModelAdmin):
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(SingletonModelAdmin):
     fieldsets = (
-        ('Site Branding', {'fields': ('site_title', 'site_description', 'logo', 'favicon')}),
+        ('Site Branding', {'fields': ('site_title', 'site_description', 'logo', 'logo_width', 'logo_height', 'favicon')}),
         ('Analytics', {'fields': ('google_analytics_id',)}),
         ('Legal Content', {'fields': ('terms_and_conditions', 'privacy_policy')}),
         ('Colors', {'fields': ('primary_color', 'secondary_color')}),
