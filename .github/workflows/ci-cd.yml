@@ -221,6 +221,7 @@ jobs:
             $COMPOSE --env-file .env.prod -f compose.prod.yml ps
 
             $COMPOSE --env-file .env.prod -f compose.prod.yml exec -T web python manage.py migrate
+            $COMPOSE --env-file .env.prod -f compose.prod.yml exec -T web python manage.py seed_email_templates
             $COMPOSE --env-file .env.prod -f compose.prod.yml exec -T web python manage.py collectstatic --noinput
 
             # Cache busting: increment version on each deployment
