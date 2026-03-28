@@ -19,8 +19,10 @@ if os.path.exists(BASE_DIR / '.env'):
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-secret-key-change-this-in-production')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
+import sys
 # Make the test environment behave like development (avoid SSL redirects, etc.)
-if 'test' in sys.argv:
+if 'test' in sys.argv or 'pytest' in sys.argv:
+    EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
     DEBUG = True
 
 _default_allowed_hosts = 'localhost,127.0.0.1,bhrikutimandap.com,www.bhrikutimandap.com'
