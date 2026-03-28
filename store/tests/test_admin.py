@@ -58,6 +58,8 @@ class AdminModuleTest(TestCase):
             'trending_subtitle': 'Sub',
             'best_seller_title': 'Best Cells',
             'best_seller_subtitle': 'Sub2',
+            'featured_title': 'Featured Picks',
+            'featured_subtitle': 'Handpicked highlights from verified sellers.',
             '_save': 'Save'
         }
         response = self.client.post(url, data)

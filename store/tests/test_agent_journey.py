@@ -17,7 +17,8 @@ class AgentJourneyTest(TestCase):
             'password': 'Password@123',
             'role': 'agent',
             'company': 'Bond Industries',
-            'phone': '9800000000'
+            'phone': '9800000000',
+            # Add any other required fields here if needed
         }
         response = self.client.post(url, data)
         

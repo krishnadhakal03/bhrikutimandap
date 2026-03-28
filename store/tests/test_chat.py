@@ -63,6 +63,14 @@ class ChatEndpointsTest(TestCase):
         self.assertEqual(data['total_unread'], 1)
 
     def test_chat_unread_counts_for_agent(self):
+        # Create an unread message for the agent
+        SellerMessage.objects.create(
+            conversation=self.conversation,
+            sender=self.customer,
+            body='Hello agent',
+            is_read=False,
+        )
+
         self.client.login(username='chat_agent', password='StrongPassw0rd!')
 
         response = self.client.get(reverse('store:chat_unread_counts_api'))

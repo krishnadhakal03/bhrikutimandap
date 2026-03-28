@@ -18,7 +18,8 @@ class AuthTest(TestCase):
             'username': 'newuser',
             'email': 'new@example.com',
             'password': 'StrongPassword123!',
-            'role': 'customer'
+            'role': 'customer',
+            # Add any other required fields here if needed
         }
         response = self.client.post(url, data)
         self.assertRedirects(response, reverse('store:verify_otp'))

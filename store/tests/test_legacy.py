@@ -12,7 +12,8 @@ class RegistrationActivationTest(TestCase):
             'username': 'u1', 
             'password': 'StrongPassw0rd!', 
             'email': 'u1@example.com', 
-            'role': 'customer'
+            'role': 'customer',
+            # Add any other required fields here if needed
         })
         # Should redirect to OTP verification page
         self.assertRedirects(resp, reverse('store:verify_otp'))
