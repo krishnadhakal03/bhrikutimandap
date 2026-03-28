@@ -48,6 +48,7 @@ jobs:
           DJANGO_SECRET_KEY: test-secret
           DJANGO_DEBUG: 'True'
           ALLOWED_HOSTS: localhost,127.0.0.1
+          EMAIL_BACKEND: django.core.mail.backends.dummy.EmailBackend
         run: |
           python manage.py test
 
