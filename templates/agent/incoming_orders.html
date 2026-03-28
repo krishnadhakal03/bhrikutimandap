@@ -2,85 +2,62 @@
 
 {% block agent_content %}
 <div class="container-fluid">
-    <div class="page-header mb-4">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h2 class="text-dark mb-0">
-                    <i class="fas fa-incoming-mail text-primary mr-2"></i>
-                    Incoming Orders Dashboard
-                </h2>
-                <small class="text-muted">Monitor and manage customer orders</small>
-            </div>
-            <div class="col-md-4 text-right">
-                <a href="{% url 'agent:orders' %}" class="btn btn-outline-primary btn-sm">
-                    <i class="fas fa-list mr-1"></i> All Orders
-                </a>
-            </div>
+    <div class="agent-toolbar">
+        <div>
+            <h3 class="text-dark mb-0"><i class="fas fa-inbox mr-2"></i>Incoming Orders</h3>
+            <p class="subtitle">Prioritize new requests, assign delivery partners, and track fulfillment stages.</p>
         </div>
+        <a href="{% url 'agent:orders' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-list mr-1"></i> All Orders
+        </a>
     </div>
 
     <!-- Summary Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card border-left-danger">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger mb-1">NEW ORDERS</div>
-                            <div class="h3 mb-0 text-gray-800">{{ total_new }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-exclamation-circle text-danger fa-2x"></i>
-                        </div>
+            <div class="agent-kpi" style="border-left-color:#e53935;">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="label">New Orders</div>
+                        <div class="value">{{ total_new }}</div>
                     </div>
+                    <i class="fas fa-exclamation-circle icon" style="color:#e53935;"></i>
                 </div>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="card border-left-warning">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning mb-1">ASSIGNED</div>
-                            <div class="h3 mb-0 text-gray-800">{{ total_assigned }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-box text-warning fa-2x"></i>
-                        </div>
+            <div class="agent-kpi" style="border-left-color:#fb8c00;">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="label">Assigned</div>
+                        <div class="value">{{ total_assigned }}</div>
                     </div>
+                    <i class="fas fa-box icon" style="color:#fb8c00;"></i>
                 </div>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="card border-left-info">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info mb-1">IN TRANSIT</div>
-                            <div class="h3 mb-0 text-gray-800">{{ total_in_transit }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-truck text-info fa-2x"></i>
-                        </div>
+            <div class="agent-kpi" style="border-left-color:#1976d2;">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="label">In Transit</div>
+                        <div class="value">{{ total_in_transit }}</div>
                     </div>
+                    <i class="fas fa-truck icon" style="color:#1976d2;"></i>
                 </div>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="card border-left-success">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success mb-1">DELIVERED</div>
-                            <div class="h3 mb-0 text-gray-800">{{ total_delivered }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-check-circle text-success fa-2x"></i>
-                        </div>
+            <div class="agent-kpi" style="border-left-color:#43a047;">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="label">Delivered</div>
+                        <div class="value">{{ total_delivered }}</div>
                     </div>
+                    <i class="fas fa-check-circle icon" style="color:#43a047;"></i>
                 </div>
             </div>
         </div>
@@ -295,33 +272,5 @@
     </div>
     {% endif %}
 </div>
-
-<style>
-    .card {
-        border: none;
-        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        margin-bottom: 1.5rem;
-    }
-    
-    .border-left-danger {
-        border-left: 0.25rem solid #e74c3c !important;
-    }
-    
-    .border-left-warning {
-        border-left: 0.25rem solid #f39c12 !important;
-    }
-    
-    .border-left-info {
-        border-left: 0.25rem solid #3498db !important;
-    }
-    
-    .border-left-success {
-        border-left: 0.25rem solid #27ae60 !important;
-    }
-    
-    .table-hover tbody tr:hover {
-        background-color: #f5f5f5;
-    }
-</style>
 
 {% endblock %}

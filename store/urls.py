@@ -9,6 +9,11 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('products/', views.product_list, name='product_list'),
     path('product/<int:pk>/', views.product_detail, name='product_detail'),
+    path('seller/<int:seller_id>/', views.seller_storefront, name='seller_storefront'),
+    path('product/<int:product_id>/buy-now/', views.buy_now, name='buy_now'),
+    path('product/<int:product_id>/chat/start/', views.start_seller_chat, name='start_seller_chat'),
+    path('chat/<int:conversation_id>/messages/', views.seller_chat_messages, name='seller_chat_messages'),
+    path('chat/<int:conversation_id>/send/', views.seller_chat_send, name='seller_chat_send'),
     path('product/<int:product_id>/review/', views.add_review, name='add_review'),
     path('cart/', views.cart_view, name='cart'),
     path('cart/add/<int:product_id>/', views.add_to_cart, name='add_to_cart'),
@@ -16,7 +21,14 @@ urlpatterns = [
     path('api/cart/update/', views.api_cart_update, name='api_cart_update'),
     path('api/cart/remove/', views.api_cart_remove, name='api_cart_remove'),
     path('api/cart/', views.api_cart_detail, name='api_cart_detail'),
+    path('api/payment-gateways/', views.api_payment_gateways, name='api_payment_gateways'),
+    path('api/payments/create/', views.api_payments_create, name='api_payments_create'),
+    path('api/payments/verify/', views.api_payments_verify, name='api_payments_verify'),
+    path('api/chat/unread-counts/', views.chat_unread_counts_api, name='chat_unread_counts_api'),
+    path('api/support-chat/', views.support_chat_api, name='support_chat_api'),
+    path('api/payments/webhook/<str:gateway>/', views.payment_webhook, name='payment_webhook'),
     path('checkout/', views.checkout, name='checkout'),
+    path('payment/return/', views.payment_return, name='payment_return'),
     path('accounts/login/', views.login_view, name='login'),
     path('accounts/logout/', views.logout_view, name='logout'),
     path('accounts/register/', views.register_view, name='register'),
@@ -68,6 +80,10 @@ urlpatterns = [
     
     # Order History
     path('customer/orders/', views.order_history, name='order_history'),
+
+    # Customer messages
+    path('customer/messages/', views.customer_messages, name='customer_messages'),
+    path('customer/messages/<int:conversation_id>/', views.customer_messages, name='customer_messages_detail'),
     
     # Wishlist
     path('customer/wishlist/', views.wishlist_view, name='wishlist'),

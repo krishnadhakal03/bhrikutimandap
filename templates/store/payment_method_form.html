@@ -4,75 +4,109 @@
 {% block title %}{{ action }} Payment Method - Bhrikutimandap{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-  <div class="row">
-    <div class="col-md-8 offset-md-2">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-light border-bottom">
-          <h4 class="mb-0">{{ action }} Payment Method</h4>
-        </div>
-        <div class="card-body p-4">
-          <div class="alert alert-info">
-            <i class="fas fa-lock"></i> 
-            <strong>Security:</strong> We use tokenization - we never store your raw payment details.
-          </div>
+<link rel="stylesheet" href="{% static 'store/css/commerce-revamp.css' %}">
 
-          <form method="post" novalidate>
-            {% csrf_token %}
-            
-            <div class="mb-3">
-              <label for="{{ form.payment_type.id_for_label }}" class="form-label">Payment Type *</label>
+<section class="ux-page">
+  <div class="ux-container" style="max-width:840px;">
+    <div class="ux-header" style="margin-bottom:16px;">
+      <div>
+        <h1 class="ux-title">{{ action }} Payment Method</h1>
+        <p class="ux-subtitle">Save a quick payment reference for faster checkout next time.</p>
+      </div>
+    </div>
+
+    <div class="ux-card">
+      <div class="ux-card-head">
+        <h2 class="ux-card-title">Payment Method Details</h2>
+      </div>
+      <div class="ux-card-body">
+        <div class="ux-alert info">
+          <strong><i class="fas fa-lock"></i> Security first:</strong> only tokenized references are stored. Raw card details are not stored in this form.
+        </div>
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <div class="ux-form-grid">
+            <div class="ux-form-group full">
+              <label for="{{ form.payment_type.id_for_label }}" class="ux-label">Payment Type</label>
               {{ form.payment_type }}
+              <small class="ux-help">Select the method you want to reuse at checkout.</small>
               {% if form.payment_type.errors %}
                 <div class="invalid-feedback d-block">{{ form.payment_type.errors }}</div>
               {% endif %}
             </div>
 
-            <div class="mb-3">
-              <label for="{{ form.display_name.id_for_label }}" class="form-label">Display Name *</label>
+            <div class="ux-form-group full">
+              <label for="{{ form.display_name.id_for_label }}" class="ux-label">Method Name</label>
               {{ form.display_name }}
-              <small class="form-text text-muted">A friendly name like "My Visa Card" or "My UPI"</small>
+              <small class="ux-help" id="nameHint">Example: "My Visa" or "Personal UPI"</small>
               {% if form.display_name.errors %}
                 <div class="invalid-feedback d-block">{{ form.display_name.errors }}</div>
               {% endif %}
             </div>
 
-            <div class="mb-3">
-              <label for="{{ form.last_four.id_for_label }}" class="form-label">Last 4 Digits (Optional)</label>
+            <div class="ux-form-group full" id="lastFourWrap">
+              <label for="{{ form.last_four.id_for_label }}" class="ux-label">Last 4 Digits (Optional)</label>
               {{ form.last_four }}
-              <small class="form-text text-muted">For your reference only (e.g., 4242)</small>
+              <small class="ux-help" id="lastFourHint">Useful for cards (example: 4242).</small>
               {% if form.last_four.errors %}
                 <div class="invalid-feedback d-block">{{ form.last_four.errors }}</div>
               {% endif %}
             </div>
+          </div>
 
-            <div class="form-check mb-4">
-              <input type="checkbox" class="form-check-input" id="{{ form.is_default.id_for_label }}" 
-                     name="{{ form.is_default.name }}" {% if form.is_default.value %}checked{% endif %}>
-              <label class="form-check-label" for="{{ form.is_default.id_for_label }}">
-                Set as default payment method
-              </label>
-            </div>
+          <div class="form-check mb-3">
+            <input type="checkbox" class="form-check-input" id="{{ form.is_default.id_for_label }}" name="{{ form.is_default.name }}" {% if form.is_default.value %}checked{% endif %}>
+            <label class="form-check-label" for="{{ form.is_default.id_for_label }}">Use as my default payment method</label>
+          </div>
 
-            <div class="alert alert-warning">
-              <i class="fas fa-info-circle"></i> 
-              <strong>Note:</strong> In production, actual card details would be processed through a secure payment gateway (Stripe, Razorpay, etc.). This form saves tokenized references only.
-            </div>
+          <div class="ux-alert warn">
+            <strong>Note:</strong> This record helps with faster selection only. Real payment processing happens through configured checkout gateways.
+          </div>
 
-            <hr>
-
-            <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Save Payment Method
-              </button>
-              <a href="{% url 'store:payment_method_list' %}" class="btn btn-outline-secondary">
-                Cancel
-              </a>
-            </div>
-          </form>
-        </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;">
+            <button type="submit" class="ux-btn-primary">
+              <i class="fas fa-save"></i> Save Payment Method
+            </button>
+            <a href="{% url 'store:payment_method_list' %}" class="ux-btn-secondary">Cancel</a>
+          </div>
+        </form>
       </div>
     </div>
   </div>
-</div>
+</section>
+
+<script>
+  (function () {
+    const paymentType = document.getElementById('{{ form.payment_type.id_for_label }}');
+    const lastFourWrap = document.getElementById('lastFourWrap');
+    const lastFourHint = document.getElementById('lastFourHint');
+    const nameHint = document.getElementById('nameHint');
+
+    function updateFieldGuidance() {
+      const value = (paymentType.value || '').toLowerCase();
+      if (value.includes('upi')) {
+        lastFourWrap.style.display = 'none';
+        nameHint.textContent = 'Example: "Personal UPI" or "Business UPI"';
+      } else if (value.includes('wallet')) {
+        lastFourWrap.style.display = 'none';
+        nameHint.textContent = 'Example: "My wallet account"';
+      } else if (value.includes('netbanking')) {
+        lastFourWrap.style.display = 'block';
+        lastFourHint.textContent = 'Optional: use branch/account hint if needed.';
+        nameHint.textContent = 'Example: "Primary Bank Account"';
+      } else {
+        lastFourWrap.style.display = 'block';
+        lastFourHint.textContent = 'Useful for cards (example: 4242).';
+        nameHint.textContent = 'Example: "My Visa" or "Personal UPI"';
+      }
+    }
+
+    if (paymentType) {
+      paymentType.addEventListener('change', updateFieldGuidance);
+      updateFieldGuidance();
+    }
+  })();
+</script>
 {% endblock %}

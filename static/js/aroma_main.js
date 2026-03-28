@@ -94,14 +94,22 @@ $(function() {
 	}
   mailChimp();
   
-  //------- fixed navbar --------//  
-  $(window).scroll(function(){
-    var sticky = $('.header_area'),
-    scroll = $(window).scrollTop();
+  //------- fixed navbar --------//
+  // Keep compatibility with both existing class names and avoid layout jump.
+  function syncFixedHeader() {
+    var sticky = $('.header_area');
+    var scroll = $(window).scrollTop();
+    if (scroll >= 100) {
+      sticky.addClass('fixed navbar_fixed');
+      $('body').addClass('header-is-fixed');
+    } else {
+      sticky.removeClass('fixed navbar_fixed');
+      $('body').removeClass('header-is-fixed');
+    }
+  }
 
-    if (scroll >= 100) sticky.addClass('fixed');
-    else sticky.removeClass('fixed');
-  });
+  $(window).on('scroll', syncFixedHeader);
+  syncFixedHeader();
 
   //------- Price Range slider -------//
   if(document.getElementById("price-range")){

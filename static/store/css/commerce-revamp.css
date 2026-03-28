@@ -1,0 +1,679 @@
+:root {
+  --ux-bg: #f3f6fb;
+  --ux-surface: #ffffff;
+  --ux-text: #1a2533;
+  --ux-muted: #5d6b7a;
+  --ux-border: #d9e2ec;
+  --ux-primary: #1261d1;
+  --ux-primary-strong: #0f4dac;
+  --ux-accent: #00a1a7;
+  --ux-accent-2: #1261d1;
+  --ux-success: #1f8b4d;
+  --ux-warning: #ab6e00;
+  --ux-danger: #bf2d2d;
+  --ux-shadow: 0 12px 36px rgba(18, 97, 209, 0.08);
+  --ux-radius: 16px;
+}
+
+/* Global non-landing skin so all pages (except home) feel consistent. */
+body.non-landing {
+  background:
+    radial-gradient(circle at 10% -10%, rgba(0, 161, 167, 0.1), transparent 40%),
+    radial-gradient(circle at 95% 5%, rgba(18, 97, 209, 0.12), transparent 40%),
+    var(--ux-bg);
+}
+
+body.non-landing .section-margin,
+body.non-landing .section-margin--small,
+body.non-landing .section-margin--small.mb-5,
+body.non-landing .py-5 {
+  background: transparent;
+}
+
+body.non-landing .card,
+body.non-landing .blog_details,
+body.non-landing .comments-area,
+body.non-landing .quote-wrapper {
+  border-radius: var(--ux-radius);
+  border: 1px solid var(--ux-border);
+  box-shadow: var(--ux-shadow);
+}
+
+body.non-landing .alert {
+  border-radius: 12px;
+}
+
+body.non-landing .button,
+body.non-landing .button-header,
+body.non-landing .btn-primary {
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+body.non-landing .btn-outline-secondary,
+body.non-landing .btn-outline-primary,
+body.non-landing .btn-outline-danger,
+body.non-landing .btn-outline-success {
+  border-radius: 12px;
+}
+
+body.non-landing input.form-control,
+body.non-landing select.form-control,
+body.non-landing textarea.form-control,
+body.non-landing .nice-select {
+  border-radius: 12px;
+  border-color: #cfdced;
+}
+
+body.non-landing .table {
+  background: #fff;
+  border-radius: 12px;
+}
+
+body.non-landing .table thead th {
+  border-top: none;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 0.75rem;
+}
+
+body.non-landing .breadcrumb {
+  background: transparent;
+  margin-bottom: 0;
+}
+
+body.non-landing .badge,
+body.non-landing .bg-warning,
+body.non-landing .bg-success,
+body.non-landing .bg-danger,
+body.non-landing .bg-info,
+body.non-landing .bg-primary,
+body.non-landing .bg-secondary {
+  border-radius: 999px;
+  padding: 0.45rem 0.7rem;
+  font-weight: 700;
+}
+
+body.non-landing .pagination .page-link {
+  border-radius: 10px;
+  border: 1px solid #dbe7f6;
+  color: #335;
+  margin: 0 3px;
+}
+
+body.non-landing .pagination .page-item.active .page-link {
+  background: linear-gradient(135deg, var(--ux-accent), var(--ux-accent-2));
+  border-color: transparent;
+  color: #fff;
+}
+
+body.non-landing .hero-banner .breadcrumb-item + .breadcrumb-item::before {
+  color: #7f90a6;
+}
+
+body.non-landing .table-responsive {
+  border-radius: 12px;
+}
+
+body.non-landing .form-check-input {
+  border-radius: 6px;
+}
+
+body.non-landing .section-intro p,
+body.non-landing .section-intro__style {
+  color: var(--ux-accent);
+}
+
+/* Keep footer visual language separate from content cards. */
+body.non-landing .footer-area {
+  background: linear-gradient(180deg, #05284e 0%, #031f3b 100%);
+  padding-top: 42px;
+  padding-bottom: 26px;
+}
+
+body.non-landing .footer-bottom {
+  background: #02172d;
+  border-top: 1px solid rgba(165, 198, 240, 0.2);
+}
+
+body.non-landing .footer-area .single-footer-widget {
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+body.non-landing .footer-area .footer_title {
+  color: #f2f7ff;
+  margin-bottom: 14px;
+}
+
+body.non-landing .footer-area p,
+body.non-landing .footer-area a,
+body.non-landing .footer-area li,
+body.non-landing .footer-bottom .footer-text {
+  color: #bfd5ef;
+}
+
+body.non-landing .footer-area .sm-head {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+body.non-landing .footer-area .list li {
+  margin-bottom: 8px;
+}
+
+body.non-landing .footer-area .list li a:hover {
+  color: #ffffff;
+}
+
+body.non-landing .footer-area .instafeed li img {
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+body.non-landing .footer-area .footer-social-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+body.non-landing .footer-area .footer-social-link {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff !important;
+  background: linear-gradient(135deg, #2b6ddf, #1d52ad) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  opacity: 1;
+  visibility: visible;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+body.non-landing .footer-area .footer-social-link:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+body.non-landing .footer-area .footer-social-link i {
+  font-size: 14px;
+  line-height: 1;
+}
+
+body.non-landing .footer-area .footer-social-fallback {
+  display: inline-block;
+  margin-left: 0;
+}
+
+body.non-landing .footer-area .footer-social-link i + .footer-social-fallback {
+  display: none;
+}
+
+/* Smooth and predictable sticky header on non-landing pages. */
+body.non-landing .header_area,
+body.non-landing .header_area .main_menu {
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body.non-landing .header_area.fixed .main_menu,
+body.non-landing .header_area.navbar_fixed .main_menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: saturate(140%) blur(6px);
+  box-shadow: 0 8px 20px rgba(5, 35, 66, 0.08);
+  transform: none;
+}
+
+body.non-landing.header-is-fixed {
+  padding-top: 96px;
+}
+
+@media (max-width: 991px) {
+  body.non-landing.header-is-fixed {
+    padding-top: 0;
+  }
+
+  body.non-landing .header_area.fixed .main_menu,
+  body.non-landing .header_area.navbar_fixed .main_menu {
+    position: relative;
+    backdrop-filter: none;
+  }
+}
+
+.ux-page {
+  background:
+    radial-gradient(circle at 10% -10%, rgba(0, 161, 167, 0.12), transparent 40%),
+    radial-gradient(circle at 95% 5%, rgba(18, 97, 209, 0.14), transparent 40%),
+    var(--ux-bg);
+  min-height: calc(100vh - 140px);
+  padding: 36px 0 56px;
+}
+
+.ux-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.ux-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.ux-title {
+  font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  color: var(--ux-text);
+  margin: 0;
+}
+
+.ux-subtitle {
+  margin: 6px 0 0;
+  color: var(--ux-muted);
+  font-size: 0.98rem;
+}
+
+.ux-pill-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ux-pill {
+  border: 1px solid var(--ux-border);
+  background: var(--ux-surface);
+  border-radius: 999px;
+  color: var(--ux-muted);
+  padding: 8px 14px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.ux-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  width: auto;
+  height: auto;
+  min-height: 0;
+}
+
+.ux-card.sticky {
+  position: sticky;
+  top: 96px;
+  z-index: 3;
+}
+
+.ux-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ux-step-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #9db6d5;
+}
+
+.ux-step.active .ux-step-dot {
+  background: var(--ux-primary);
+}
+
+.ux-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.ux-grid.twocol {
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: start;
+}
+
+.ux-card {
+  background: var(--ux-surface);
+  border: 1px solid var(--ux-border);
+  border-radius: var(--ux-radius);
+  box-shadow: var(--ux-shadow);
+  overflow: hidden;
+}
+
+.ux-card-head {
+  border-bottom: 1px solid var(--ux-border);
+  padding: 16px 18px;
+  background: linear-gradient(90deg, rgba(18, 97, 209, 0.08), rgba(0, 161, 167, 0.08));
+}
+
+.ux-card-title {
+  margin: 0;
+  color: var(--ux-text);
+  font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+.ux-card-body {
+  padding: 18px;
+}
+
+.ux-summary-line {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  color: var(--ux-muted);
+  font-weight: 600;
+}
+
+.ux-summary-line.total {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--ux-border);
+  color: var(--ux-text);
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+
+.ux-btn-primary,
+.ux-btn-secondary,
+.ux-btn-ghost {
+  border-radius: 12px;
+  border: none;
+  padding: 12px 16px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.ux-btn-primary {
+  color: #fff;
+  background: linear-gradient(90deg, var(--ux-primary), var(--ux-primary-strong));
+}
+
+.ux-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(18, 97, 209, 0.24);
+  color: #fff;
+}
+
+.ux-btn-secondary {
+  color: var(--ux-text);
+  border: 1px solid var(--ux-border);
+  background: #f9fbff;
+}
+
+.ux-btn-secondary:hover {
+  border-color: #b8cde4;
+}
+
+.ux-btn-ghost {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ux-muted);
+}
+
+.ux-alert {
+  border-radius: 12px;
+  border: 1px solid;
+  padding: 12px 14px;
+  font-size: 0.93rem;
+  margin-bottom: 16px;
+}
+
+.ux-alert.warn {
+  border-color: #ecd4a0;
+  background: #fff7e8;
+  color: #7b4a00;
+}
+
+.ux-alert.info {
+  border-color: #b4d0ef;
+  background: #edf5ff;
+  color: #184a85;
+}
+
+.ux-table {
+  width: 100%;
+}
+
+.ux-table th,
+.ux-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #e8eff7;
+  vertical-align: middle;
+}
+
+.ux-table th {
+  color: #4c5c6d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.75rem;
+}
+
+.ux-product {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.ux-product img,
+.ux-thumb-empty {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #ecf2f9;
+  display: grid;
+  place-items: center;
+  color: #6f7b88;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.ux-product-name {
+  margin: 0;
+  color: var(--ux-text);
+  font-weight: 700;
+}
+
+.ux-product-sub {
+  margin: 2px 0 0;
+  color: var(--ux-muted);
+  font-size: 0.86rem;
+}
+
+.ux-qty {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #cfdced;
+  border-radius: 999px;
+  background: #f9fbff;
+}
+
+.ux-qty button {
+  border: none;
+  background: transparent;
+  color: #24508a;
+  width: 34px;
+  height: 34px;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.ux-qty input {
+  width: 40px;
+  text-align: center;
+  border: none;
+  background: transparent;
+  font-weight: 700;
+}
+
+.ux-remove {
+  border: 1px solid #edc7c7;
+  background: #fff4f4;
+  color: var(--ux-danger);
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+.ux-radio-card {
+  position: relative;
+}
+
+.ux-radio-card input[type='radio'] {
+  position: absolute;
+  opacity: 0;
+}
+
+.ux-radio-card label {
+  display: block;
+  border: 1px solid var(--ux-border);
+  border-radius: 14px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #fff;
+}
+
+.ux-radio-card input[type='radio']:checked + label {
+  border-color: var(--ux-primary);
+  box-shadow: 0 0 0 2px rgba(18, 97, 209, 0.13);
+  background: #f5faff;
+}
+
+.ux-radio-title {
+  margin: 0;
+  font-weight: 800;
+  color: var(--ux-text);
+  font-size: 0.98rem;
+}
+
+.ux-radio-sub {
+  margin: 4px 0 0;
+  color: var(--ux-muted);
+  font-size: 0.86rem;
+}
+
+.ux-trust-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #3e5369;
+  font-size: 0.9rem;
+}
+
+.ux-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.ux-form-group {
+  margin-bottom: 16px;
+}
+
+.ux-form-group.full {
+  grid-column: 1 / -1;
+}
+
+.ux-label {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #2b3b4e;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.ux-form-group .form-control,
+.ux-form-group .form-select,
+.ux-form-group select,
+.ux-form-group input {
+  border-radius: 12px;
+  border: 1px solid #cfdced;
+  height: 44px;
+  width: 100%;
+}
+
+/* If global scripts convert select elements to nice-select, keep it full-width and aligned. */
+.ux-form-group .nice-select {
+  width: 100%;
+  float: none;
+  height: 44px;
+  line-height: 42px;
+  border-radius: 12px;
+  border: 1px solid #cfdced;
+}
+
+.ux-form-group .nice-select .list {
+  width: 100%;
+}
+
+.ux-help {
+  display: block;
+  color: #6e7e8f;
+  font-size: 0.82rem;
+  margin-top: 5px;
+}
+
+.ux-empty {
+  text-align: center;
+  padding: 56px 22px;
+}
+
+.ux-empty h3 {
+  margin: 12px 0 6px;
+  font-weight: 800;
+}
+
+@media (max-width: 992px) {
+  .ux-grid.twocol {
+    grid-template-columns: 1fr;
+  }
+
+  .ux-card.sticky {
+    position: static !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .ux-header {
+    flex-direction: column;
+  }
+
+  .ux-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ux-table th:nth-child(2),
+  .ux-table td:nth-child(2),
+  .ux-table th:nth-child(5),
+  .ux-table td:nth-child(5) {
+    display: none;
+  }
+}

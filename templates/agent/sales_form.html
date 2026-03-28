@@ -2,14 +2,21 @@
 {% load widget_tweaks %}
 
 {% block agent_content %}
-<div class="mb-4">
-    <h3 class="text-dark">Record Sale</h3>
+<div class="agent-toolbar">
+    <div>
+        <h3>Record Sale</h3>
+        <p class="subtitle">Capture offline/direct sales accurately to keep inventory and reports up to date.</p>
+    </div>
 </div>
 
-<div class="card">
+<div class="agent-form-shell">
+    <div class="agent-form-main card">
     <div class="card-body">
         <form method="post">
             {% csrf_token %}
+
+            <div class="agent-form-section">
+                <h6>Transaction Details</h6>
             
             <div class="row mb-3">
                 <div class="col-md-6">
@@ -44,12 +51,13 @@
                            value="{% now 'Y-m-dTH:i' %}">
                 </div>
             </div>
+            </div>
             
-            <div class="alert alert-info">
+            <div class="alert alert-info" style="margin-bottom:0;">
                 <strong>Note:</strong> The total amount will be calculated automatically as Quantity × Unit Price
             </div>
             
-            <div class="mt-4">
+            <div class="agent-form-actions">
                 <button type="submit" class="btn btn-success">
                     <i class="fas fa-save mr-2"></i> Record Sale
                 </button>
@@ -57,5 +65,20 @@
             </div>
         </form>
     </div>
+    </div>
+
+    <aside class="agent-form-side">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fas fa-clipboard-check mr-2"></i>Quick Checklist</h5></div>
+            <div class="card-body">
+                <ul class="agent-tips-list">
+                    <li>Select the exact product variant sold.</li>
+                    <li>Confirm quantity before saving.</li>
+                    <li>Use actual unit price for clean margin reports.</li>
+                    <li>Backdate transaction only when needed.</li>
+                </ul>
+            </div>
+        </div>
+    </aside>
 </div>
 {% endblock %}

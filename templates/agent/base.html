@@ -4,46 +4,63 @@
 {% block extra_head %}
 <style>
     :root {
-        --primary: #2e7d32;
-        --primary-light: #4caf50;
-        --primary-dark: #1b5e20;
-        --accent: #00bfa5;
+        --primary: #1261d1;
+        --primary-light: #2d79e3;
+        --primary-dark: #0f4dac;
+        --accent: #00a1a7;
         --danger: #e53935;
         --warning: #fb8c00;
         --info: #1976d2;
         --success: #43a047;
-        --dark: #1a237e;
-        --light: #f5f7fa;
-        --border: #e0e3e8;
+        --dark: #1a2533;
+        --light: #f3f6fb;
+        --border: #d9e2ec;
     }
 
     * {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    body {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    body.non-landing {
+        background:
+            radial-gradient(circle at 10% -10%, rgba(0, 161, 167, 0.1), transparent 40%),
+            radial-gradient(circle at 95% 5%, rgba(18, 97, 209, 0.12), transparent 40%),
+            var(--light);
         min-height: 100vh;
     }
     
     /* ===== HEADER ===== */
     .agent-header {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-        color: white;
-        padding: 15px 0;
-        box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15);
+        background: rgba(255, 255, 255, 0.96);
+        color: var(--dark);
+        padding: 12px 0;
+        box-shadow: 0 6px 18px rgba(5, 35, 66, 0.08);
         margin-bottom: 0;
-        border-bottom: 3px solid var(--accent);
+        border-bottom: 1px solid var(--border);
         position: sticky;
         top: 0;
-        z-index: 100;
+        z-index: 200;
+        backdrop-filter: blur(8px);
+    }
+
+    .agent-sidebar-toggle {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #f8fbff;
+        color: var(--primary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
     }
     
     .agent-header .logo {
         font-size: 20px;
         font-weight: 700;
         text-decoration: none;
-        color: white;
+        color: var(--dark);
         display: flex;
         align-items: center;
         gap: 8px;
@@ -54,18 +71,51 @@
     }
     
     .agent-header a {
-        color: white;
+        color: var(--dark);
         text-decoration: none;
         transition: all 0.3s ease;
     }
     
     .agent-header a:hover {
-        color: #fff9e6;
+        color: var(--primary);
         transform: translateY(-2px);
     }
     
     .agent-header .dropdown-toggle::after {
         display: none;
+    }
+
+    .agent-company-name {
+        margin-left: 16px;
+        color: #53667d;
+        font-weight: 700;
+        font-size: 0.93rem;
+    }
+
+    .agent-user-trigger {
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--dark) !important;
+        background: #f7fbff;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .agent-user-trigger i {
+        font-size: 18px;
+        color: var(--primary);
+    }
+
+    .agent-user-trigger:hover {
+        color: var(--primary) !important;
+        background: #edf5ff;
+        border-color: #c8d9ef;
+        transform: none !important;
     }
 
     .agent-header .dropdown-menu {
@@ -94,12 +144,25 @@
     /* ===== SIDEBAR ===== */
     .agent-sidebar {
         min-height: calc(100vh - 60px);
-        background: white;
+        background: rgba(255, 255, 255, 0.95);
         border-right: 1px solid var(--border);
         padding: 24px 0;
         position: sticky;
-        top: 60px;
-        box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+        top: 72px;
+        box-shadow: 0 12px 24px rgba(18, 97, 209, 0.06);
+        backdrop-filter: blur(6px);
+    }
+
+    .agent-sidebar-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(12, 23, 38, 0.45);
+        z-index: 98;
+        display: none;
+    }
+
+    .agent-sidebar-overlay.show {
+        display: block;
     }
 
     .agent-sidebar-header {
@@ -220,7 +283,7 @@
 
     /* ===== CONTENT ===== */
     .agent-content {
-        padding: 32px;
+        padding: 28px;
         background-color: transparent;
         min-height: calc(100vh - 60px);
     }
@@ -347,6 +410,166 @@
         font-weight: 600;
     }
 
+        .agent-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+
+        .agent-toolbar h3 {
+            margin: 0;
+            color: var(--dark);
+            font-weight: 800;
+        }
+
+        .agent-toolbar .subtitle {
+            margin: 4px 0 0;
+            color: #77879a;
+            font-size: 0.9rem;
+        }
+
+        .agent-filter-card {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 10px 22px rgba(18, 97, 209, 0.06);
+        }
+
+        .agent-filter-grid {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .agent-filter-grid > * {
+            grid-column: span 3;
+        }
+
+        .agent-filter-grid .wide {
+            grid-column: span 4;
+        }
+
+        .agent-filter-grid .actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .agent-kpi {
+            border-left: 4px solid var(--primary);
+            padding: 16px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(18, 97, 209, 0.06);
+            height: 100%;
+        }
+
+        .agent-kpi .label {
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: #68839f;
+            font-weight: 700;
+        }
+
+        .agent-kpi .value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--dark);
+        }
+
+        .agent-kpi .icon {
+            color: var(--primary);
+            opacity: 0.9;
+        }
+
+        .agent-empty {
+            text-align: center;
+            padding: 42px 16px;
+            color: #7a8da3;
+        }
+
+        .agent-empty i {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .agent-table-actions {
+            display: inline-flex;
+            gap: 6px;
+        }
+
+        .agent-section-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .agent-progress {
+            height: 10px;
+            border-radius: 999px;
+            background: #eaf0f8;
+            overflow: hidden;
+        }
+
+        .agent-progress > span {
+            display: block;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+        }
+
+        .agent-form-shell {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 320px;
+            gap: 16px;
+        }
+
+        .agent-form-main,
+        .agent-form-side {
+            min-width: 0;
+        }
+
+        .agent-form-section {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #fff;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+
+        .agent-form-section h6 {
+            font-size: 0.86rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: #577495;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .agent-form-help {
+            font-size: 0.82rem;
+            color: #74879c;
+            margin-top: 6px;
+        }
+
+        .agent-form-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .agent-tips-list {
+            margin: 0;
+            padding-left: 18px;
+            color: #5f7185;
+            font-size: 0.88rem;
+        }
+
     /* ===== TABLES ===== */
     .table {
         background: white;
@@ -472,9 +695,9 @@
 
     /* ===== CARDS ===== */
     .card {
-        border: none;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 12px 24px rgba(18, 97, 209, 0.06);
         margin-bottom: 24px;
         transition: all 0.3s ease;
     }
@@ -484,10 +707,10 @@
     }
 
     .card-header {
-        background: linear-gradient(135deg, #f5f7fa 0%, #e8eef7 100%);
+        background: linear-gradient(90deg, rgba(18, 97, 209, 0.08), rgba(0, 161, 167, 0.08));
         border-bottom: 2px solid var(--border);
-        border-top-left-radius: 8px;
-        border-top-right-radius: 8px;
+        border-top-left-radius: 14px;
+        border-top-right-radius: 14px;
         padding: 20px;
         font-weight: 600;
         color: var(--dark);
@@ -624,12 +847,13 @@
         .agent-sidebar {
             position: fixed;
             left: -300px;
-            top: 60px;
+            top: 0;
             width: 280px;
-            height: calc(100vh - 60px);
+            height: 100vh;
             transition: all 0.3s ease;
             z-index: 99;
             box-shadow: 2px 0 12px rgba(0,0,0,0.1);
+            padding-top: 86px;
         }
 
         .agent-sidebar.show {
@@ -637,7 +861,7 @@
         }
 
         .agent-content {
-            padding: 20px;
+            padding: 16px;
         }
 
         .page-header h3 {
@@ -651,6 +875,15 @@
         .metric-value {
             font-size: 24px;
         }
+
+            .agent-filter-grid > *,
+            .agent-filter-grid .wide {
+                grid-column: span 12;
+            }
+
+            .agent-form-shell {
+                grid-template-columns: 1fr;
+            }
     }
 
     /* ===== ANIMATIONS ===== */
@@ -721,25 +954,35 @@
     <div class="container-fluid px-4">
         <div class="d-flex justify-content-between align-items-center py-2">
             <div class="d-flex align-items-center">
+                <button type="button" class="agent-sidebar-toggle d-md-none" id="agentSidebarToggle" aria-label="Open menu">
+                    <i class="fas fa-bars"></i>
+                </button>
                 <a href="{% url 'agent:dashboard' %}" class="logo">
                     <i class="fas fa-store"></i>
                     <span>Agent Portal</span>
                 </a>
                 {% if request.user.agentprofile %}
-                <div class="ml-4 text-white">
+                <div class="agent-company-name">
                     <strong>{{ request.user.agentprofile.company_name }}</strong>
                 </div>
                 {% endif %}
             </div>
             
             <div class="dropdown">
-                <a class="text-white dropdown-toggle" href="#" role="button" data-toggle="dropdown" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-user-circle" style="font-size: 20px;"></i>
+                <a class="agent-user-trigger dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-label="Account menu">
+                    <i class="fas fa-user-circle"></i>
                     <span>{{ request.user.first_name|default:request.user.username }}</span>
                 </a>
                 <div class="dropdown-menu dropdown-menu-right">
+                    <a class="dropdown-item" href="{% url 'agent:messages' %}">
+                        <i class="fas fa-comments" style="width: 16px;"></i> Messages
+                        <span class="badge badge-primary ml-1 chat-unread-count" data-kind="agent" {% if not agent_unread_messages %}style="display:none;"{% endif %}>{{ agent_unread_messages }}</span>
+                    </a>
                     <a class="dropdown-item" href="{% url 'agent:profile_detail' %}">
                         <i class="fas fa-user" style="width: 16px;"></i> Profile
+                    </a>
+                    <a class="dropdown-item" href="{% url 'store:product_list' %}">
+                        <i class="fas fa-exchange-alt" style="width: 16px;"></i> Switch to Storefront
                     </a>
                     <div class="dropdown-divider"></div>
                     <a class="dropdown-item" href="{% url 'store:logout' %}">
@@ -755,8 +998,9 @@
 {% block content %}
 <div class="container-fluid p-0">
     <div class="row g-0 min-vh-100" style="background: transparent;">
+        <div class="agent-sidebar-overlay d-md-none" id="agentSidebarOverlay"></div>
         <!-- Sidebar -->
-        <div class="col-md-3 agent-sidebar">
+        <div class="col-md-3 agent-sidebar" id="agentSidebar">
             <div class="agent-sidebar-header">
                 <h5><i class="fas fa-tachometer-alt mr-2"></i>Dashboard</h5>
                 <small>{{ request.user.agentprofile.company_name }}</small>
@@ -804,6 +1048,13 @@
                     <i class="fas fa-inbox"></i>
                     <span>Incoming Orders</span>
                 </a>
+
+                     <a href="{% url 'agent:messages' %}"
+                         class="nav-link {% if 'messages' in request.resolver_match.url_name %}active{% endif %}">
+                          <i class="fas fa-comments"></i>
+                         <span>Messages</span>
+                         <span class="badge badge-primary ml-2 chat-unread-count" data-kind="agent" {% if not agent_unread_messages %}style="display:none;"{% endif %}>{{ agent_unread_messages }}</span>
+                     </a>
                 
                 <a href="{% url 'agent:delivery_partners' %}" 
                    class="nav-link {% if 'delivery_partner' in request.resolver_match.url_name %}active{% endif %}">
@@ -857,4 +1108,40 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const toggleBtn = document.getElementById('agentSidebarToggle');
+    const sidebar = document.getElementById('agentSidebar');
+    const overlay = document.getElementById('agentSidebarOverlay');
+
+    if (!toggleBtn || !sidebar || !overlay) return;
+
+    function closeSidebar() {
+        sidebar.classList.remove('show');
+        overlay.classList.remove('show');
+    }
+
+    function openSidebar() {
+        sidebar.classList.add('show');
+        overlay.classList.add('show');
+    }
+
+    toggleBtn.addEventListener('click', function () {
+        if (sidebar.classList.contains('show')) {
+            closeSidebar();
+        } else {
+            openSidebar();
+        }
+    });
+
+    overlay.addEventListener('click', closeSidebar);
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeSidebar();
+    });
+});
+</script>
 {% endblock %}

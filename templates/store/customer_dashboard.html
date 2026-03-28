@@ -202,7 +202,7 @@
                 <td>#{{ order.id }}</td>
                 <td>{{ order.created_at|date:"M d, Y" }}</td>
                 <td>{{ order.items.count }}</td>
-                <td>₹{{ order.total }}</td>
+                <td>NPR {{ order.total }}</td>
                 <td>
                   {% if order.status == 'pending' %}
                     <span class="badge bg-warning">Pending</span>

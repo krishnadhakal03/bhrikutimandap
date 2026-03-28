@@ -2,32 +2,27 @@
 {% load widget_tweaks %}
 
 {% block agent_content %}
-<div class="mb-4">
-    <h3 class="text-dark">Adjust Stock</h3>
-    <small class="text-muted">{{ product.title }}</small>
+<div class="agent-toolbar">
+    <div>
+        <h3><i class="fas fa-sliders-h"></i> Adjust Stock</h3>
+        <p class="subtitle">{{ product.title }} - current stock: {{ product.stock }} units</p>
+    </div>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        <form method="post">
-            {% csrf_token %}
-            
-            <div class="alert alert-info">
-                <strong>Current Stock:</strong> {{ product.stock }} units
-            </div>
-            
-            <div class="row mb-3">
+<form method="post" class="agent-form-shell">
+    {% csrf_token %}
+    <div class="agent-form-main">
+        <div class="agent-form-section">
+            <h6>Adjustment Details</h6>
+            <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label">{{ form.action.label }}</label>
                     {{ form.action|add_class:"form-select" }}
                     {% if form.action.errors %}
                     <div class="invalid-feedback d-block">{{ form.action.errors }}</div>
                     {% endif %}
-                    <small class="text-muted d-block mt-2">
-                        increase, decrease, adjustment, return, or damage
-                    </small>
+                    <p class="agent-form-help">increase, decrease, adjustment, return, or damage</p>
                 </div>
-                
                 <div class="col-md-6">
                     <label class="form-label">{{ form.quantity_changed.label }}</label>
                     {{ form.quantity_changed|add_class:"form-control" }}
@@ -36,29 +31,35 @@
                     {% endif %}
                 </div>
             </div>
-            
-            <div class="row mb-3">
-                <div class="col-12">
-                    <label class="form-label">{{ form.reason.label }}</label>
-                    {{ form.reason|add_class:"form-control" }}
-                    {% if form.reason.errors %}
-                    <div class="invalid-feedback d-block">{{ form.reason.errors }}</div>
-                    {% endif %}
-                    <small class="text-muted">e.g., "Received shipment", "Damaged items", "Customer return"</small>
-                </div>
-            </div>
-            
-            <div class="alert alert-warning mt-4">
-                <strong>Note:</strong> This action will create an audit trail. The new stock will be calculated based on your action type.
-            </div>
-            
-            <div class="mt-4">
-                <button type="submit" class="btn btn-success">
-                    <i class="fas fa-save mr-2"></i> Adjust Stock
-                </button>
-                <a href="{% url 'agent:stock_overview' %}" class="btn btn-secondary">Cancel</a>
-            </div>
-        </form>
+        </div>
+
+        <div class="agent-form-section">
+            <h6>Reason</h6>
+            <label class="form-label">{{ form.reason.label }}</label>
+            {{ form.reason|add_class:"form-control" }}
+            {% if form.reason.errors %}
+            <div class="invalid-feedback d-block">{{ form.reason.errors }}</div>
+            {% endif %}
+            <p class="agent-form-help">Example: Received shipment, Damaged items, Customer return.</p>
+        </div>
+
+        <div class="agent-form-actions">
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-save mr-2"></i> Save Adjustment
+            </button>
+            <a href="{% url 'agent:stock_overview' %}" class="btn btn-secondary">Cancel</a>
+        </div>
     </div>
-</div>
+
+    <aside class="agent-form-side">
+        <div class="agent-form-section">
+            <h6>Before You Save</h6>
+            <ul class="agent-tips-list">
+                <li>Every adjustment creates an audit trail.</li>
+                <li>Use clear reasons for easier reconciliation.</li>
+                <li>Verify quantity to avoid accidental stock drift.</li>
+            </ul>
+        </div>
+    </aside>
+</form>
 {% endblock %}

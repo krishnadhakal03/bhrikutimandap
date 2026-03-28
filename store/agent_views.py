@@ -16,7 +16,8 @@ import os
 from store.models import (
     User, Product, Order, OrderItem, StockHistory, SalesTransaction,
     StockAlert, AgentProfile, MarketDemandSuggestion,
-    DeliveryPartner, OrderDelivery, DeliveryTracking, ReturnRequest
+    DeliveryPartner, OrderDelivery, DeliveryTracking, ReturnRequest,
+    SellerConversation, SellerMessage
 )
 from store.forms import (
     AgentProfileForm, AgentProductForm, StockAdjustmentForm,
@@ -74,6 +75,10 @@ def agent_dashboard(request):
     
     # Get or create agent profile
     agent_profile, created = AgentProfile.objects.get_or_create(user=agent)
+    unread_messages = SellerMessage.objects.filter(
+        conversation__seller=agent,
+        is_read=False,
+    ).exclude(sender=agent).count()
     
     context = {
         'agent_profile': agent_profile,
@@ -84,6 +89,7 @@ def agent_dashboard(request):
         'top_products': top_products,
         'recent_sales': recent_sales,
         'days_back': days_back,
+        'unread_messages': unread_messages,
     }
     
     return render(request, 'agent/dashboard.html', context)
@@ -1073,3 +1079,39 @@ def agent_set_preferred_partner(request, partner_id):
         return JsonResponse({'status': 'success', 'message': 'Preferred partner updated'})
     
     return redirect('agent:delivery_partners')
+
+
+@login_required
+@agent_required
+def agent_messages(request, conversation_id=None):
+    """Agent inbox for direct customer conversations."""
+    conversations = SellerConversation.objects.filter(seller=request.user).select_related(
+        'customer',
+        'product',
+    ).order_by('-updated_at')
+
+    selected = None
+    if conversation_id:
+        selected = get_object_or_404(conversations, pk=conversation_id)
+
+    # Fast unread counts by conversation
+    unread_by_conversation = {
+        row['conversation_id']: row['total']
+        for row in SellerMessage.objects.filter(
+            conversation__seller=request.user,
+            is_read=False,
+        ).exclude(sender=request.user).values('conversation_id').annotate(total=Count('id'))
+    }
+
+    for conv in conversations:
+        conv.unread_count = unread_by_conversation.get(conv.id, 0)
+
+    # Mark selected conversation messages as read
+    if selected:
+        SellerMessage.objects.filter(conversation=selected, is_read=False).exclude(sender=request.user).update(is_read=True)
+
+    context = {
+        'conversations': conversations,
+        'selected_conversation': selected,
+    }
+    return render(request, 'agent/messages.html', context)

@@ -4,40 +4,46 @@
 {% block title %}Checkout - Bhrikutimandap{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-  <!-- Page Header -->
-  <div class="row mb-4">
-    <div class="col-md-12">
-      <h2>Checkout</h2>
-      <p class="text-muted">Review your order and complete your purchase</p>
+<link rel="stylesheet" href="{% static 'store/css/commerce-revamp.css' %}">
+
+<section class="ux-page">
+  <div class="ux-container">
+    <div class="ux-header">
+      <div>
+        <h1 class="ux-title">Checkout</h1>
+        <p class="ux-subtitle">Confirm delivery, choose payment, and place your order confidently.</p>
+      </div>
+      <div class="ux-pill-row">
+        <span class="ux-pill ux-step"><span class="ux-step-dot"></span>Cart</span>
+        <span class="ux-pill ux-step active"><span class="ux-step-dot"></span>Checkout</span>
+        <span class="ux-pill ux-step"><span class="ux-step-dot"></span>Payment</span>
+      </div>
     </div>
-  </div>
 
   {% if insufficient_stock %}
-  <div class="alert alert-danger" role="alert">
-    <strong>Stock Issues:</strong>
+  <div class="ux-alert warn" role="alert">
+    <strong>Stock availability issue:</strong>
     <ul class="mb-0">
       {% for item in insufficient_stock %}
       <li>{{ item }}</li>
       {% endfor %}
     </ul>
-    <a href="{% url 'store:cart' %}" class="alert-link">Go back to cart</a>
+    <a href="{% url 'store:cart' %}" style="font-weight:700;">Go back to cart</a>
   </div>
   {% endif %}
 
   <form method="post" id="checkoutForm">
     {% csrf_token %}
-    <div class="row">
-      <!-- Left Column: Cart Items & Delivery -->
-      <div class="col-lg-8">
-        <!-- Order Review Section -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-header bg-light border-bottom">
-            <h5 class="mb-0">Order Summary</h5>
+    <div class="ux-grid twocol">
+      <div>
+        <div class="ux-card" style="margin-bottom:16px;">
+          <div class="ux-card-head">
+            <h2 class="ux-card-title">1. Order Review</h2>
           </div>
-          <div class="table-responsive">
-            <table class="table table-hover mb-0">
-              <thead class="table-light">
+          <div class="ux-card-body p-0">
+            <div class="table-responsive">
+              <table class="ux-table">
+                <thead>
                 <tr>
                   <th>Product</th>
                   <th>Quantity</th>
@@ -49,95 +55,104 @@
                 {% for item in cart_items %}
                 <tr>
                   <td>{{ item.product.title }}</td>
-                  <td>{{ item.quantity }}</td>
-                  <td>Rs. {{ item.product.price }}</td>
-                  <td>Rs. {{ item.subtotal }}</td>
+                  <td style="font-weight:700;">{{ item.quantity }}</td>
+                  <td style="font-weight:700;">NPR {{ item.product.price }}</td>
+                  <td style="font-weight:800; color:#124ea6;">NPR {{ item.subtotal }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
-          </div>
-          <div class="card-body border-top">
-            <div class="row">
-              <div class="col-md-8 text-end">
-                <h6 class="text-muted mb-0">Order Total:</h6>
-              </div>
-              <div class="col-md-4">
-                <h5 class="mb-0">Rs. {{ cart_total }}</h5>
-              </div>
+            </div>
+            <div class="ux-card-body" style="display:flex; justify-content:space-between;">
+              <span class="ux-subtitle">Order total</span>
+              <strong style="font-size:1.2rem;">NPR {{ cart_total }}</strong>
             </div>
           </div>
         </div>
 
-        <!-- Delivery Address Section -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-header bg-light border-bottom">
-            <h5 class="mb-0">
-              <i class="fas fa-map-marker-alt"></i> Delivery Address
-            </h5>
+        <div class="ux-card" style="margin-bottom:16px;">
+          <div class="ux-card-head">
+            <h2 class="ux-card-title">2. Delivery Address</h2>
           </div>
-          <div class="card-body">
+          <div class="ux-card-body">
             {% if addresses %}
-            <div class="address-selection">
+            <div class="ux-grid" style="gap:12px;">
               {% for address in addresses %}
-              <div class="form-check mb-3">
-                <input class="form-check-input" type="radio" name="delivery_address" id="address_{{ address.id }}"
+              <div class="ux-radio-card">
+                <input type="radio" name="delivery_address" id="address_{{ address.id }}"
                   value="{{ address.id }}" {% if address.is_default %}checked{% endif %}>
-                <label class="form-check-label w-100" for="address_{{ address.id }}">
-                  <div class="d-flex justify-content-between align-items-start">
+                <label for="address_{{ address.id }}">
+                  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
                     <div>
-                      <strong>{{ address.label }}</strong><br>
-                      <span class="text-muted small">
-                        {{ address.recipient_name }}<br>
+                      <p class="ux-radio-title">{{ address.label }} · {{ address.recipient_name }}</p>
+                      <p class="ux-radio-sub">
                         {{ address.address_line1 }}
-                        {% if address.address_line2 %}<br>{{ address.address_line2 }}{% endif %}<br>
-                        {{ address.city }}, {{ address.state }} {{ address.postal_code }}<br>
-                        {{ address.country }}<br>
-                        <i class="fas fa-phone"></i> {{ address.phone }}
-                      </span>
+                        {% if address.address_line2 %}, {{ address.address_line2 }}{% endif %},
+                        {{ address.city }}, {{ address.state }} {{ address.postal_code }}, {{ address.country }}
+                      </p>
+                      <p class="ux-radio-sub"><i class="fas fa-phone"></i> {{ address.phone }}</p>
                     </div>
                     {% if address.is_default %}
-                    <span class="badge bg-success ms-2">Default</span>
+                    <span class="ux-chip" style="color:#1f8b4d; border:1px solid #b8e2c8; background:#ecfbf2;">Default</span>
                     {% endif %}
                   </div>
                 </label>
               </div>
-              {% if not forloop.last %}
-              <hr>{% endif %}
               {% endfor %}
             </div>
-            <div class="mt-3 pt-3 border-top">
-              <a href="{% url 'store:address_create' %}" class="btn btn-sm btn-outline-primary">
-                <i class="fas fa-plus"></i> Add New Address
+            <div style="margin-top:14px;">
+              <a href="{% url 'store:address_create' %}" class="ux-btn-secondary" style="padding:10px 12px;">
+                <i class="fas fa-plus"></i> Add another address
               </a>
             </div>
             {% else %}
-            <div class="alert alert-warning" role="alert">
-              <i class="fas fa-exclamation-triangle"></i> No addresses found.
-              <a href="{% url 'store:address_create' %}" class="alert-link">Add a delivery address</a>
+            <div class="ux-alert warn" role="alert">
+              <i class="fas fa-exclamation-triangle"></i> No saved address found.
+              <a href="{% url 'store:address_create' %}">Add delivery address</a>
             </div>
             {% endif %}
           </div>
         </div>
 
-        <!-- Payment Method Section -->
-        <div class="card border-0 shadow-sm">
-          <div class="card-header bg-light border-bottom">
-            <h5 class="mb-0">
-              <i class="fas fa-credit-card"></i> Payment Method
-            </h5>
+        <div class="ux-card">
+          <div class="ux-card-head">
+            <h2 class="ux-card-title">3. Payment Method</h2>
           </div>
-          <div class="card-body">
-            {% if payment_methods %}
-            <div class="payment-selection">
-              {% for method in payment_methods %}
-              <div class="form-check mb-3">
-                <input class="form-check-input" type="radio" name="payment_method" id="payment_{{ method.id }}"
-                  value="{{ method.id }}" {% if method.is_default %}checked{% endif %}>
-                <label class="form-check-label w-100" for="payment_{{ method.id }}">
-                  <div class="d-flex justify-content-between align-items-center">
+          <div class="ux-card-body">
+            {% if gateway_options %}
+            <h5 style="font-weight:800; margin:0 0 10px;">Online Gateway</h5>
+            <div class="ux-grid" style="gap:10px; margin-bottom:16px;">
+              {% for gateway in gateway_options %}
+              <div class="ux-radio-card">
+                <input type="radio" name="payment_method" id="gateway_{{ gateway.name }}"
+                  value="gateway:{{ gateway.name }}" {% if gateway.is_default %}checked{% endif %}>
+                <label for="gateway_{{ gateway.name }}">
+                  <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
                     <div>
-                      <strong>
+                      <p class="ux-radio-title"><i class="fas fa-globe"></i> {{ gateway.get_name_display }}</p>
+                      <p class="ux-radio-sub">Secure redirect payment via {{ gateway.get_name_display }}</p>
+                    </div>
+                    {% if gateway.is_default %}
+                    <span class="ux-chip" style="color:#124ea6; border:1px solid #bdd3ef; background:#ecf4ff;">Recommended</span>
+                    {% endif %}
+                  </div>
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if payment_methods %}
+            <h5 style="font-weight:800; margin:0 0 10px;">Saved Methods</h5>
+            <div class="ux-grid" style="gap:10px; margin-bottom:14px;">
+              {% for method in payment_methods %}
+              <div class="ux-radio-card">
+                <input type="radio" name="payment_method" id="payment_{{ method.id }}"
+                  value="{{ method.id }}" {% if method.is_default %}checked{% endif %}>
+                <label for="payment_{{ method.id }}">
+                  <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                    <div>
+                      <p class="ux-radio-title">
                         {% if method.payment_type == 'card' %}
                         <i class="fas fa-credit-card"></i>
                         {% elif method.payment_type == 'upi' %}
@@ -148,146 +163,113 @@
                         <i class="fas fa-wallet"></i>
                         {% endif %}
                         {{ method.display_name }}
-                      </strong><br>
-                      <span class="text-muted small">
+                      </p>
+                      <p class="ux-radio-sub">
                         Type: {{ method.get_payment_type_display }}
                         {% if method.last_four %}
                         | Ending in {{ method.last_four }}
                         {% endif %}
-                      </span>
+                      </p>
                     </div>
                     {% if method.is_default %}
-                    <span class="badge bg-success ms-2">Default</span>
+                    <span class="ux-chip" style="color:#1f8b4d; border:1px solid #b8e2c8; background:#ecfbf2;">Default</span>
                     {% endif %}
                   </div>
                 </label>
               </div>
-              {% if not forloop.last %}
-              <hr>{% endif %}
               {% endfor %}
             </div>
-            <div class="mt-3 pt-3 border-top">
-              <a href="{% url 'store:payment_method_create' %}" class="btn btn-sm btn-outline-primary">
+            <div style="margin-bottom:16px;">
+              <a href="{% url 'store:payment_method_create' %}" class="ux-btn-secondary" style="padding:10px 12px;">
                 <i class="fas fa-plus"></i> Add Payment Method
               </a>
             </div>
-            
-            <!-- COD Option -->
-             <div class="mt-3 border-top pt-3">
-              <div class="form-check mb-3">
-                <input class="form-check-input" type="radio" name="payment_method" id="payment_cod" value="cod">
-                <label class="form-check-label w-100" for="payment_cod">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                      <strong><i class="fas fa-money-bill-wave"></i> Cash on Delivery</strong><br>
-                      <span class="text-muted small">Pay when you receive your order</span>
-                    </div>
-                  </div>
-                </label>
-              </div>
-            </div>
             {% else %}
-            <div class="alert alert-warning" role="alert">
+            {% if not gateway_options %}
+            <div class="ux-alert warn" role="alert">
               <i class="fas fa-exclamation-triangle"></i> No payment methods found.
-              <a href="{% url 'store:payment_method_create' %}" class="alert-link">Add a payment method</a>
+              <a href="{% url 'store:payment_method_create' %}">Add a payment method</a>
             </div>
+            {% endif %}
             {% endif %}
 
-            {% if not payment_methods %}
-             <!-- COD Option (Standalone) -->
-             <div class="payment-selection mt-3">
-              <div class="form-check mb-3">
-                <input class="form-check-input" type="radio" name="payment_method" id="payment_cod_fallback" value="cod">
-                <label class="form-check-label w-100" for="payment_cod_fallback">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                      <strong><i class="fas fa-money-bill-wave"></i> Cash on Delivery</strong><br>
-                      <span class="text-muted small">Pay when you receive your order</span>
-                    </div>
-                  </div>
-                </label>
-              </div>
+            <h5 style="font-weight:800; margin:0 0 10px;">Fallback Option</h5>
+            <div class="ux-radio-card" style="margin-top:6px;">
+              <input type="radio" name="payment_method" id="payment_cod" value="cod">
+              <label for="payment_cod">
+                <p class="ux-radio-title"><i class="fas fa-money-bill-wave"></i> Cash on Delivery</p>
+                <p class="ux-radio-sub">Pay at your doorstep when the order arrives.</p>
+              </label>
             </div>
-            {% endif %}
           </div>
         </div>
       </div>
 
-      <!-- Right Column: Summary & Actions -->
-      <div class="col-lg-4">
-        <!-- Order Summary Card -->
-        <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
-          <div class="card-header bg-light border-bottom">
-            <h5 class="mb-0">Order Summary</h5>
-          </div>
-          <div class="card-body">
-            <div class="row mb-3">
-              <div class="col-6">
-                <strong>Subtotal:</strong>
-              </div>
-              <div class="col-6 text-end">
-                Rs. {{ cart_total }}
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-6">
-                <strong>Shipping:</strong>
-              </div>
-              <div class="col-6 text-end">
-                Free
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-6">
-                <strong>Tax:</strong>
-              </div>
-              <div class="col-6 text-end">
-                Included
-              </div>
-            </div>
-            <hr>
-            <div class="row">
-              <div class="col-6">
-                <h5><strong>Total:</strong></h5>
-              </div>
-              <div class="col-6 text-end">
-                <h5><strong>Rs. {{ cart_total }}</strong></h5>
-              </div>
-            </div>
-          </div>
+      <aside class="ux-card sticky">
+        <div class="ux-card-head">
+          <h2 class="ux-card-title">Final Review</h2>
+        </div>
+        <div class="ux-card-body">
+          <div class="ux-summary-line"><span>Subtotal</span><span>NPR {{ cart_total }}</span></div>
+          <div class="ux-summary-line"><span>Shipping</span><span style="color:var(--ux-success);">Free</span></div>
+          <div class="ux-summary-line"><span>Tax</span><span>Included</span></div>
+          <div class="ux-summary-line total"><span>Total</span><span id="summaryTotal">NPR {{ cart_total }}</span></div>
 
-          <div class="card-body border-top">
-            <div class="d-grid gap-2">
-              <button type="submit" class="btn btn-primary btn-lg" id="placeOrderBtn">
-                <i class="fas fa-check-circle"></i> Place Order
-              </button>
-              <a href="{% url 'store:cart' %}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left"></i> Back to Cart
-              </a>
-            </div>
-          </div>
+          <button type="submit" class="ux-btn-primary" style="width:100%; margin-top:14px;" id="placeOrderBtn">
+            <i class="fas fa-check-circle"></i> Place Order
+          </button>
+          <a href="{% url 'store:cart' %}" class="ux-btn-secondary" style="width:100%; margin-top:10px;">
+            <i class="fas fa-arrow-left"></i> Back to Cart
+          </a>
 
-          <!-- Order Info -->
-          <div class="card-body bg-light border-top text-center small text-muted">
-            <p class="mb-1">
-              <i class="fas fa-shield-alt"></i> Secure Checkout
-            </p>
-            <p class="mb-0">
-              Your payment information is encrypted and safe
-            </p>
+          <div class="ux-alert info" style="margin-top:14px; margin-bottom:0;">
+            <strong>Secure checkout includes:</strong>
+            <ul class="ux-trust-list" style="margin-top:8px;">
+              <li>Encrypted payment handoff</li>
+              <li>Server-side payment verification</li>
+              <li>Support if payment fails</li>
+            </ul>
           </div>
         </div>
-      </div>
+      </aside>
     </div>
   </form>
 </div>
+</section>
 
 <script>
-  // Form validation
-  document.getElementById('checkoutForm').addEventListener('submit', function (e) {
+  const form = document.getElementById('checkoutForm');
+  const placeOrderBtn = document.getElementById('placeOrderBtn');
+
+  function updateCtaLabel() {
+    const selected = document.querySelector('input[name="payment_method"]:checked');
+    if (!selected) {
+      placeOrderBtn.innerHTML = '<i class="fas fa-check-circle"></i> Place Order';
+      return;
+    }
+
+    if (selected.value === 'cod') {
+      placeOrderBtn.innerHTML = '<i class="fas fa-box"></i> Place COD Order';
+      return;
+    }
+
+    if (selected.value.startsWith('gateway:')) {
+      placeOrderBtn.innerHTML = '<i class="fas fa-credit-card"></i> Pay NPR {{ cart_total }} now';
+      return;
+    }
+
+    placeOrderBtn.innerHTML = '<i class="fas fa-check-circle"></i> Place Order';
+  }
+
+  document.querySelectorAll('input[name="payment_method"]').forEach(input => {
+    input.addEventListener('change', updateCtaLabel);
+  });
+
+  updateCtaLabel();
+
+  form.addEventListener('submit', function (e) {
     const deliveryAddress = document.querySelector('input[name="delivery_address"]:checked');
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
-
     if (!deliveryAddress) {
       e.preventDefault();
       alert('Please select a delivery address');
@@ -300,20 +282,8 @@
       return false;
     }
 
-    // Disable button to prevent double submission
-    document.getElementById('placeOrderBtn').disabled = true;
-    document.getElementById('placeOrderBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    placeOrderBtn.disabled = true;
+    placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
   });
 </script>
-
-<style>
-  .address-selection .form-check:hover,
-  .payment-selection .form-check:hover {
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    padding: 10px;
-    margin-left: -10px;
-    margin-right: -10px;
-  }
-</style>
 {% endblock %}

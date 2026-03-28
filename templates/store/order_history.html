@@ -57,7 +57,7 @@
               <td><strong>#{{ order.id }}</strong></td>
               <td>{{ order.created_at|date:"M d, Y H:i" }}</td>
               <td>{{ order.items.count }} item{{ order.items.count|pluralize }}</td>
-              <td><strong>₹{{ order.total }}</strong></td>
+              <td><strong>NPR {{ order.total }}</strong></td>
               <td>
                 {% if order.status == 'pending' %}
                   <span class="badge bg-warning text-dark">Pending</span>

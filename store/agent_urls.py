@@ -39,6 +39,10 @@ urlpatterns = [
     path('orders/incoming/', agent_views.agent_incoming_orders, name='incoming_orders'),
     path('orders/<int:order_id>/', agent_views.agent_order_detail, name='order_detail'),
     path('orders/<int:order_id>/status/', agent_views.agent_order_status_update, name='order_status_update'),
+
+    # Direct customer chat
+    path('messages/', agent_views.agent_messages, name='messages'),
+    path('messages/<int:conversation_id>/', agent_views.agent_messages, name='messages_detail'),
     
     # Delivery Management
     path('orders/<int:order_id>/assign-delivery/', agent_views.agent_assign_delivery, name='assign_delivery'),

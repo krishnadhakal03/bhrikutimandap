@@ -2,14 +2,21 @@
 {% load widget_tweaks %}
 
 {% block agent_content %}
-<div class="mb-4">
-    <h3 class="text-dark">{% if form.instance.id %}Edit Product{% else %}Add Product{% endif %}</h3>
+<div class="agent-toolbar">
+    <div>
+        <h3>{% if form.instance.id %}Edit Product{% else %}Add Product{% endif %}</h3>
+        <p class="subtitle">Create clear, conversion-friendly product details with complete media and stock setup.</p>
+    </div>
 </div>
 
-<div class="card">
+<div class="agent-form-shell">
+    <div class="agent-form-main card">
     <div class="card-body">
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
+
+            <div class="agent-form-section">
+                <h6>Basic Details</h6>
             
             <div class="row mb-3">
                 <div class="col-md-6">
@@ -38,7 +45,10 @@
                     {% endif %}
                 </div>
             </div>
+            </div>
             
+            <div class="agent-form-section">
+                <h6>Inventory & Timing</h6>
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label">{{ form.stock.label }}</label>
@@ -56,12 +66,15 @@
                     {% endif %}
                 </div>
             </div>
+            </div>
             
+            <div class="agent-form-section">
+                <h6>Media Assets</h6>
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label">{{ form.image.label }} <span class="text-danger">*</span></label>
                     {{ form.image|add_class:"form-control" }}
-                    <small class="text-muted">Primary product image (Mandatory)</small>
+                    <div class="agent-form-help">Primary product image (mandatory)</div>
                     {% if form.image.errors %}
                     <div class="invalid-feedback d-block">{{ form.image.errors }}</div>
                     {% endif %}
@@ -70,13 +83,16 @@
                 <div class="col-md-6">
                     <label class="form-label">Additional Media</label>
                     {% render_field form.additional_media class="form-control" multiple="multiple" %}
-                    <small class="text-muted">Upload more images or videos (Optional)</small>
+                    <div class="agent-form-help">Upload more images or videos (optional)</div>
                     {% if form.additional_media.errors %}
                     <div class="invalid-feedback d-block">{{ form.additional_media.errors }}</div>
                     {% endif %}
                 </div>
             </div>
+            </div>
             
+            <div class="agent-form-section">
+                <h6>Delivery & Category</h6>
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label">{{ form.payment_methods.label }}</label>
@@ -104,8 +120,9 @@
                     {% endif %}
                 </div>
             </div>
+            </div>
             
-            <div class="mt-4">
+            <div class="agent-form-actions">
                 <button type="submit" class="btn btn-success">
                     <i class="fas fa-save mr-2"></i> Save Product
                 </button>
@@ -113,5 +130,20 @@
             </div>
         </form>
     </div>
+    </div>
+
+    <aside class="agent-form-side">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fas fa-lightbulb mr-2"></i>Publishing Tips</h5></div>
+            <div class="card-body">
+                <ul class="agent-tips-list">
+                    <li>Use a concise title with product type first.</li>
+                    <li>Set realistic stock to avoid overselling.</li>
+                    <li>Add at least one close-up and one usage image.</li>
+                    <li>Keep delivery rules clear for customer trust.</li>
+                </ul>
+            </div>
+        </div>
+    </aside>
 </div>
 {% endblock %}

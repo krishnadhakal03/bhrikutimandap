@@ -1,22 +1,24 @@
 {% extends "agent/base.html" %}
 
 {% block agent_content %}
-<!-- Page Header -->
-<div class="page-header">
-    <h3><i class="fas fa-plus-circle"></i>Add Delivery Partner</h3>
-    <p>Register a new delivery partner for your orders.</p>
+<div class="agent-toolbar">
+    <div>
+        <h3><i class="fas fa-plus-circle mr-2"></i>Add Delivery Partner</h3>
+        <p class="subtitle">Register partner preferences and assignment readiness in one step.</p>
+    </div>
 </div>
 
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-truck mr-2"></i>Select & Configure Partner</h5>
-            </div>
-            <div class="card-body">
+<div class="agent-form-shell">
+    <div class="agent-form-main card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-truck mr-2"></i>Select & Configure Partner</h5>
+        </div>
+        <div class="card-body">
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     
+                    <div class="agent-form-section">
+                        <h6>Partner Selection</h6>
                     <!-- Delivery Partner Selection -->
                     <div class="form-group mb-4">
                         <label for="id_delivery_partner" class="form-label" style="font-weight: 600; margin-bottom: 12px;">
@@ -26,9 +28,12 @@
                         {% if form.delivery_partner.errors %}
                         <div class="alert alert-danger mt-2">{{ form.delivery_partner.errors }}</div>
                         {% endif %}
-                        <small class="form-text text-muted mt-2">Choose a delivery partner from the available options</small>
+                        <div class="agent-form-help">Choose a delivery partner from the available options.</div>
+                    </div>
                     </div>
                     
+                    <div class="agent-form-section">
+                        <h6>Assignment Preferences</h6>
                     <!-- Preferred Partner -->
                     <div class="form-group mb-4">
                         <div class="form-check">
@@ -37,7 +42,7 @@
                                 <i class="fas fa-star mr-2" style="color: #fb8c00;"></i>Mark as Preferred Partner
                             </label>
                         </div>
-                        <small class="form-text text-muted d-block mt-2">This partner will be suggested first when assigning deliveries</small>
+                        <div class="agent-form-help">This partner will be suggested first when assigning deliveries.</div>
                         {% if form.is_preferred.errors %}
                         <div class="alert alert-danger mt-2">{{ form.is_preferred.errors }}</div>
                         {% endif %}
@@ -51,12 +56,15 @@
                                 <i class="fas fa-check-circle mr-2" style="color: #43a047;"></i>Active
                             </label>
                         </div>
-                        <small class="form-text text-muted d-block mt-2">Keep this partner active for assignments</small>
+                        <div class="agent-form-help">Keep this partner active for assignments.</div>
                         {% if form.is_active.errors %}
                         <div class="alert alert-danger mt-2">{{ form.is_active.errors }}</div>
                         {% endif %}
                     </div>
+                    </div>
                     
+                    <div class="agent-form-section">
+                        <h6>Instructions</h6>
                     <!-- Special Notes -->
                     <div class="form-group mb-4">
                         <label for="id_notes" class="form-label" style="font-weight: 600; margin-bottom: 12px;">
@@ -66,25 +74,25 @@
                         {% if form.notes.errors %}
                         <div class="alert alert-danger mt-2">{{ form.notes.errors }}</div>
                         {% endif %}
-                        <small class="form-text text-muted mt-2">Add payment terms, delivery zones, vehicle requirements, or any special notes</small>
+                        <div class="agent-form-help">Add payment terms, zones, vehicle needs, or any instructions.</div>
+                    </div>
                     </div>
                     
                     <!-- Form Actions -->
-                    <div class="d-flex gap-2 mt-5">
-                        <button type="submit" class="btn btn-success btn-lg">
+                    <div class="agent-form-actions">
+                        <button type="submit" class="btn btn-success">
                             <i class="fas fa-check mr-2"></i>Add Partner
                         </button>
-                        <a href="{% url 'agent:delivery_partners' %}" class="btn btn-outline-secondary btn-lg">
+                        <a href="{% url 'agent:delivery_partners' %}" class="btn btn-secondary">
                             <i class="fas fa-times mr-2"></i>Cancel
                         </a>
                     </div>
                 </form>
-            </div>
         </div>
     </div>
     
     <!-- Help Panel -->
-    <div class="col-lg-4">
+    <aside class="agent-form-side">
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0"><i class="fas fa-lightbulb mr-2" style="color: #fb8c00;"></i>Tips</h5>
@@ -113,7 +121,7 @@
             </div>
             <div class="card-body">
                 <p style="font-size: 13px; color: #666;">Each delivery partner includes:</p>
-                <ul style="font-size: 13px; padding-left: 16px;">
+                <ul class="agent-tips-list">
                     <li>Average delivery time</li>
                     <li>Success delivery rate</li>
                     <li>Vehicle type</li>
@@ -121,6 +129,6 @@
                 </ul>
             </div>
         </div>
-    </div>
+    </aside>
 </div>
 {% endblock %}

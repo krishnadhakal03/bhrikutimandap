@@ -1,38 +1,50 @@
 {% extends "agent/base.html" %}
 
 {% block agent_content %}
-<div class="mb-4">
-    <h3 class="text-dark">Reports & Analytics</h3>
+<div class="agent-toolbar">
+    <div>
+        <h3 class="text-dark mb-0">Reports & Analytics</h3>
+        <p class="subtitle">Understand performance trends and identify high-impact products.</p>
+    </div>
 </div>
 
 <!-- Revenue Summary -->
 <div class="row mb-4">
     <div class="col-md-4 mb-3">
-        <div class="card">
-            <div class="card-body text-center">
-                <h6 class="text-muted">Total Revenue</h6>
-                <h3 class="text-success">₹{{ total_revenue|floatformat:0 }}</h3>
-                <small class="text-muted">All time</small>
+        <div class="agent-kpi" style="border-left-color: #1f8b4d;">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="label">Total Revenue</div>
+                    <div class="value" style="color:#1f8b4d;">₹{{ total_revenue|floatformat:0 }}</div>
+                    <small class="text-muted">All time</small>
+                </div>
+                <i class="fas fa-rupee-sign icon"></i>
             </div>
         </div>
     </div>
     
     <div class="col-md-4 mb-3">
-        <div class="card">
-            <div class="card-body text-center">
-                <h6 class="text-muted">Total Units Sold</h6>
-                <h3 class="text-primary">{{ total_quantity }}</h3>
-                <small class="text-muted">All time</small>
+        <div class="agent-kpi" style="border-left-color: #1261d1;">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="label">Total Units Sold</div>
+                    <div class="value" style="color:#1261d1;">{{ total_quantity }}</div>
+                    <small class="text-muted">All time</small>
+                </div>
+                <i class="fas fa-boxes icon"></i>
             </div>
         </div>
     </div>
     
     <div class="col-md-4 mb-3">
-        <div class="card">
-            <div class="card-body text-center">
-                <h6 class="text-muted">Average Transaction</h6>
-                <h3 class="text-info">₹{{ avg_transaction|floatformat:0 }}</h3>
-                <small class="text-muted">Per sale</small>
+        <div class="agent-kpi" style="border-left-color: #00a1a7;">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="label">Average Transaction</div>
+                    <div class="value" style="color:#00a1a7;">₹{{ avg_transaction|floatformat:0 }}</div>
+                    <small class="text-muted">Per sale</small>
+                </div>
+                <i class="fas fa-chart-line icon"></i>
             </div>
         </div>
     </div>
@@ -63,12 +75,8 @@
                         <td>{{ product.total_quantity }}</td>
                         <td>₹{{ product.total_revenue|floatformat:0 }}</td>
                         <td>
-                            <div class="progress" style="height: 20px;">
-                                <div class="progress-bar" role="progressbar" 
-                                     style="width: {{ product.percentage }}%">
-                                    {{ product.percentage|floatformat:1 }}%
-                                </div>
-                            </div>
+                            <div class="agent-progress"><span style="width: {{ product.percentage }}%"></span></div>
+                            <small class="text-muted">{{ product.percentage|floatformat:1 }}%</small>
                         </td>
                     </tr>
                     {% endfor %}
@@ -76,7 +84,10 @@
             </table>
         </div>
         {% else %}
-        <p class="text-center text-muted py-5">No sales data available</p>
+        <div class="agent-empty">
+            <i class="fas fa-chart-pie"></i>
+            <p class="mb-0">No sales data available yet.</p>
+        </div>
         {% endif %}
     </div>
 </div>
@@ -108,7 +119,10 @@
         </div>
         <small class="text-muted d-block mt-3">← Days →</small>
         {% else %}
-        <p class="text-center text-muted py-5">No sales data for the past 30 days</p>
+        <div class="agent-empty">
+            <i class="fas fa-wave-square"></i>
+            <p class="mb-0">No sales data for the past 30 days.</p>
+        </div>
         {% endif %}
     </div>
 </div>
@@ -133,7 +147,10 @@
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-center text-muted py-5">No sales data available</p>
+        <div class="agent-empty">
+            <i class="fas fa-ranking-star"></i>
+            <p class="mb-0">Top product ranking will appear after sales come in.</p>
+        </div>
         {% endif %}
     </div>
 </div>

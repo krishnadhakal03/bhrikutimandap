@@ -1,9 +1,15 @@
 {% extends "agent/base.html" %}
 
 {% block agent_content %}
-<div class="mb-4">
-    <h3 class="text-dark">Market Insights</h3>
-    <small class="text-muted">AI-powered market demand analysis</small>
+<div class="agent-toolbar">
+    <div>
+        <h3><i class="fas fa-lightbulb"></i> Market Insights</h3>
+        <p class="subtitle">AI-powered demand analysis from your recent sales activity.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'agent:reports' %}" class="btn btn-secondary btn-sm">View Reports</a>
+        <a href="{% url 'agent:products_list' %}" class="btn btn-primary btn-sm">Manage Products</a>
+    </div>
 </div>
 
 <div class="alert alert-info">
@@ -133,7 +139,7 @@
 
 <!-- Bulk Actions -->
 <div class="card">
-    <div class="card-header bg-light">
+    <div class="card-header">
         <h5 class="mb-0">Take Action</h5>
     </div>
     <div class="card-body">
@@ -153,18 +159,15 @@
 </div>
 
 {% else %}
-<div class="alert alert-warning">
-    <i class="fas fa-info-circle mr-2"></i>
-    <strong>No insights yet:</strong> Record some sales transactions to get AI-powered market insights.
-</div>
-
 <div class="card">
-    <div class="card-body text-center py-5">
-        <i class="fas fa-chart-line" style="font-size: 48px; color: #ccc;"></i>
-        <p class="text-muted mt-3">Start recording sales to unlock market insights</p>
-        <a href="{% url 'agent:sales_create' %}" class="btn btn-success">
-            <i class="fas fa-money-bill mr-2"></i> Record Your First Sale
-        </a>
+    <div class="card-body">
+        <div class="agent-empty">
+            <i class="fas fa-chart-line"></i>
+            <p class="mb-2">No insights yet. Record sales transactions to unlock analysis.</p>
+            <a href="{% url 'agent:sales_create' %}" class="btn btn-success">
+                <i class="fas fa-money-bill mr-2"></i> Record your first sale
+            </a>
+        </div>
     </div>
 </div>
 {% endif %}

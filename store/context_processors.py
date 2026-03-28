@@ -71,3 +71,55 @@ def dynamic_pages(request):
         }
     except Exception:
         return {}
+
+
+def chat_unread_counts(request):
+    """Add unread chat counters for navbar/sidebar badges."""
+    if not request.user.is_authenticated:
+        return {
+            'customer_unread_messages': 0,
+            'agent_unread_messages': 0,
+            'chat_unread_total': 0,
+        }
+
+    from django.db import connection
+    from django.db.utils import OperationalError, ProgrammingError
+    from .models import SellerMessage
+
+    # If chat tables are not migrated yet, keep templates functional.
+    try:
+        table_names = connection.introspection.table_names()
+        if 'store_sellermessage' not in table_names:
+            return {
+                'customer_unread_messages': 0,
+                'agent_unread_messages': 0,
+                'chat_unread_total': 0,
+            }
+    except Exception:
+        return {
+            'customer_unread_messages': 0,
+            'agent_unread_messages': 0,
+            'chat_unread_total': 0,
+        }
+
+    try:
+        customer_unread = SellerMessage.objects.filter(
+            conversation__customer=request.user,
+            is_read=False,
+        ).exclude(sender=request.user).count()
+
+        agent_unread = 0
+        if request.user.role == 'agent':
+            agent_unread = SellerMessage.objects.filter(
+                conversation__seller=request.user,
+                is_read=False,
+            ).exclude(sender=request.user).count()
+    except (OperationalError, ProgrammingError):
+        customer_unread = 0
+        agent_unread = 0
+
+    return {
+        'customer_unread_messages': customer_unread,
+        'agent_unread_messages': agent_unread,
+        'chat_unread_total': customer_unread + agent_unread,
+    }

@@ -2,14 +2,21 @@
 {% load widget_tweaks %}
 
 {% block agent_content %}
-<div class="mb-4">
-    <h3 class="text-dark">Edit Profile</h3>
+<div class="agent-toolbar">
+    <div>
+        <h3>Edit Profile</h3>
+        <p class="subtitle">Keep business identity, banking, and branding details complete for trust and smoother operations.</p>
+    </div>
 </div>
 
-<div class="card">
+<div class="agent-form-shell">
+    <div class="agent-form-main card">
     <div class="card-body">
         <form method="post" enctype="multipart/form-data" class="needs-validation">
             {% csrf_token %}
+
+            <div class="agent-form-section">
+                <h6>Company Identity</h6>
             
             <div class="row mb-3">
                 <div class="col-md-6">
@@ -38,7 +45,10 @@
                     {% endif %}
                 </div>
             </div>
+            </div>
             
+            <div class="agent-form-section">
+                <h6>Compliance & Targets</h6>
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label">{{ form.gst_number.label }}</label>
@@ -56,7 +66,10 @@
                     {% endif %}
                 </div>
             </div>
+            </div>
             
+            <div class="agent-form-section">
+                <h6>Banking</h6>
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label">{{ form.bank_account.label }}</label>
@@ -74,9 +87,10 @@
                     {% endif %}
                 </div>
             </div>
+            </div>
 
-            <hr class="my-4">
-            <h5 class="mb-3">Branding & Images</h5>
+            <div class="agent-form-section">
+            <h6>Branding & Images</h6>
             
             <div class="row mb-3">
                 <div class="col-md-6">
@@ -123,8 +137,9 @@
                     {% endif %}
                 </div>
             </div>
+            </div>
             
-            <div class="mt-4">
+            <div class="agent-form-actions">
                 <button type="submit" class="btn btn-success">
                     <i class="fas fa-save mr-2"></i> Save Changes
                 </button>
@@ -132,5 +147,20 @@
             </div>
         </form>
     </div>
+    </div>
+
+    <aside class="agent-form-side">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="fas fa-shield-alt mr-2"></i>Profile Quality Tips</h5></div>
+            <div class="card-body">
+                <ul class="agent-tips-list">
+                    <li>Keep phone and address current for delivery coordination.</li>
+                    <li>Upload clear logo/banner for better brand recall.</li>
+                    <li>Use valid GST and banking information for faster settlement.</li>
+                    <li>Set realistic monthly targets for accurate performance tracking.</li>
+                </ul>
+            </div>
+        </div>
+    </aside>
 </div>
 {% endblock %}

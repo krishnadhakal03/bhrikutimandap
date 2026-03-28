@@ -1,58 +1,51 @@
 {% extends "agent/base.html" %}
 
 {% block agent_content %}
-<div class="mb-4 d-flex justify-content-between align-items-center">
-    <h3 class="text-dark mb-0">Stock Overview</h3>
+<div class="agent-toolbar">
+    <div>
+        <h3><i class="fas fa-boxes"></i> Stock Overview</h3>
+        <p class="subtitle">Monitor inventory health and make adjustments before shortages hit.</p>
+    </div>
     <a href="{% url 'agent:stock_alerts' %}" class="btn btn-warning btn-sm">
         <i class="fas fa-bell mr-2"></i> Alerts ({{ alert_count }})
     </a>
 </div>
 
-<!-- Stock Status Cards -->
-<div class="row mb-4">
-    <div class="col-md-4 mb-3">
-        <div class="card border-success">
-            <div class="card-body text-center">
-                <h5 class="text-success">In Stock</h5>
-                <h3 class="mb-0">{{ products_in_stock }}</h3>
-                <small class="text-muted">Products with stock</small>
-            </div>
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="agent-kpi" style="border-left-color: var(--success);">
+            <div class="label">In Stock</div>
+            <div class="value">{{ products_in_stock }}</div>
+            <small class="text-muted">Products with healthy stock</small>
         </div>
     </div>
-    
-    <div class="col-md-4 mb-3">
-        <div class="card border-warning">
-            <div class="card-body text-center">
-                <h5 class="text-warning">Low Stock</h5>
-                <h3 class="mb-0">{{ products_low_stock }}</h3>
-                <small class="text-muted">Below 20 units</small>
-            </div>
+    <div class="col-md-4">
+        <div class="agent-kpi" style="border-left-color: var(--warning);">
+            <div class="label">Low Stock</div>
+            <div class="value">{{ products_low_stock }}</div>
+            <small class="text-muted">Below 20 units</small>
         </div>
     </div>
-    
-    <div class="col-md-4 mb-3">
-        <div class="card border-danger">
-            <div class="card-body text-center">
-                <h5 class="text-danger">Out of Stock</h5>
-                <h3 class="mb-0">{{ products_out_of_stock }}</h3>
-                <small class="text-muted">No stock available</small>
-            </div>
+    <div class="col-md-4">
+        <div class="agent-kpi" style="border-left-color: var(--danger);">
+            <div class="label">Out of Stock</div>
+            <div class="value">{{ products_out_of_stock }}</div>
+            <small class="text-muted">Needs replenishment</small>
         </div>
     </div>
 </div>
 
-<!-- Stock Table -->
 <div class="card mb-4">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Product Stock Levels</h5>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-layer-group mr-2"></i>Product Stock Levels</h5>
         <a href="{% url 'agent:stock_alerts' %}" class="btn btn-sm btn-outline-primary">Manage Alerts</a>
     </div>
-    
+
     <div class="card-body">
         {% if products %}
         <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
+            <table class="table table-hover mb-0">
+                <thead>
                     <tr>
                         <th>Product</th>
                         <th>Current Stock</th>
@@ -65,8 +58,7 @@
                     {% for product in products %}
                     <tr>
                         <td>
-                            <strong>{{ product.title }}</strong>
-                            <br>
+                            <strong>{{ product.title }}</strong><br>
                             <small class="text-muted">Price: ₹{{ product.price }}</small>
                         </td>
                         <td><strong>{{ product.stock }}</strong> units</td>
@@ -91,18 +83,20 @@
             </table>
         </div>
         {% else %}
-        <p class="text-center text-muted py-5">No products yet. <a href="{% url 'agent:product_create' %}">Add a product</a></p>
+        <div class="agent-empty">
+            <i class="fas fa-box-open"></i>
+            <p class="mb-2">No products found yet.</p>
+            <a href="{% url 'agent:product_create' %}" class="btn btn-primary">Add your first product</a>
+        </div>
         {% endif %}
     </div>
 </div>
 
-<!-- Recent Stock Changes -->
 {% if recent_changes %}
 <div class="card">
-    <div class="card-header bg-light">
-        <h5 class="mb-0">Recent Stock Changes</h5>
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-history mr-2"></i>Recent Stock Changes</h5>
     </div>
-    
     <div class="card-body">
         <div class="list-group list-group-flush">
             {% for change in recent_changes %}

@@ -15,9 +15,15 @@ gunicorn>=21.0.0
 
 # Environment Variables
 python-dotenv>=1.0.0
+cryptography>=42.0.0
+requests>=2.31.0
+stripe>=10.0.0
 
 # Database
 psycopg2-binary>=2.9.0
 
 # Static Files
 whitenoise>=6.4.0
+
+# Optional local/free LLM for support chatbot (enabled via SUPPORT_BOT_USE_LLM=1)
+transformers>=4.41.0

@@ -210,6 +210,37 @@
       background: #384aeb;
       color: white;
     }
+
+    .seller-link {
+      color: #667eea;
+      text-decoration: none;
+      border-bottom: 1px dashed rgba(102, 126, 234, 0.4);
+    }
+
+    .seller-link:hover {
+      color: #384aeb;
+      border-bottom-color: #384aeb;
+    }
+
+    .product-rating-preview {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      justify-content: center;
+    }
+
+    .product-rating-preview .stars {
+      color: #f4b400;
+      letter-spacing: 1px;
+      font-size: 0.82rem;
+    }
+
+    .product-rating-preview .count {
+      color: #6b7683;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
   </style>
 
     {% if products %}
@@ -260,7 +291,10 @@
             {% elif product.supplier %}
             <p
               style="margin: 6px 0; color: #667eea; font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">
-              <i class="fas fa-store"></i> {{ product.supplier.company|default:product.supplier.username }}
+              <i class="fas fa-store"></i>
+              <a class="seller-link" href="{% url 'store:seller_storefront' product.supplier.id %}">
+                {{ product.supplier.company|default:product.supplier.username }}
+              </a>
             </p>
             {% else %}
              <p
@@ -268,7 +302,19 @@
               <i class="fas fa-store"></i> Vendor
             </p>
             {% endif %}
-            <p class="card-product__price">Rs. {{ product.price }}</p>
+            <p class="card-product__price">NPR {{ product.price }}</p>
+            <div class="product-rating-preview">
+              <span class="stars">
+                {% for i in "12345"|make_list %}
+                  {% if forloop.counter <= product.avg_rating %}
+                    <i class="fas fa-star"></i>
+                  {% else %}
+                    <i class="far fa-star"></i>
+                  {% endif %}
+                {% endfor %}
+              </span>
+              <span class="count">{{ product.review_count }} review{{ product.review_count|pluralize }}</span>
+            </div>
           </div>
         </div>
       </div>

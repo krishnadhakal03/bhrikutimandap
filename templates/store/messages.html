@@ -1,0 +1,161 @@
+{% extends "store/base.html" %}
+
+{% block title %}Messages{% endblock %}
+
+{% block content %}
+<section class="section-margin">
+  <div class="container">
+    <style>
+      .conversation-item {
+        display: block;
+        padding: 12px 16px;
+        border-bottom: 1px solid #eef3f8;
+        text-decoration: none;
+        color: #22364f;
+        background: transparent;
+      }
+
+      .conversation-item.active {
+        background: #e7f0ff;
+      }
+    </style>
+
+    <div class="mb-4">
+      <h2 style="font-weight:700; margin-bottom: 6px;">Messages</h2>
+      <p style="color:#5f7086; margin:0;">Chat directly with sellers about products and orders.</p>
+    </div>
+
+    <div class="card" style="border-radius: 12px; overflow: hidden; border: 1px solid #e1e9f3;">
+      <div class="row g-0" style="min-height: 560px;">
+        <div class="col-lg-4" style="border-right: 1px solid #e1e9f3; background: #f8fbff;">
+          <div style="padding: 14px 16px; border-bottom: 1px solid #e1e9f3; font-weight: 700;">
+            Conversations
+          </div>
+          <div style="max-height: 560px; overflow-y: auto;">
+            {% for conv in conversations %}
+              <a href="{% url 'store:customer_messages_detail' conv.id %}" class="conversation-item {% if selected_conversation and selected_conversation.id == conv.id %}active{% endif %}">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                  <strong style="font-size:0.95rem;">{{ conv.seller.get_full_name|default:conv.seller.username }}</strong>
+                  {% if conv.unread_count %}
+                    <span style="min-width:22px; height:22px; border-radius:999px; background:#1261d1; color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:700;">{{ conv.unread_count }}</span>
+                  {% endif %}
+                </div>
+                <div style="margin-top:4px; font-size:0.82rem; color:#5b6d80;">{{ conv.product.title|truncatechars:36 }}</div>
+                <div style="margin-top:3px; font-size:0.75rem; color:#8ea0b4;">{{ conv.updated_at|date:"M d, H:i" }}</div>
+              </a>
+            {% empty %}
+              <div style="padding: 20px; color: #6d7f95;">No conversations yet. Open a product and tap Chat with Seller.</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-lg-8" style="display:flex; flex-direction:column;">
+          {% if selected_conversation %}
+            <div style="padding:14px 16px; border-bottom:1px solid #e1e9f3; background:#fff;">
+              <strong>{{ selected_conversation.seller.get_full_name|default:selected_conversation.seller.username }}</strong>
+              <div style="font-size:0.82rem; color:#5f7086;">About: {{ selected_conversation.product.title }}</div>
+            </div>
+
+            <div id="customerChatBody" style="padding:16px; background:#f4f8fc; flex:1; overflow-y:auto;"></div>
+
+            <div style="padding:12px; border-top:1px solid #e1e9f3; background:#fff; display:flex; gap:8px;">
+              <input id="customerChatInput" type="text" placeholder="Type your message..." style="flex:1; border:1px solid #cdd7e3; border-radius:10px; padding:10px;">
+              <button id="customerChatSend" class="btn btn-primary">Send</button>
+            </div>
+          {% else %}
+            <div style="display:flex; flex:1; align-items:center; justify-content:center; color:#6d7f95; font-size:1rem;">
+              Select a conversation to view messages.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% if selected_conversation %}
+<div id="customerChatMeta" data-conversation-id="{{ selected_conversation.id }}" data-current-user-id="{{ request.user.id }}" style="display:none;"></div>
+<script>
+(function () {
+  const meta = document.getElementById('customerChatMeta');
+  const conversationId = Number(meta?.dataset.conversationId || 0);
+  const currentUserId = Number(meta?.dataset.currentUserId || 0);
+  const body = document.getElementById('customerChatBody');
+  const input = document.getElementById('customerChatInput');
+  const send = document.getElementById('customerChatSend');
+  if (!body || !input || !send || !conversationId || !currentUserId) return;
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function renderMessage(msg) {
+    const mine = msg.sender_id === currentUserId;
+    const wrap = document.createElement('div');
+    wrap.style.maxWidth = '80%';
+    wrap.style.margin = mine ? '8px 0 8px auto' : '8px auto 8px 0';
+    wrap.style.padding = '10px 12px';
+    wrap.style.borderRadius = '10px';
+    wrap.style.background = mine ? '#1261d1' : '#fff';
+    wrap.style.border = mine ? 'none' : '1px solid #d7e2ee';
+    wrap.style.color = mine ? '#fff' : '#20364f';
+    wrap.innerHTML = '<div style="font-size:0.9rem;">' + escapeHtml(msg.body) + '</div><div style="font-size:0.72rem; margin-top:5px; opacity:0.8;">' + escapeHtml(msg.created_at) + '</div>';
+    body.appendChild(wrap);
+  }
+
+  async function loadMessages() {
+    const res = await fetch('{% url "store:seller_chat_messages" selected_conversation.id %}');
+    const data = await res.json();
+    if (!data.ok) return;
+
+    body.innerHTML = '';
+    data.messages.forEach(renderMessage);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    const optimistic = {
+      sender_id: currentUserId,
+      body: text,
+      created_at: 'sending...'
+    };
+    renderMessage(optimistic);
+    body.scrollTop = body.scrollHeight;
+    input.value = '';
+
+    const res = await fetch('{% url "store:seller_chat_send" selected_conversation.id %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      body: JSON.stringify({ message: text })
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      await loadMessages();
+      return;
+    }
+
+    await loadMessages();
+  }
+
+  send.addEventListener('click', sendMessage);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  loadMessages();
+  setInterval(loadMessages, 7000);
+})();
+</script>
+{% endif %}
+{% endblock %}

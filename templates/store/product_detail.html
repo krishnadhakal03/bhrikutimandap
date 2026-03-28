@@ -2,6 +2,22 @@
 {% load static %}
 
 {% block content %}
+<style>
+  .rating-stars-yellow {
+    color: #f4b400;
+  }
+
+  .seller-link {
+    color: #667eea;
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(102, 126, 234, 0.35);
+  }
+
+  .seller-link:hover {
+    color: #384aeb;
+    border-bottom-color: #384aeb;
+  }
+</style>
 <section class="section-margin single-product">
   <div class="container">
     <nav aria-label="breadcrumb" style="margin-bottom: 30px;">
@@ -75,12 +91,24 @@
               {% endif %}
               <div>
                 <p style="margin: 0; color: #667eea; font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">Sold by</p>
-                <h4 style="margin: 4px 0 0 0; color: #212529; font-weight: 700;">{{ product.agent.company_name }}</h4>
+                <h4 style="margin: 4px 0 0 0; color: #212529; font-weight: 700;">
+                  {% if seller_storefront_url %}
+                    <a class="seller-link" href="{{ seller_storefront_url }}">{{ product.agent.company_name }}</a>
+                  {% else %}
+                    {{ product.agent.company_name }}
+                  {% endif %}
+                </h4>
               </div>
             {% else %}
               <div>
                 <p style="margin: 0; color: #667eea; font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">Sold by</p>
-                <h4 style="margin: 4px 0 0 0; color: #212529; font-weight: 700;">{{ product.supplier.company|default:product.supplier.username }}</h4>
+                <h4 style="margin: 4px 0 0 0; color: #212529; font-weight: 700;">
+                  {% if seller_storefront_url %}
+                    <a class="seller-link" href="{{ seller_storefront_url }}">{{ product.supplier.company|default:product.supplier.username }}</a>
+                  {% else %}
+                    {{ product.supplier.company|default:product.supplier.username }}
+                  {% endif %}
+                </h4>
               </div>
             {% endif %}
           </div>
@@ -89,7 +117,7 @@
 
           <!-- Real Ratings & Reviews -->
           <div style="margin-bottom: 25px; display: flex; align-items: center; gap: 12px;">
-            <div style="color: #ffc107; font-size: 1.2rem;">
+            <div class="rating-stars-yellow" style="font-size: 1.2rem;">
               {% for _ in full_stars %}<i class="fas fa-star"></i>{% endfor %}
               {% if half_star %}<i class="fas fa-star-half-alt"></i>{% endif %}
               {% for _ in empty_stars %}<i class="far fa-star"></i>{% endfor %}
@@ -102,7 +130,7 @@
           <!-- Price Section -->
           <div class="single-product__price" style="margin-bottom: 30px; padding: 25px; background: #fdfdfd; border: 1px solid #eee; border-radius: 12px;">
             <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span style="font-size: 2.8rem; font-weight: 800; color: #212529;">Rs. {{ product.price }}</span>
+              <span style="font-size: 2.8rem; font-weight: 800; color: #212529;">NPR {{ product.price }}</span>
               {% if product.stock > 0 %}
               <span class="badge badge-success" style="padding: 8px 16px; font-size: 0.9rem; border-radius: 20px;">{{ product.stock }} In Stock</span>
               {% else %}
@@ -125,11 +153,40 @@
               {% if product.stock == 0 %}disabled{% endif %}>
               <i class="ti-shopping-cart mr-2"></i> {% if product.stock == 0 %}{{ product_page_settings.out_of_stock_label }}{% else %}{{ product_page_settings.add_to_cart_label|default:"ADD TO CART" }}{% endif %}
             </button>
+            <form method="post" action="{% url 'store:buy_now' product.pk %}" style="flex: 2; margin: 0;">
+              {% csrf_token %}
+              <button class="btn"
+                style="background: {% if product.stock > 0 %}#1f8b4d{% else %}#ccc{% endif %}; color: white; padding: 18px 28px; font-size: 1.05rem; font-weight: 700; border: none; border-radius: 10px; width: 100%; {% if product.stock == 0 %}cursor: not-allowed;{% endif %}"
+                {% if product.stock == 0 %}disabled{% endif %}>
+                <i class="fas fa-bolt mr-2"></i> Buy Now
+              </button>
+            </form>
             <button class="btn add-to-wishlist-btn"
               style="background: #fff; color: #212529; border: 2px solid #ddd; padding: 18px 25px; border-radius: 10px;"
               data-product-id="{{ product.pk }}">
               <i class="ti-heart"></i>
             </button>
+          </div>
+
+          <div style="display:flex; gap: 12px; flex-wrap: wrap; margin-top: -8px; margin-bottom: 30px;">
+            {% if in_app_chat_url %}
+            <button type="button" id="openInAppChat"
+               style="display:inline-flex; align-items:center; gap:8px; background:#eef2ff; color:#2f4bb8; border:1px solid #c9d5ff; padding:10px 14px; border-radius:10px; font-weight:700; text-decoration:none;">
+              <i class="fas fa-comments"></i> Chat with Seller (In App)
+            </button>
+            {% endif %}
+            {% if chat_with_seller_url %}
+            <a href="{{ chat_with_seller_url }}" target="_blank" rel="noopener noreferrer"
+               style="display:inline-flex; align-items:center; gap:8px; background:#ecfbf2; color:#1f8b4d; border:1px solid #b8e2c8; padding:10px 14px; border-radius:10px; font-weight:700; text-decoration:none;">
+              <i class="fab fa-whatsapp"></i> Chat with Seller
+            </a>
+            {% endif %}
+            {% if seller_storefront_url %}
+            <a href="{{ seller_storefront_url }}"
+               style="display:inline-flex; align-items:center; gap:8px; background:#edf5ff; color:#124ea6; border:1px solid #bdd3ef; padding:10px 14px; border-radius:10px; font-weight:700; text-decoration:none;">
+              <i class="fas fa-store"></i> Visit {{ seller_name }} Store
+            </a>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -179,7 +236,7 @@
                   <span style="font-weight: 700; color: #333;">{{ review.user.username }}</span>
                   <span style="color: #999; font-size: 0.85rem;">{{ review.created_at|date:"M d, Y" }}</span>
                 </div>
-                <div style="color: #ffc107; margin-bottom: 12px;">
+                <div class="rating-stars-yellow" style="margin-bottom: 12px;">
                   {% for i in "12345"|make_list %}{% if forloop.counter <= review.rating %}<i class="fas fa-star"></i>{% else %}<i class="far fa-star"></i>{% endif %}{% endfor %}
                 </div>
                 <p style="color: #555; margin-bottom: 0;">{{ review.comment }}</p>
@@ -222,7 +279,7 @@
             <div class="card border-0 shadow-sm" style="border-radius: 15px; margin-bottom: 20px; border: 1px solid #eee;">
               <div class="card-body p-4">
                 <div style="text-align: center; margin-bottom: 20px;">
-                  <span style="font-size: 1.8rem; font-weight: 800; color: #212529; display: block;">Rs. {{ product.price }}</span>
+                  <span style="font-size: 1.8rem; font-weight: 800; color: #212529; display: block;">NPR {{ product.price }}</span>
                   {% if product.stock == 0 %}
                     <span class="badge badge-danger mt-2">{{ product_page_settings.out_of_stock_label }}</span>
                   {% else %}
@@ -236,6 +293,29 @@
                   {% if product.stock == 0 %}disabled{% endif %}>
                   {% if product.stock == 0 %}{{ product_page_settings.out_of_stock_label }}{% else %}{{ product_page_settings.add_to_cart_label|default:"ADD TO CART" }}{% endif %}
                 </button>
+
+                <form method="post" action="{% url 'store:buy_now' product.pk %}" style="margin-top: 10px;">
+                  {% csrf_token %}
+                  <button class="btn w-100"
+                    style="background: {% if product.stock > 0 %}#1f8b4d{% else %}#ccc{% endif %}; color: white; padding: 13px; font-size: 1rem; font-weight: 700; border: none; border-radius: 30px; transition: all 0.3s ease; {% if product.stock == 0 %}cursor: not-allowed;{% endif %}"
+                    {% if product.stock == 0 %}disabled{% endif %}>
+                    <i class="fas fa-bolt"></i> Buy Now
+                  </button>
+                </form>
+
+                 {% if in_app_chat_url %}
+                 <button type="button" id="openInAppChatSidebar"
+                   style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top: 10px; border-radius: 30px; border:1px solid #c9d5ff; color:#2f4bb8; background:#eef2ff; padding: 11px 12px; font-weight:700; text-decoration:none; width: 100%;">
+                  <i class="fas fa-comments"></i> Chat with Seller (In App)
+                 </button>
+                 {% endif %}
+
+                {% if chat_with_seller_url %}
+                <a href="{{ chat_with_seller_url }}" target="_blank" rel="noopener noreferrer"
+                   style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top: 10px; border-radius: 30px; border:1px solid #b8e2c8; color:#1f8b4d; background:#ecfbf2; padding: 11px 12px; font-weight:700; text-decoration:none;">
+                  <i class="fab fa-whatsapp"></i> Chat with Seller
+                </a>
+                {% endif %}
               </div>
             </div>
 
@@ -288,7 +368,19 @@
               </div>
               <div class="card-body p-3">
                 <h6 style="font-weight: 700; margin-bottom: 5px;" class="text-truncate">{{ rp.title }}</h6>
-                <p style="color: var(--primary-color); font-weight: 700; margin: 0;">Rs. {{ rp.price }}</p>
+                <p style="color: var(--primary-color); font-weight: 700; margin: 0;">NPR {{ rp.price }}</p>
+                <div style="margin-top: 5px; font-size: 0.78rem; color: #6b7683; display:flex; align-items:center; gap:6px;">
+                  <span class="rating-stars-yellow">
+                    {% for i in "12345"|make_list %}
+                      {% if forloop.counter <= rp.avg_rating %}
+                        <i class="fas fa-star"></i>
+                      {% else %}
+                        <i class="far fa-star"></i>
+                      {% endif %}
+                    {% endfor %}
+                  </span>
+                  <span>{{ rp.review_count }} review{{ rp.review_count|pluralize }}</span>
+                </div>
               </div>
             </a>
           </div>
@@ -299,6 +391,22 @@
     {% endif %}
   </div>
 </section>
+
+{% if in_app_chat_url %}
+<div id="inAppChatModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1200;">
+  <div style="position:absolute; right: 18px; bottom: 18px; width: 360px; max-width: calc(100vw - 24px); background:#fff; border-radius: 14px; overflow:hidden; box-shadow: 0 16px 38px rgba(8,35,64,0.25);">
+    <div style="padding: 12px 14px; background: linear-gradient(90deg,#2f4bb8,#3f6fe2); color:#fff; display:flex; align-items:center; justify-content:space-between;">
+      <strong>Chat with {{ seller_name }}</strong>
+      <button id="closeInAppChat" style="background:none; border:none; color:#fff; font-size:18px;">&times;</button>
+    </div>
+    <div id="inAppChatBody" style="padding: 12px; max-height: 320px; overflow-y:auto; background:#f5f8fd;"></div>
+    <div style="padding: 10px; border-top: 1px solid #e2e9f3; display:flex; gap:8px;">
+      <input id="inAppChatInput" type="text" placeholder="Ask about this product..." style="flex:1; border:1px solid #c9d5e4; border-radius:10px; padding:10px; font-size:13px;">
+      <button id="inAppChatSend" style="border:none; background:#2f4bb8; color:#fff; border-radius:10px; padding: 10px 12px; font-weight:700;">Send</button>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <script>
   // Media Gallery Switcher
@@ -325,6 +433,136 @@
       mainImage.style.display = 'none';
     }
   }
+
+  {% if in_app_chat_url %}
+  (function initInAppSellerChat() {
+    const openButtons = [
+      document.getElementById('openInAppChat'),
+      document.getElementById('openInAppChatSidebar')
+    ].filter(Boolean);
+    const modal = document.getElementById('inAppChatModal');
+    const closeBtn = document.getElementById('closeInAppChat');
+    const body = document.getElementById('inAppChatBody');
+    const input = document.getElementById('inAppChatInput');
+    const send = document.getElementById('inAppChatSend');
+    const supportChat = document.getElementById('supportChat');
+    if (!modal || !body || !input || !send) return;
+
+    let conversationId = null;
+    let pollTimer = null;
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function appendMessage(msg, mine) {
+      const bubble = document.createElement('div');
+      bubble.style.maxWidth = '84%';
+      bubble.style.margin = mine ? '8px 0 8px auto' : '8px auto 8px 0';
+      bubble.style.padding = '9px 11px';
+      bubble.style.borderRadius = '10px';
+      bubble.style.background = mine ? '#2f4bb8' : '#fff';
+      bubble.style.color = mine ? '#fff' : '#2a3f56';
+      bubble.style.border = mine ? 'none' : '1px solid #d8e3f0';
+      bubble.innerHTML = '<div style="font-size:13px;">' + escapeHtml(msg.body) + '</div><div style="font-size:11px; opacity:0.75; margin-top:4px;">' + escapeHtml(msg.created_at) + '</div>';
+      body.appendChild(bubble);
+      body.scrollTop = body.scrollHeight;
+    }
+
+    async function startConversation() {
+      if (conversationId) return conversationId;
+      const res = await fetch('{{ in_app_chat_url }}', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken')
+        }
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        showCartNotification(data.error || 'Unable to start chat.', 'error');
+        return null;
+      }
+      conversationId = data.conversation_id;
+      return conversationId;
+    }
+
+    async function loadMessages() {
+      if (!conversationId) return;
+      const res = await fetch('/chat/' + conversationId + '/messages/');
+      const data = await res.json();
+      if (!data.ok) return;
+
+      body.innerHTML = '';
+      data.messages.forEach(function (msg) {
+        appendMessage(msg, msg.sender_id === {{ request.user.id }});
+      });
+    }
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      if (!conversationId) return;
+
+      const res = await fetch('/chat/' + conversationId + '/send/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({message: text})
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        showCartNotification(data.error || 'Unable to send message.', 'error');
+        return;
+      }
+
+      input.value = '';
+      appendMessage(data.message, true);
+    }
+
+    async function openModal() {
+      modal.style.display = 'block';
+      if (supportChat) {
+        supportChat.dataset.prevDisplay = supportChat.style.display || '';
+        supportChat.style.display = 'none';
+      }
+      const convo = await startConversation();
+      if (!convo) return;
+      await loadMessages();
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(loadMessages, 6000);
+    }
+
+    function closeModal() {
+      modal.style.display = 'none';
+      if (supportChat) {
+        supportChat.style.display = supportChat.dataset.prevDisplay || '';
+      }
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    }
+
+    openButtons.forEach(function (btn) {
+      btn.addEventListener('click', openModal);
+    });
+    closeBtn?.addEventListener('click', closeModal);
+    modal.addEventListener('click', function (event) {
+      if (event.target === modal) closeModal();
+    });
+    send.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+  })();
+  {% endif %}
 
 </script>
 {% endblock %}

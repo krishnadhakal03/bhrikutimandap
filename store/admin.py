@@ -1,4 +1,6 @@
 import io
+import json
+import logging
 import os
 import zipfile
 from tempfile import NamedTemporaryFile
@@ -9,19 +11,26 @@ from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 from django.core.exceptions import PermissionDenied
 from django.core.management import call_command
 from django.http import HttpResponse
+from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import path
 from django.utils import timezone
 from django.utils.html import format_html
 from ckeditor_uploader.fields import RichTextUploadingField
 from ckeditor_uploader.widgets import CKEditorUploadingWidget
+from .payment_service import PaymentService, PaymentServiceError
 from .models import (
     User, Product, ProductMedia, ProductReview, Order, OrderItem, Cart, CartItem, SiteSettings, 
     CustomerProfile, Address, PaymentMethod, Wishlist, WishlistItem,
     AgentProfile, StockHistory, SalesTransaction, StockAlert, MarketDemandSuggestion,
     DeliveryPartner, Vehicle, OrderDelivery, DeliveryTracking, ReturnRequest, Blog, EmailTemplate,
-    Category, HomePage, ContactPage, AuthPage, ProductPageSettings, AgentPageSettings
+    Category, HomePage, ContactPage, AuthPage, ProductPageSettings, AgentPageSettings,
+    PaymentGatewayConfig, PaymentTransaction, PaymentGatewayAudit,
+    SellerConversation, SellerMessage
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 # Custom Forms for User Admin with proper password handling
@@ -51,6 +60,108 @@ class CustomUserChangeForm(UserChangeForm):
                   'address_line1', 'address_line2', 'city', 'state', 'country', 'postal_code',
                   'role', 'is_active', 'is_staff', 'is_superuser', 'verified', 'approved_by_admin',
                   'date_joined', 'last_login')
+
+
+class PaymentGatewayConfigAdminForm(forms.ModelForm):
+    DUMMY_SCENARIO_CHOICES = [
+        ('', 'Not set'),
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+        ('pending', 'Pending'),
+    ]
+
+    # Sandbox fields
+    sandbox_publishable_key = forms.CharField(required=False)
+    sandbox_public_key = forms.CharField(required=False)
+    sandbox_secret_key = forms.CharField(required=False, widget=forms.PasswordInput(render_value=True))
+    sandbox_webhook_secret = forms.CharField(required=False, widget=forms.PasswordInput(render_value=True))
+    sandbox_api_key = forms.CharField(required=False, widget=forms.PasswordInput(render_value=True))
+    sandbox_merchant_id = forms.CharField(required=False)
+    sandbox_base_url = forms.CharField(required=False)
+    sandbox_initiate_url = forms.CharField(required=False)
+    sandbox_verification_url = forms.CharField(required=False)
+    sandbox_refund_url = forms.CharField(required=False)
+    sandbox_create_url = forms.CharField(required=False)
+    sandbox_verify_url = forms.CharField(required=False)
+    sandbox_dummy_status = forms.ChoiceField(required=False, choices=DUMMY_SCENARIO_CHOICES)
+
+    # Production fields
+    production_publishable_key = forms.CharField(required=False)
+    production_public_key = forms.CharField(required=False)
+    production_secret_key = forms.CharField(required=False, widget=forms.PasswordInput(render_value=True))
+    production_webhook_secret = forms.CharField(required=False, widget=forms.PasswordInput(render_value=True))
+    production_api_key = forms.CharField(required=False, widget=forms.PasswordInput(render_value=True))
+    production_merchant_id = forms.CharField(required=False)
+    production_base_url = forms.CharField(required=False)
+    production_initiate_url = forms.CharField(required=False)
+    production_verification_url = forms.CharField(required=False)
+    production_refund_url = forms.CharField(required=False)
+    production_create_url = forms.CharField(required=False)
+    production_verify_url = forms.CharField(required=False)
+    production_dummy_status = forms.ChoiceField(required=False, choices=DUMMY_SCENARIO_CHOICES)
+
+    FIELD_DEFS = [
+        ('publishable_key', 'Publishable Key', 'Stripe public key (starts with pk_).'),
+        ('public_key', 'Public Key', 'Public key used by Khalti or similar gateways.'),
+        ('secret_key', 'Secret Key', 'Private secret key from your gateway dashboard.'),
+        ('webhook_secret', 'Webhook Secret', 'Signature secret used to validate webhooks.'),
+        ('api_key', 'API Key', 'API key for providers like AilePay.'),
+        ('merchant_id', 'Merchant ID', 'Your merchant/business ID from gateway.'),
+        ('base_url', 'Base URL', 'Provider API base URL.'),
+        ('initiate_url', 'Initiate URL', 'Optional full endpoint for payment initiate call.'),
+        ('verification_url', 'Verification URL', 'Optional full endpoint for payment verification call.'),
+        ('refund_url', 'Refund URL', 'Optional full endpoint for refund call.'),
+        ('create_url', 'Create URL', 'Optional full endpoint for creating payment.'),
+        ('verify_url', 'Verify URL', 'Optional full endpoint for verifying payment.'),
+        ('dummy_status', 'Dummy Status', 'For Dummy gateway: success, failed, or pending.'),
+    ]
+
+    SECRET_KEYS = {'secret_key', 'webhook_secret', 'api_key'}
+
+    class Meta:
+        model = PaymentGatewayConfig
+        fields = ('name', 'is_enabled', 'is_default', 'environment')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        current = self.instance.get_config() if self.instance and self.instance.pk else {}
+
+        for env in ('sandbox', 'production'):
+            env_config = current.get(env, {})
+            for key, label, help_text in self.FIELD_DEFS:
+                field_name = f'{env}_{key}'
+                if key == 'dummy_status':
+                    self.fields[field_name].label = f'{env.title()} - Test Scenario'
+                    self.fields[field_name].help_text = 'Dummy-only selector. Choose how payment should behave in checkout.'
+                else:
+                    self.fields[field_name].label = f'{env.title()} - {label}'
+                    self.fields[field_name].help_text = help_text
+                self.fields[field_name].initial = env_config.get(key, '')
+
+        self.fields['name'].help_text = (
+            'Choose provider. Use Dummy (Local Test) if you want to test without company registration.'
+        )
+        self.fields['environment'].help_text = (
+            'Select which config to use right now. Start with Sandbox for testing.'
+        )
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        sandbox = {}
+        production = {}
+
+        for key, _label, _help_text in self.FIELD_DEFS:
+            sandbox_value = (self.cleaned_data.get(f'sandbox_{key}') or '').strip()
+            production_value = (self.cleaned_data.get(f'production_{key}') or '').strip()
+            if sandbox_value:
+                sandbox[key] = sandbox_value
+            if production_value:
+                production[key] = production_value
+
+        instance.set_config({'sandbox': sandbox, 'production': production})
+        if commit:
+            instance.save()
+        return instance
 
 
 # Custom Admin Site Styling
@@ -263,6 +374,10 @@ def _list_server_backups(backup_dir: str) -> list[str]:
         return []
 
 
+def _admin_payment_gateways_view(_request):
+    return redirect('admin:store_paymentgatewayconfig_changelist')
+
+
 _original_admin_get_urls = admin.site.get_urls
 
 
@@ -270,6 +385,7 @@ def _admin_get_urls_with_tools():
     urls = _original_admin_get_urls()
     custom = [
         path('db-tools/', admin.site.admin_view(_admin_db_tools_view), name='db_tools'),
+        path('payment-gateways/', admin.site.admin_view(_admin_payment_gateways_view), name='payment_gateways'),
     ]
     return custom + urls
 
@@ -754,6 +870,109 @@ class PaymentMethodAdmin(admin.ModelAdmin):
             return format_html('<span style="color: #4CAF50; font-weight: bold;">● Active</span>')
         return format_html('<span style="color: #f44336; font-weight: bold;">● Inactive</span>')
     status_badge.short_description = 'Status'
+
+
+@admin.register(PaymentGatewayConfig)
+class PaymentGatewayConfigAdmin(admin.ModelAdmin):
+    form = PaymentGatewayConfigAdminForm
+    list_display = ('name', 'environment', 'is_enabled', 'is_default', 'updated_at')
+    list_filter = ('name', 'environment', 'is_enabled', 'is_default')
+    readonly_fields = ('created_at', 'updated_at')
+    actions = ('validate_gateway_configs',)
+
+    fieldsets = (
+        (
+            'Gateway Identity',
+            {
+                'fields': ('name', 'environment'),
+                'description': 'Step 1: Choose gateway and active environment (Sandbox recommended for testing).',
+            },
+        ),
+        (
+            'Status',
+            {
+                'fields': ('is_enabled', 'is_default'),
+                'description': 'Step 2: Enable this gateway and optionally mark it as default at checkout.',
+            },
+        ),
+        (
+            'Sandbox Config (Recommended for Testing)',
+            {
+                'fields': (
+                    'sandbox_publishable_key', 'sandbox_public_key', 'sandbox_secret_key', 'sandbox_webhook_secret',
+                    'sandbox_api_key', 'sandbox_merchant_id', 'sandbox_base_url', 'sandbox_initiate_url',
+                    'sandbox_verification_url', 'sandbox_refund_url', 'sandbox_create_url', 'sandbox_verify_url',
+                    'sandbox_dummy_status',
+                ),
+                'description': 'Fill only fields your selected gateway needs. You can leave unrelated fields empty.',
+            },
+        ),
+        (
+            'Production Config (Use Later in Go-Live)',
+            {
+                'fields': (
+                    'production_publishable_key', 'production_public_key', 'production_secret_key', 'production_webhook_secret',
+                    'production_api_key', 'production_merchant_id', 'production_base_url', 'production_initiate_url',
+                    'production_verification_url', 'production_refund_url', 'production_create_url', 'production_verify_url',
+                    'production_dummy_status',
+                ),
+                'description': 'Use this when you go live. Keep empty during initial testing if needed.',
+            },
+        ),
+        ('Metadata', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
+
+    def validate_gateway_configs(self, request, queryset):
+        ok_count = 0
+        for gateway in queryset:
+            try:
+                ok, message = PaymentService.validate_gateway_configuration(gateway)
+            except (PaymentServiceError, Exception) as exc:
+                ok = False
+                message = str(exc)
+
+            action = 'validated' if ok else 'updated'
+            PaymentGatewayAudit.objects.create(
+                gateway=gateway,
+                actor=request.user,
+                action=action,
+                details={'message': message},
+            )
+
+            if ok:
+                ok_count += 1
+            else:
+                self.message_user(request, f'{gateway.get_name_display()}: {message}', level=messages.ERROR)
+
+        if ok_count:
+            self.message_user(request, f'{ok_count} gateway configuration(s) validated successfully.', level=messages.SUCCESS)
+
+    validate_gateway_configs.short_description = 'Validate selected gateway configurations'
+
+
+@admin.register(PaymentTransaction)
+class PaymentTransactionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'order', 'gateway', 'amount', 'currency', 'status', 'external_id', 'created_at')
+    list_filter = ('gateway', 'status', 'currency', 'created_at')
+    search_fields = ('external_id', 'order__id', 'order__user__username', 'last_error')
+    readonly_fields = (
+        'order', 'gateway', 'amount', 'currency', 'status', 'external_id',
+        'metadata', 'verification_attempts', 'last_error', 'created_at', 'updated_at'
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(PaymentGatewayAudit)
+class PaymentGatewayAuditAdmin(admin.ModelAdmin):
+    list_display = ('id', 'gateway', 'action', 'actor', 'created_at')
+    list_filter = ('action', 'gateway__name', 'created_at')
+    search_fields = ('gateway__name', 'actor__username')
+    readonly_fields = ('gateway', 'action', 'actor', 'details', 'created_at')
+
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(Wishlist)
@@ -1304,7 +1523,7 @@ class CategoryAdmin(admin.ModelAdmin):
 class HomePageAdmin(SingletonModelAdmin):
     fieldsets = (
         ('SEO', {'fields': ('meta_title', 'meta_description', 'meta_keywords')}),
-        ('Content', {'fields': ('trending_title', 'trending_subtitle', 'best_seller_title', 'best_seller_subtitle')}),
+        ('Content', {'fields': ('featured_title', 'featured_subtitle', 'trending_title', 'trending_subtitle', 'best_seller_title', 'best_seller_subtitle')}),
     )
 
 @admin.register(ContactPage)
@@ -1335,4 +1554,20 @@ class AgentPageSettingsAdmin(SingletonModelAdmin):
         ('SEO', {'fields': ('meta_title', 'meta_description', 'meta_keywords')}),
         ('Labels', {'fields': ('dashboard_welcome_title', 'add_product_button_label', 'products_table_header')}),
     )
+
+
+@admin.register(SellerConversation)
+class SellerConversationAdmin(admin.ModelAdmin):
+    list_display = ('id', 'customer', 'seller', 'product', 'updated_at')
+    search_fields = ('customer__username', 'seller__username', 'product__title')
+    list_filter = ('updated_at',)
+    readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(SellerMessage)
+class SellerMessageAdmin(admin.ModelAdmin):
+    list_display = ('id', 'conversation', 'sender', 'is_read', 'created_at')
+    search_fields = ('body', 'sender__username', 'conversation__product__title')
+    list_filter = ('is_read', 'created_at')
+    readonly_fields = ('created_at',)
 

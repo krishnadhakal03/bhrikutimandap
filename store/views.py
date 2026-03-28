@@ -2,13 +2,26 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Product, Order, OrderItem, Address, PaymentMethod, Blog, ProductMedia, ProductReview
+from .models import (
+    Product,
+    Order,
+    OrderItem,
+    Address,
+    PaymentMethod,
+    Blog,
+    ProductMedia,
+    ProductReview,
+    SellerConversation,
+    SellerMessage,
+)
 from .forms import ProductReviewForm
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 import json
 from django.utils import timezone
+from urllib.parse import quote
+from django.db.utils import OperationalError, ProgrammingError
 
 User = get_user_model()
 from .models import Cart, CartItem, Product
@@ -22,11 +35,21 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from .services import process_order_created, process_return_approval
 from .models import ReturnRequest, HomePage, ContactPage, AuthPage, ProductPageSettings, AgentPageSettings
+from .payment_service import PaymentService, PaymentServiceError
 from . import forms
+from .support_bot import generate_support_reply
 
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _annotate_product_ratings(queryset):
+    """Attach rating aggregates for quick card previews."""
+    return queryset.annotate(
+        avg_rating=models.Avg('reviews__rating'),
+        review_count=models.Count('reviews', distinct=True),
+    )
 
 
 def _get_email_connection():
@@ -153,7 +176,7 @@ def product_list(request):
     category_slug = request.GET.get('category', '')
     
     # Start with all products that are in stock
-    products = Product.objects.filter(stock__gt=0)
+    products = _annotate_product_ratings(Product.objects.filter(stock__gt=0))
     
     # Apply search filter
     if search:
@@ -181,6 +204,8 @@ def product_list(request):
         product.agent_name = product.get_agent_name()
         product.in_stock = product.is_in_stock()
         product.estimated_delivery = product.get_estimated_delivery()
+        product.avg_rating = product.avg_rating or 0
+        product.review_count = product.review_count or 0
     
     # Get all agents for filter dropdown
     from store.models import AgentProfile
@@ -196,6 +221,13 @@ def product_list(request):
 
 
 def home(request):
+    try:
+        home_page = HomePage.load()
+    except (OperationalError, ProgrammingError):
+        # Allows app startup when code is ahead of local DB schema.
+        # Run migrations to persist these fields.
+        home_page = HomePage()
+
     from django.db.models import Q
     
     # Get filter parameters
@@ -205,7 +237,7 @@ def home(request):
     category_slug = request.GET.get('category', '')
     
     # Start with all products that are in stock
-    products = Product.objects.filter(stock__gt=0)
+    products = _annotate_product_ratings(Product.objects.filter(stock__gt=0))
     
     # Apply search filter
     if search:
@@ -237,21 +269,31 @@ def home(request):
     # Add agent info to products
     for product in products_list:
         product.agent_name = product.get_agent_name()
+        product.avg_rating = product.avg_rating or 0
+        product.review_count = product.review_count or 0
     
     # Get all agents for filter dropdown
     from store.models import AgentProfile
     agents = AgentProfile.objects.filter(approval_status='approved').order_by('company_name')
     
     # Get best sellers (top 8 products)
-    best_sellers = Product.objects.filter(stock__gt=0).order_by('-id')[:8]
+    best_sellers = _annotate_product_ratings(Product.objects.filter(stock__gt=0)).order_by('-id')[:8]
+    for product in best_sellers:
+        product.avg_rating = product.avg_rating or 0
+        product.review_count = product.review_count or 0
 
     # Get Hero Carousel products (Random 5)
-    hero_products = Product.objects.filter(stock__gt=0).order_by('?')[:5]
+    hero_products = _annotate_product_ratings(Product.objects.filter(stock__gt=0)).order_by('?')[:5]
+    for product in hero_products:
+        product.avg_rating = product.avg_rating or 0
+        product.review_count = product.review_count or 0
     
     return render(request, 'store/home.html', {
-        'current_page': HomePage.load(),
+        'current_page': home_page,
+        'home_page': home_page,
         'products': products_list,
         'best_sellers': best_sellers,
+        'hero_products': hero_products,
         'agents': agents,
         'search': search,
         'sort_price': sort_price,
@@ -509,7 +551,26 @@ def product_detail(request, pk):
     review_form = ProductReviewForm()
     
     # Get related products
-    related_products = Product.objects.exclude(pk=pk)[:4]
+    related_products = _annotate_product_ratings(Product.objects.exclude(pk=pk))[:4]
+    for rp in related_products:
+        rp.avg_rating = rp.avg_rating or 0
+        rp.review_count = rp.review_count or 0
+
+    # Storefront and direct contact context for seller/agent.
+    seller_name = product.supplier.company if product.supplier and product.supplier.company else product.supplier.username if product.supplier else 'Seller'
+    seller_storefront_url = ''
+    chat_with_seller_url = ''
+    in_app_chat_url = ''
+    if product.supplier_id:
+        seller_storefront_url = reverse('store:seller_storefront', args=[product.supplier_id])
+        seller_phone = (product.supplier.phone or '').strip() if product.supplier else ''
+        if seller_phone:
+            normalized_phone = ''.join(ch for ch in seller_phone if ch.isdigit())
+            if normalized_phone:
+                chat_text = quote(f"Hello {seller_name}, I want details about '{product.title}'.")
+                chat_with_seller_url = f"https://wa.me/{normalized_phone}?text={chat_text}"
+        if request.user.is_authenticated and request.user != product.supplier:
+            in_app_chat_url = reverse('store:start_seller_chat', args=[product.id])
     
     return render(request, 'store/product_detail.html', {
         'product': product,
@@ -520,8 +581,223 @@ def product_detail(request, pk):
         'half_star': half_star,
         'empty_stars': range(empty_stars),
         'review_form': review_form,
-        'related_products': related_products
+        'related_products': related_products,
+        'seller_name': seller_name,
+        'seller_storefront_url': seller_storefront_url,
+        'chat_with_seller_url': chat_with_seller_url,
+        'in_app_chat_url': in_app_chat_url,
     })
+
+
+def _conversation_allowed(conversation, user):
+    if not user.is_authenticated:
+        return False
+    return user.id in (conversation.customer_id, conversation.seller_id)
+
+
+@login_required
+@require_http_methods(['POST'])
+def start_seller_chat(request, product_id):
+    """Create or fetch direct in-app chat for current customer and product seller."""
+    product = get_object_or_404(Product, pk=product_id)
+    if not product.supplier_id:
+        return JsonResponse({'ok': False, 'error': 'Seller not available for this product.'}, status=400)
+
+    if request.user == product.supplier:
+        return JsonResponse({'ok': False, 'error': 'You cannot start a chat with yourself.'}, status=400)
+
+    conversation, _ = SellerConversation.objects.get_or_create(
+        customer=request.user,
+        seller=product.supplier,
+        product=product,
+    )
+
+    return JsonResponse({'ok': True, 'conversation_id': conversation.id})
+
+
+@login_required
+@require_http_methods(['GET'])
+def seller_chat_messages(request, conversation_id):
+    """Return chat messages if the requester is part of the conversation."""
+    conversation = get_object_or_404(
+        SellerConversation.objects.select_related('customer', 'seller', 'product'),
+        pk=conversation_id,
+    )
+    if not _conversation_allowed(conversation, request.user):
+        return JsonResponse({'ok': False, 'error': 'Access denied.'}, status=403)
+
+    if request.user.id == conversation.customer_id:
+        other_party_name = conversation.seller.company or conversation.seller.username
+        other_party_role = 'seller'
+    else:
+        other_party_name = conversation.customer.get_full_name() or conversation.customer.username
+        other_party_role = 'customer'
+
+    SellerMessage.objects.filter(conversation=conversation).exclude(sender=request.user).update(is_read=True)
+    messages_qs = conversation.messages.select_related('sender').order_by('created_at')
+
+    return JsonResponse({
+        'ok': True,
+        'conversation': {
+            'id': conversation.id,
+            'product_title': conversation.product.title,
+            'other_party_name': other_party_name,
+            'other_party_role': other_party_role,
+        },
+        'messages': [
+            {
+                'id': msg.id,
+                'sender_id': msg.sender_id,
+                'sender_name': msg.sender.get_full_name() or msg.sender.username,
+                'body': msg.body,
+                'created_at': msg.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            }
+            for msg in messages_qs
+        ],
+    })
+
+
+@login_required
+@require_http_methods(['POST'])
+def seller_chat_send(request, conversation_id):
+    """Send a message to a seller conversation."""
+    conversation = get_object_or_404(SellerConversation, pk=conversation_id)
+    if not _conversation_allowed(conversation, request.user):
+        return JsonResponse({'ok': False, 'error': 'Access denied.'}, status=403)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'Invalid JSON payload.'}, status=400)
+
+    body = str(payload.get('message', '')).strip()
+    if not body:
+        return JsonResponse({'ok': False, 'error': 'Message cannot be empty.'}, status=400)
+
+    message = SellerMessage.objects.create(
+        conversation=conversation,
+        sender=request.user,
+        body=body,
+    )
+    SellerConversation.objects.filter(pk=conversation.pk).update(updated_at=timezone.now())
+
+    return JsonResponse({
+        'ok': True,
+        'message': {
+            'id': message.id,
+            'sender_id': message.sender_id,
+            'sender_name': message.sender.get_full_name() or message.sender.username,
+            'body': message.body,
+            'created_at': message.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+        },
+    })
+
+
+@require_http_methods(['POST'])
+def support_chat_api(request):
+    """Server-side support chatbot endpoint with optional free local LLM backend."""
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'Invalid JSON payload.'}, status=400)
+
+    message = str(payload.get('message', '')).strip()
+    if not message:
+        return JsonResponse({'ok': False, 'error': 'Message is required.'}, status=400)
+
+    reply = generate_support_reply(message)
+    return JsonResponse({'ok': True, 'reply': reply})
+
+
+@login_required
+@require_http_methods(['GET'])
+def customer_messages(request, conversation_id=None):
+    """Customer inbox for direct conversations with sellers."""
+    conversations = SellerConversation.objects.filter(customer=request.user).select_related(
+        'seller',
+        'product',
+    ).order_by('-updated_at')
+
+    selected = None
+    if conversation_id:
+        selected = get_object_or_404(conversations, pk=conversation_id)
+
+    unread_by_conversation = {
+        row['conversation_id']: row['total']
+        for row in SellerMessage.objects.filter(
+            conversation__customer=request.user,
+            is_read=False,
+        ).exclude(sender=request.user).values('conversation_id').annotate(total=models.Count('id'))
+    }
+    for conv in conversations:
+        conv.unread_count = unread_by_conversation.get(conv.id, 0)
+
+    if selected:
+        SellerMessage.objects.filter(conversation=selected, is_read=False).exclude(sender=request.user).update(is_read=True)
+
+    return render(request, 'store/messages.html', {
+        'conversations': conversations,
+        'selected_conversation': selected,
+    })
+
+
+@login_required
+@require_http_methods(['GET'])
+def chat_unread_counts_api(request):
+    """Live unread counters for navbar/sidebar badges."""
+    customer_unread = SellerMessage.objects.filter(
+        conversation__customer=request.user,
+        is_read=False,
+    ).exclude(sender=request.user).count()
+
+    agent_unread = 0
+    if request.user.role == 'agent':
+        agent_unread = SellerMessage.objects.filter(
+            conversation__seller=request.user,
+            is_read=False,
+        ).exclude(sender=request.user).count()
+
+    return JsonResponse({
+        'ok': True,
+        'customer_unread': customer_unread,
+        'agent_unread': agent_unread,
+        'total_unread': customer_unread + agent_unread,
+    })
+
+
+def seller_storefront(request, seller_id):
+    """Public storefront for a seller with all active products and rating previews."""
+    seller = get_object_or_404(User, pk=seller_id, role='agent')
+    products = _annotate_product_ratings(
+        Product.objects.filter(supplier=seller, stock__gt=0).order_by('-id')
+    )
+    for product in products:
+        product.avg_rating = product.avg_rating or 0
+        product.review_count = product.review_count or 0
+
+    return render(request, 'store/seller_storefront.html', {
+        'seller': seller,
+        'products': products,
+    })
+
+
+@login_required
+def buy_now(request, product_id):
+    """Shortcut checkout path for a single product."""
+    product = get_object_or_404(Product, pk=product_id)
+    qty = int(request.POST.get('quantity') or request.GET.get('quantity') or 1)
+    qty = max(1, qty)
+
+    if product.stock < qty:
+        messages.error(request, f"Only {product.stock} item(s) available for {product.title}.")
+        return redirect('store:product_detail', pk=product.pk)
+
+    cart, _ = Cart.objects.get_or_create(user=request.user)
+    cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
+    cart_item.quantity = qty if created else (cart_item.quantity + qty)
+    cart_item.save()
+    messages.success(request, f"{product.title} added. Proceed to checkout.")
+    return redirect('store:checkout')
 
 
 @login_required
@@ -668,6 +944,7 @@ def checkout(request):
         # Get user's addresses and payment methods
         addresses = request.user.addresses.all() if request.user.is_authenticated else []
         payment_methods = request.user.payment_methods.filter(is_active=True) if request.user.is_authenticated else []
+        gateway_options = PaymentService.get_enabled_gateways()
         
         # Prepare cart items with subtotals
         cart_items_display = []
@@ -686,6 +963,7 @@ def checkout(request):
             'cart_total': cart_total,
             'addresses': addresses,
             'payment_methods': payment_methods,
+            'gateway_options': gateway_options,
             'insufficient_stock': insufficient_stock,
         }
         return render(request, 'store/checkout.html', context)
@@ -694,6 +972,9 @@ def checkout(request):
     elif request.method == 'POST':
         selected_address_id = request.POST.get('delivery_address')
         selected_payment_id = request.POST.get('payment_method')
+        selected_gateway_name = ''
+        if selected_payment_id and selected_payment_id.startswith('gateway:'):
+            selected_gateway_name = selected_payment_id.split(':', 1)[1].strip().lower()
         
         # Validate selections
         if not selected_address_id and request.user.is_authenticated:
@@ -701,7 +982,7 @@ def checkout(request):
             return redirect('store:checkout')
         
         if not selected_payment_id and request.user.is_authenticated:
-            messages.error(request, 'Please select a payment method')
+            messages.error(request, 'Please select a payment method or gateway')
             return redirect('store:checkout')
         
         # Get selected address and payment method
@@ -715,7 +996,9 @@ def checkout(request):
                 messages.error(request, 'Invalid address selected')
                 return redirect('store:checkout')
             
-            if selected_payment_id == 'cod':
+            if selected_gateway_name:
+                selected_payment = None
+            elif selected_payment_id == 'cod':
                 # Handle COD - Get or Create a COD payment method for this user
                 selected_payment, created = PaymentMethod.objects.get_or_create(
                     user=request.user,
@@ -747,6 +1030,34 @@ def checkout(request):
                 product=product,
                 quantity=qty
             )
+
+        # For online gateways, redirect user to gateway payment page and finalize order after verification.
+        if selected_gateway_name:
+            try:
+                return_url = request.build_absolute_uri(reverse('store:payment_return'))
+                if '?' in return_url:
+                    return_url = f"{return_url}&gateway={selected_gateway_name}"
+                else:
+                    return_url = f"{return_url}?gateway={selected_gateway_name}"
+
+                cancel_url = request.build_absolute_uri(reverse('store:checkout'))
+                payment_start = PaymentService.initiate_payment(
+                    order=order,
+                    gateway_name=selected_gateway_name,
+                    return_url=return_url,
+                    cancel_url=cancel_url,
+                    currency='NPR',
+                )
+                if payment_start.get('redirect_url'):
+                    return redirect(payment_start['redirect_url'])
+
+                messages.error(request, 'Payment gateway did not return a redirect URL.')
+                order.delete()
+                return redirect('store:checkout')
+            except PaymentServiceError as exc:
+                messages.error(request, f'Payment initiation failed: {exc}')
+                order.delete()
+                return redirect('store:checkout')
         
         # Process order: deduct stock and create delivery records
         if process_order_created(order):
@@ -768,11 +1079,136 @@ def checkout(request):
             return redirect('store:checkout')
 
 
+@require_http_methods(['GET'])
+def api_payment_gateways(request):
+    gateways = PaymentService.get_enabled_gateways()
+    data = [
+        {
+            'name': gateway.name,
+            'display_name': gateway.get_name_display(),
+            'is_default': gateway.is_default,
+            'environment': gateway.environment,
+            'public_config': gateway.get_public_config(),
+        }
+        for gateway in gateways
+    ]
+    return JsonResponse({'gateways': data})
+
+
+@login_required
+@require_http_methods(['POST'])
+def api_payments_create(request):
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON payload.'}, status=400)
+
+    order_id = payload.get('order_id')
+    gateway_name = str(payload.get('gateway', '')).strip().lower()
+    if not order_id or not gateway_name:
+        return JsonResponse({'success': False, 'error': 'order_id and gateway are required.'}, status=400)
+
+    order = Order.objects.filter(id=order_id, user=request.user).first()
+    if not order:
+        return JsonResponse({'success': False, 'error': 'Order not found.'}, status=404)
+
+    try:
+        return_url = request.build_absolute_uri(reverse('store:payment_return'))
+        if '?' in return_url:
+            return_url = f"{return_url}&gateway={gateway_name}"
+        else:
+            return_url = f"{return_url}?gateway={gateway_name}"
+        cancel_url = request.build_absolute_uri(reverse('store:checkout'))
+
+        response_data = PaymentService.initiate_payment(
+            order=order,
+            gateway_name=gateway_name,
+            return_url=return_url,
+            cancel_url=cancel_url,
+            currency='NPR',
+        )
+        return JsonResponse({'success': True, **response_data})
+    except PaymentServiceError as exc:
+        return JsonResponse({'success': False, 'error': str(exc)}, status=400)
+
+
+@require_http_methods(['POST'])
+def api_payments_verify(request):
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON payload.'}, status=400)
+
+    gateway_name = str(payload.get('gateway', '')).strip().lower()
+    if not gateway_name:
+        return JsonResponse({'success': False, 'error': 'gateway is required.'}, status=400)
+
+    try:
+        result = PaymentService.verify_payment(
+            gateway_name=gateway_name,
+            payload=payload,
+            actor=request.user if getattr(request, 'user', None) and request.user.is_authenticated else None,
+            from_webhook=False,
+        )
+        return JsonResponse(result)
+    except PaymentServiceError as exc:
+        return JsonResponse({'success': False, 'error': str(exc)}, status=400)
+
+
+@csrf_exempt
+@require_http_methods(['POST'])
+def payment_webhook(request, gateway):
+    try:
+        result = PaymentService.handle_webhook(gateway_name=gateway, request=request)
+        return JsonResponse({'success': True, **result})
+    except PaymentServiceError as exc:
+        return JsonResponse({'success': False, 'error': str(exc)}, status=400)
+
+
+@require_http_methods(['GET'])
+def payment_return(request):
+    gateway_name = str(request.GET.get('gateway', '')).strip().lower()
+    if not gateway_name:
+        messages.error(request, 'Payment gateway was not provided.')
+        return redirect('store:checkout')
+
+    payload = request.GET.dict()
+    payload['gateway'] = gateway_name
+
+    try:
+        result = PaymentService.verify_payment(
+            gateway_name=gateway_name,
+            payload=payload,
+            actor=request.user if request.user.is_authenticated else None,
+            from_webhook=False,
+        )
+        if result.get('success'):
+            order_id = result.get('order_id')
+            if order_id:
+                messages.success(request, f"Payment completed successfully for order #{order_id}.")
+                return redirect('store:order_detail', order_id=order_id)
+            messages.success(request, 'Payment completed successfully.')
+            return redirect('store:checkout')
+    except PaymentServiceError as exc:
+        messages.error(request, f'Payment verification failed: {exc}')
+        return redirect('store:checkout')
+
+    messages.error(request, 'Payment could not be verified. Please try again.')
+    return redirect('store:checkout')
+
+
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
+        username = (request.POST.get('username') or '').strip()
         password = request.POST.get('password')
+
+        # Allow sign-in with either username or email address.
         user = authenticate(request, username=username, password=password)
+        if not user and username:
+            by_email = User.objects.filter(email__iexact=username).first()
+            if by_email:
+                user = authenticate(request, username=by_email.username, password=password)
+
         if user:
             # Merge session cart
             _merge_session_cart_into_user(request, user)
@@ -798,6 +1234,7 @@ def register_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
         email = request.POST.get('email', '')
         role = request.POST.get('role', 'customer')
         # additional fields
@@ -810,6 +1247,10 @@ def register_view(request):
 
         if not username or not password:
             messages.error(request, 'Username and password required')
+        elif not confirm_password:
+            messages.error(request, 'Please confirm your password')
+        elif password != confirm_password:
+            messages.error(request, 'Password and confirm password do not match')
         elif not email:
             messages.error(request, 'Email address is required')
         elif User.objects.filter(username=username).exists():

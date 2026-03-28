@@ -37,6 +37,9 @@
   <link rel="stylesheet" href="{% static 'vendors/owl-carousel/owl.theme.default.min.css' %}">
   <link rel="stylesheet" href="{% static 'vendors/owl-carousel/owl.carousel.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/aroma_style.css' %}">
+  {% if request.path != '/' %}
+  <link rel="stylesheet" href="{% static 'store/css/commerce-revamp.css' %}">
+  {% endif %}
   <style>
     :root {
       --primary-color: {{ site_settings.primary_color|default:"#384aeb" }};
@@ -152,6 +155,59 @@
       color: #384aeb;
     }
 
+    @media (min-width: 992px) {
+      .header_area .navbar .container {
+        display: flex;
+        align-items: center;
+        flex-wrap: nowrap;
+      }
+
+      .header_area .navbar-brand.logo_h {
+        flex: 0 0 auto;
+        margin-right: 22px;
+      }
+
+      .header_area .navbar-brand.logo_h img {
+        width: auto !important;
+        max-width: 180px !important;
+        max-height: 70px !important;
+      }
+
+      .header_area .navbar-collapse {
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        flex: 1 1 auto;
+      }
+
+      .header_area .menu_nav {
+        display: flex;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+        margin-right: 16px;
+      }
+
+      .header_area .menu_nav .nav-item {
+        margin-right: 24px;
+      }
+
+      .header_area .menu_nav .nav-item:last-child {
+        margin-right: 0;
+      }
+
+      .header_area .nav-shop {
+        display: flex;
+        align-items: center;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+        margin-bottom: 0;
+      }
+
+      .header_area .nav-shop li:last-child {
+        margin-left: 16px;
+      }
+    }
+
     /* Fix for mobile menu cutoff */
     @media (max-width: 991px) {
       .navbar-collapse {
@@ -261,13 +317,13 @@
     }
   </style>
 </head>
-<body>
+<body class="{% if request.path != '/' %}non-landing{% endif %}">
   <!--================ Start Header Menu Area =================-->
   {% block header %}
   <header class="header_area">
     <div class="main_menu">
       <nav class="navbar navbar-expand-lg navbar-light">
-        <div class="container d-flex flex-column flex-lg-row align-items-center">
+        <div class="container">
           {% if site_settings.logo %}
             <a class="navbar-brand logo_h mx-auto ml-lg-0 mr-lg-3" href="{% url 'store:home' %}"><img src="{{ site_settings.logo.url }}" alt="{{ site_settings.site_title|default:'Bhrikutimandap' }}" style="height: {% if site_settings.logo_height %}{{ site_settings.logo_height }}px{% else %}auto{% endif %}; width: {% if site_settings.logo_width %}{{ site_settings.logo_width }}px{% else %}auto{% endif %}; max-width: none;"></a>
           {% else %}
@@ -312,7 +368,10 @@
                   {% for category in categories %}
                     <li class="nav-item"><a class="nav-link" href="{% url 'store:product_list' %}?category={{ category.slug }}">{{ category.name }}</a></li>
                   {% empty %}
-                    <li class="nav-item"><a class="nav-link" href="#">No Categories</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'store:product_list' %}?category=men">Men</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'store:product_list' %}?category=women">Women</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'store:product_list' %}?category=kids">Kids</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'store:product_list' %}?category=accessories">Accessories</a></li>
                   {% endfor %}
                 </ul>
               </li>
@@ -332,6 +391,22 @@
               <li class="nav-item"><button id="searchBtn" title="Search Products"><i class="ti-search"></i></button></li>
               <li class="nav-item"><a href="{% url 'store:cart' %}"><button title="View Cart"><i class="ti-shopping-cart"></i><span class="nav-shop__circle cart-count">{{ cart_count|default:"0" }}</span></button></a></li>
               {% if user.is_authenticated %}
+                <li class="nav-item">
+                  {% if user.role == 'agent' %}
+                    <a href="{% url 'agent:messages' %}">
+                  {% else %}
+                    <a href="{% url 'store:customer_messages' %}">
+                  {% endif %}
+                    <button title="Messages">
+                      <i class="ti-comments"></i>
+                      {% if user.role == 'agent' %}
+                        <span class="nav-shop__circle chat-unread-count" data-kind="agent" {% if not agent_unread_messages %}style="display:none;"{% endif %}>{{ agent_unread_messages }}</span>
+                      {% else %}
+                        <span class="nav-shop__circle chat-unread-count" data-kind="customer" {% if not customer_unread_messages %}style="display:none;"{% endif %}>{{ customer_unread_messages }}</span>
+                      {% endif %}
+                    </button>
+                  </a>
+                </li>
                 <li class="nav-item"><a href="{% url 'store:wishlist' %}"><button title="View Wishlist"><i class="ti-heart"></i><span class="nav-shop__circle wishlist-count">{{ user.wishlist.item_count }}</span></button></a></li>
               {% endif %}
               <li class="nav-item"><a class="button button-header" href="{% url 'store:product_list' %}">Shop Now</a></li>
@@ -342,6 +417,12 @@
                   </a>
                   <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userDropdown">
                     <a class="dropdown-item" href="{% url 'store:customer_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                    {% if user.role == 'agent' %}
+                      <a class="dropdown-item" href="{% url 'agent:dashboard' %}"><i class="fas fa-exchange-alt"></i> Switch to Agent Portal</a>
+                      <a class="dropdown-item" href="{% url 'agent:messages' %}"><i class="fas fa-comments"></i> Messages <span class="badge badge-primary ml-1 chat-unread-count" data-kind="agent" {% if not agent_unread_messages %}style="display:none;"{% endif %}>{{ agent_unread_messages }}</span></a>
+                    {% else %}
+                      <a class="dropdown-item" href="{% url 'store:customer_messages' %}"><i class="fas fa-comments"></i> Messages <span class="badge badge-primary ml-1 chat-unread-count" data-kind="customer" {% if not customer_unread_messages %}style="display:none;"{% endif %}>{{ customer_unread_messages }}</span></a>
+                    {% endif %}
                     <a class="dropdown-item" href="{% url 'store:profile_detail' %}"><i class="fas fa-user"></i> Profile</a>
                     <a class="dropdown-item" href="{% url 'store:order_history' %}"><i class="fas fa-shopping-bag"></i> Orders</a>
                     <a class="dropdown-item" href="{% url 'store:wishlist' %}"><i class="fas fa-heart"></i> Wishlist</a>
@@ -398,51 +479,57 @@
               <p>{{ site_settings.contact_email|default:"info@bhrikutimandap.com" }}</p>
 
               {% if site_settings %}
-                {% if site_settings.facebook_url or site_settings.instagram_url or site_settings.tiktok_url or site_settings.youtube_url or site_settings.twitter_url or site_settings.linkedin_url or site_settings.whatsapp_url %}
-                  <div style="margin-top: 16px;">
-                    <p class="sm-head" style="margin-bottom: 10px;">
-                      <span class="fa fa-share-alt"></span>
-                      Follow Us
-                    </p>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div class="footer-social" style="margin-top: 16px;">
+                  <p class="sm-head" style="margin-bottom: 10px;">
+                    <span class="fa fa-share-alt"></span>
+                    Follow Us
+                  </p>
+                  {% if site_settings.facebook_url or site_settings.instagram_url or site_settings.tiktok_url or site_settings.youtube_url or site_settings.twitter_url or site_settings.linkedin_url or site_settings.whatsapp_url %}
+                    <div class="footer-social-links" style="display: flex; gap: 10px; flex-wrap: wrap;">
                       {% if site_settings.facebook_url %}
-                        <a href="{{ site_settings.facebook_url }}" target="_blank" rel="noopener noreferrer" title="Facebook" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
-                          <i class="fab fa-facebook-f"></i>
+                        <a class="footer-social-link" href="{{ site_settings.facebook_url }}" target="_blank" rel="noopener noreferrer" title="Facebook" aria-label="Facebook" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
+                          <i class="fab fa-facebook-f" aria-hidden="true"></i>
                         </a>
                       {% endif %}
+
                       {% if site_settings.instagram_url %}
-                        <a href="{{ site_settings.instagram_url }}" target="_blank" rel="noopener noreferrer" title="Instagram" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
-                          <i class="fab fa-instagram"></i>
+                        <a class="footer-social-link" href="{{ site_settings.instagram_url }}" target="_blank" rel="noopener noreferrer" title="Instagram" aria-label="Instagram" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
+                          <i class="fab fa-instagram" aria-hidden="true"></i>
                         </a>
                       {% endif %}
+
                       {% if site_settings.tiktok_url %}
-                        <a href="{{ site_settings.tiktok_url }}" target="_blank" rel="noopener noreferrer" title="TikTok" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
-                          <i class="fab fa-tiktok"></i>
+                        <a class="footer-social-link" href="{{ site_settings.tiktok_url }}" target="_blank" rel="noopener noreferrer" title="TikTok" aria-label="TikTok" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
+                          <i class="fab fa-tiktok" aria-hidden="true"></i>
                         </a>
                       {% endif %}
+
                       {% if site_settings.youtube_url %}
-                        <a href="{{ site_settings.youtube_url }}" target="_blank" rel="noopener noreferrer" title="YouTube" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
-                          <i class="fab fa-youtube"></i>
+                        <a class="footer-social-link" href="{{ site_settings.youtube_url }}" target="_blank" rel="noopener noreferrer" title="YouTube" aria-label="YouTube" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
+                          <i class="fab fa-youtube" aria-hidden="true"></i>
                         </a>
                       {% endif %}
+
                       {% if site_settings.twitter_url %}
-                        <a href="{{ site_settings.twitter_url }}" target="_blank" rel="noopener noreferrer" title="X / Twitter" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
-                          <i class="fab fa-twitter"></i>
+                        <a class="footer-social-link" href="{{ site_settings.twitter_url }}" target="_blank" rel="noopener noreferrer" title="X / Twitter" aria-label="X / Twitter" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
+                          <i class="fab fa-twitter" aria-hidden="true"></i>
                         </a>
                       {% endif %}
+
                       {% if site_settings.linkedin_url %}
-                        <a href="{{ site_settings.linkedin_url }}" target="_blank" rel="noopener noreferrer" title="LinkedIn" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
-                          <i class="fab fa-linkedin-in"></i>
+                        <a class="footer-social-link" href="{{ site_settings.linkedin_url }}" target="_blank" rel="noopener noreferrer" title="LinkedIn" aria-label="LinkedIn" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
+                          <i class="fab fa-linkedin-in" aria-hidden="true"></i>
                         </a>
                       {% endif %}
+
                       {% if site_settings.whatsapp_url %}
-                        <a href="{{ site_settings.whatsapp_url }}" target="_blank" rel="noopener noreferrer" title="WhatsApp" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
-                          <i class="fab fa-whatsapp"></i>
+                        <a class="footer-social-link" href="{{ site_settings.whatsapp_url }}" target="_blank" rel="noopener noreferrer" title="WhatsApp" aria-label="WhatsApp" style="width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #384aeb; color: #fff;">
+                          <i class="fab fa-whatsapp" aria-hidden="true"></i>
                         </a>
                       {% endif %}
                     </div>
-                  </div>
-                {% endif %}
+                  {% endif %}
+                </div>
               {% endif %}
             </div>
           </div>
@@ -513,6 +600,28 @@
         <input type="text" name="search" placeholder="Search for products..." required>
         <button type="submit">Search</button>
       </form>
+    </div>
+  </div>
+
+  <!-- Customer Care Chatbot -->
+  <div id="supportChat" style="position: fixed; right: 18px; bottom: 84px; z-index: 1200; font-family: 'Segoe UI', sans-serif;">
+    <button id="supportChatToggle"
+      style="width: 54px; height: 54px; border-radius: 50%; border: none; background: linear-gradient(135deg, #1261d1, #00a1a7); color: #fff; box-shadow: 0 12px 22px rgba(18,97,209,0.35);">
+      <i class="fas fa-comment-dots"></i>
+    </button>
+
+    <div id="supportChatPanel"
+      style="display:none; width: 320px; max-width: calc(100vw - 24px); background:#fff; border:1px solid #d8e3ef; border-radius: 14px; overflow:hidden; box-shadow:0 16px 36px rgba(8,35,64,0.2); margin-top:10px;">
+      <div style="padding: 12px 14px; background: linear-gradient(90deg,#1261d1,#00a1a7); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <strong>Customer Care Assistant</strong>
+        <button id="supportChatClose" style="background:transparent; border:none; color:#fff; font-size:18px; line-height:1;">&times;</button>
+      </div>
+      <div id="supportChatBody" style="padding: 12px; max-height: 300px; overflow-y: auto; background:#f6f9fd;"></div>
+      <div style="padding: 10px; border-top:1px solid #e8edf4; display:flex; gap:8px;">
+        <input id="supportChatInput" type="text" placeholder="Ask about order, return, delivery..."
+          style="flex:1; border:1px solid #cbd8e8; border-radius:10px; padding: 10px; font-size: 13px;">
+        <button id="supportChatSend" style="border:none; background:#1261d1; color:#fff; border-radius:10px; padding: 10px 12px; font-weight:700;">Send</button>
+      </div>
     </div>
   </div>
 
@@ -662,6 +771,163 @@
 
     // Expose globally for clickable links
     window.showLegalModal = showLegalModal;
+
+    // Lightweight free chatbot helper with keyword matching + graceful fallback.
+    (function initSupportBot() {
+      const panel = document.getElementById('supportChatPanel');
+      const toggle = document.getElementById('supportChatToggle');
+      const closeBtn = document.getElementById('supportChatClose');
+      const input = document.getElementById('supportChatInput');
+      const send = document.getElementById('supportChatSend');
+      const body = document.getElementById('supportChatBody');
+      if (!panel || !toggle || !input || !send || !body) return;
+
+      const botReplies = [
+        {
+          keys: ['order', 'track', 'status'],
+          text: 'You can track orders from Dashboard > Orders. If payment is complete and status is pending for long, contact support from the Contact page.'
+        },
+        {
+          keys: ['return', 'refund'],
+          text: 'Open your order details and use the return request option for eligible items. Seller review is required before approval.'
+        },
+        {
+          keys: ['delivery', 'shipping', 'ship'],
+          text: 'Delivery details are shown in each product and checkout summary. For exact timelines, use Chat with Seller on product page.'
+        },
+        {
+          keys: ['payment', 'card', 'cod', 'gateway'],
+          text: 'We support secure payment gateways and cash on delivery where available. If payment fails, retry from checkout and verify your method.'
+        },
+        {
+          keys: ['agent', 'seller', 'store'],
+          text: 'Tap the seller name on a product to open their storefront and browse all items from that seller.'
+        },
+      ];
+
+      function appendBubble(text, fromUser) {
+        const bubble = document.createElement('div');
+        bubble.style.maxWidth = '86%';
+        bubble.style.margin = fromUser ? '8px 0 8px auto' : '8px auto 8px 0';
+        bubble.style.padding = '9px 11px';
+        bubble.style.borderRadius = '10px';
+        bubble.style.fontSize = '12px';
+        bubble.style.lineHeight = '1.45';
+        bubble.style.background = fromUser ? '#1261d1' : '#ffffff';
+        bubble.style.color = fromUser ? '#ffffff' : '#27405d';
+        bubble.style.border = fromUser ? 'none' : '1px solid #dce6f2';
+        bubble.textContent = text;
+        body.appendChild(bubble);
+        body.scrollTop = body.scrollHeight;
+      }
+
+      function getReply(message) {
+        const msg = (message || '').toLowerCase();
+        for (const item of botReplies) {
+          if (item.keys.some(k => msg.includes(k))) return item.text;
+        }
+        return 'I can help with orders, returns, shipping, payments, and seller/store questions. For human support, please use the Contact page.';
+      }
+
+      async function getServerReply(message) {
+        const res = await fetch('{% url "store:support_chat_api" %}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({ message })
+        });
+        const data = await res.json();
+        if (data && data.ok && data.reply) {
+          return data.reply;
+        }
+        throw new Error((data && data.error) || 'Support assistant unavailable');
+      }
+
+      async function sendMessage() {
+        const text = input.value.trim();
+        if (!text) return;
+        appendBubble(text, true);
+        input.value = '';
+        try {
+          const reply = await getServerReply(text);
+          appendBubble(reply, false);
+        } catch (error) {
+          setTimeout(() => appendBubble(getReply(text), false), 150);
+        }
+      }
+
+      function openPanel() {
+        panel.style.display = 'block';
+        if (!body.dataset.welcome) {
+          appendBubble('Hi! I am your customer care assistant. Ask me about orders, returns, delivery, payment, or sellers.', false);
+          body.dataset.welcome = '1';
+        }
+      }
+
+      function closePanel() {
+        panel.style.display = 'none';
+      }
+
+      toggle.addEventListener('click', function () {
+        if (panel.style.display === 'none' || !panel.style.display) {
+          openPanel();
+        } else {
+          closePanel();
+        }
+      });
+
+      closeBtn?.addEventListener('click', closePanel);
+      send.addEventListener('click', sendMessage);
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+    })();
+
+    (function initChatUnreadBadges() {
+      const badges = Array.from(document.querySelectorAll('.chat-unread-count'));
+      if (!badges.length) return;
+
+      function applyCount(element, count) {
+        const safeCount = Number(count || 0);
+        element.textContent = safeCount;
+        element.style.display = safeCount > 0 ? '' : 'none';
+      }
+
+      function updateBadges(data) {
+        badges.forEach(function (badge) {
+          const kind = badge.dataset.kind || 'total';
+          if (kind === 'agent') {
+            applyCount(badge, data.agent_unread);
+          } else if (kind === 'customer') {
+            applyCount(badge, data.customer_unread);
+          } else {
+            applyCount(badge, data.total_unread);
+          }
+        });
+      }
+
+      async function refresh() {
+        try {
+          const res = await fetch('{% url "store:chat_unread_counts_api" %}', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          });
+          if (!res.ok) return;
+          const data = await res.json();
+          if (!data || !data.ok) return;
+          updateBadges(data);
+        } catch (error) {
+          // Keep silent to avoid noisy UX on intermittent network failures.
+        }
+      }
+
+      refresh();
+      setInterval(refresh, 12000);
+    })();
   </script>
 
   <!-- Mobile Bottom Navigation -->
@@ -749,6 +1015,21 @@
         <span>Account</span>
       </div>
     </a>
+    {% if user.role == 'agent' %}
+    <a href="{% url 'agent:messages' %}" class="mobile-bottom-nav__item">
+      <div class="mobile-bottom-nav__item-content">
+        <i class="mobile-bottom-nav__icon fas fa-comments"></i>
+        <span>Messages</span>
+      </div>
+    </a>
+    {% else %}
+    <a href="{% url 'store:customer_messages' %}" class="mobile-bottom-nav__item">
+      <div class="mobile-bottom-nav__item-content">
+        <i class="mobile-bottom-nav__icon fas fa-comments"></i>
+        <span>Messages</span>
+      </div>
+    </a>
+    {% endif %}
     {% else %}
     <a href="{% url 'store:login' %}" class="mobile-bottom-nav__item">
       <div class="mobile-bottom-nav__item-content">

@@ -1,8 +1,14 @@
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import timedelta
+import base64
+import hashlib
+import json
+
+from cryptography.fernet import Fernet, InvalidToken
 
 
 class User(AbstractUser):
@@ -111,6 +117,42 @@ class ProductReview(models.Model):
 
     def __str__(self):
         return f"Review for {self.product.title} by {self.user.username}"
+
+
+class SellerConversation(models.Model):
+    """Direct in-app chat thread between one customer and one seller for a product."""
+    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='seller_conversations')
+    seller = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='incoming_seller_conversations',
+        limit_choices_to={'role': 'agent'},
+    )
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='seller_conversations')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('customer', 'seller', 'product')
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"Chat: {self.customer.username} -> {self.seller.username} ({self.product.title})"
+
+
+class SellerMessage(models.Model):
+    """Message within a seller conversation."""
+    conversation = models.ForeignKey(SellerConversation, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_seller_messages')
+    body = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Msg by {self.sender.username} in chat #{self.conversation_id}"
 
 
 class Order(models.Model):
@@ -369,6 +411,168 @@ class PaymentMethod(models.Model):
             return (self.expiry_year < today.year) or \
                    (self.expiry_year == today.year and self.expiry_month < today.month)
         return False
+
+
+class PaymentGatewayConfig(models.Model):
+    class GatewayName(models.TextChoices):
+        STRIPE = 'stripe', 'Stripe'
+        KHALTI = 'khalti', 'Khalti'
+        AILEPAY = 'ailepay', 'AilePay'
+        DUMMY = 'dummy', 'Dummy (Local Test)'
+
+    class Environment(models.TextChoices):
+        SANDBOX = 'sandbox', 'Sandbox'
+        PRODUCTION = 'production', 'Production'
+
+    name = models.CharField(max_length=20, choices=GatewayName.choices, unique=True)
+    is_enabled = models.BooleanField(default=False)
+    is_default = models.BooleanField(default=False)
+    environment = models.CharField(max_length=20, choices=Environment.choices, default=Environment.SANDBOX)
+    config_json = models.TextField(default='{}', help_text='Encrypted gateway configuration payload')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Payment Gateway Config'
+        verbose_name_plural = 'Payment Gateway Configs'
+
+    def __str__(self):
+        return f"{self.get_name_display()} ({self.environment})"
+
+    @staticmethod
+    def _get_fernet() -> Fernet:
+        source = (
+            getattr(settings, 'PAYMENT_CONFIG_ENCRYPTION_KEY', '')
+            or settings.SECRET_KEY
+        )
+        digest = hashlib.sha256(source.encode('utf-8')).digest()
+        key = base64.urlsafe_b64encode(digest)
+        return Fernet(key)
+
+    @classmethod
+    def encrypt_config(cls, value: dict) -> str:
+        payload = json.dumps(value or {}, separators=(',', ':'), sort_keys=True).encode('utf-8')
+        token = cls._get_fernet().encrypt(payload).decode('utf-8')
+        return f"enc::{token}"
+
+    @classmethod
+    def decrypt_config(cls, value: str) -> dict:
+        if not value:
+            return {}
+
+        text = value.strip()
+        if not text:
+            return {}
+
+        if text.startswith('enc::'):
+            token = text[5:].encode('utf-8')
+            try:
+                decrypted = cls._get_fernet().decrypt(token)
+            except InvalidToken:
+                return {}
+            try:
+                return json.loads(decrypted.decode('utf-8'))
+            except json.JSONDecodeError:
+                return {}
+
+        # Backward-compatible fallback for non-encrypted legacy values
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            return {}
+
+    def get_config(self) -> dict:
+        return self.decrypt_config(self.config_json)
+
+    def set_config(self, value: dict) -> None:
+        self.config_json = self.encrypt_config(value)
+
+    def get_active_config(self) -> dict:
+        config = self.get_config()
+        return config.get(self.environment, {})
+
+    def get_public_config(self) -> dict:
+        active = self.get_active_config()
+        if self.name == self.GatewayName.STRIPE:
+            return {'publishable_key': active.get('publishable_key', '')}
+        if self.name == self.GatewayName.KHALTI:
+            return {'public_key': active.get('public_key', '')}
+        if self.name == self.GatewayName.AILEPAY:
+            return {'merchant_id': active.get('merchant_id', '')}
+        if self.name == self.GatewayName.DUMMY:
+            return {'mode': 'local-test'}
+        return {}
+
+    def clean(self):
+        if self.is_default and not self.is_enabled:
+            raise ValidationError('Default gateway must be enabled.')
+
+    def save(self, *args, **kwargs):
+        if self.is_default:
+            PaymentGatewayConfig.objects.exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
+
+
+class PaymentTransaction(models.Model):
+    class GatewayName(models.TextChoices):
+        STRIPE = 'stripe', 'Stripe'
+        KHALTI = 'khalti', 'Khalti'
+        AILEPAY = 'ailepay', 'AilePay'
+        DUMMY = 'dummy', 'Dummy (Local Test)'
+
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        SUCCESS = 'success', 'Success'
+        FAILED = 'failed', 'Failed'
+        REFUNDED = 'refunded', 'Refunded'
+
+    order = models.ForeignKey('Order', null=True, blank=True, on_delete=models.SET_NULL, related_name='payment_transactions')
+    gateway = models.CharField(max_length=20, choices=GatewayName.choices)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=10, default='NPR')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    external_id = models.CharField(max_length=255, blank=True, db_index=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    verification_attempts = models.PositiveIntegerField(default=0)
+    last_error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['gateway', 'status']),
+            models.Index(fields=['external_id']),
+        ]
+
+    def __str__(self):
+        return f"{self.gateway} {self.amount} {self.currency} ({self.status})"
+
+
+class PaymentGatewayAudit(models.Model):
+    class Action(models.TextChoices):
+        CREATED = 'created', 'Created'
+        UPDATED = 'updated', 'Updated'
+        VALIDATED = 'validated', 'Validated'
+        ENABLED = 'enabled', 'Enabled'
+        DISABLED = 'disabled', 'Disabled'
+        CREATE_PAYMENT = 'create_payment', 'Create Payment'
+        VERIFY_PAYMENT = 'verify_payment', 'Verify Payment'
+        WEBHOOK_VERIFY = 'webhook_verify', 'Webhook Verify'
+        WEBHOOK_ERROR = 'webhook_error', 'Webhook Error'
+
+    gateway = models.ForeignKey(PaymentGatewayConfig, on_delete=models.SET_NULL, null=True, blank=True, related_name='audit_logs')
+    action = models.CharField(max_length=32, choices=Action.choices)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    details = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        who = self.actor.username if self.actor else 'system'
+        return f"{self.action} by {who}"
 
 
 class Wishlist(models.Model):
@@ -958,6 +1162,8 @@ class SingletonModel(models.Model):
         return obj
 
 class HomePage(SEOModel, SingletonModel):
+    featured_title = models.CharField(max_length=200, default='Featured Picks')
+    featured_subtitle = models.CharField(max_length=255, default='Handpicked highlights from verified sellers.')
     trending_title = models.CharField(max_length=200, default='Trending Product')
     trending_subtitle = models.CharField(max_length=200, default='Popular Item in the market')
     best_seller_title = models.CharField(max_length=200, default='Best Sellers Shop')

@@ -23,9 +23,10 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 if 'test' in sys.argv:
     DEBUG = True
 
+_default_allowed_hosts = 'localhost,127.0.0.1,bhrikutimandap.com,www.bhrikutimandap.com'
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+    for host in os.environ.get('ALLOWED_HOSTS', _default_allowed_hosts).split(',')
     if host.strip()
 ]
 
@@ -107,6 +108,7 @@ TEMPLATES[0]['OPTIONS']['context_processors'].append('store.context_processors.s
 TEMPLATES[0]['OPTIONS']['context_processors'].append('store.context_processors.site_settings')
 TEMPLATES[0]['OPTIONS']['context_processors'].append('store.context_processors.categories')
 TEMPLATES[0]['OPTIONS']['context_processors'].append('store.context_processors.dynamic_pages')
+TEMPLATES[0]['OPTIONS']['context_processors'].append('store.context_processors.chat_unread_counts')
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

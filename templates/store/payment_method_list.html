@@ -4,38 +4,39 @@
 {% block title %}Payment Methods - Bhrikutimandap{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-  <!-- Header -->
-  <div class="row mb-4">
-    <div class="col-md-8">
-      <h2>Payment Methods</h2>
-      <p class="text-muted">Manage your saved payment methods for faster checkout</p>
-    </div>
-    <div class="col-md-4 text-end">
-      <a href="{% url 'store:payment_method_create' %}" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Add Payment Method
-      </a>
-    </div>
-  </div>
+<link rel="stylesheet" href="{% static 'store/css/commerce-revamp.css' %}">
 
-  <div class="alert alert-info">
-    <i class="fas fa-lock"></i> 
-    <strong>Security:</strong> We only store encrypted payment tokens and never store raw card data.
-  </div>
+<section class="ux-page">
+  <div class="ux-container">
+    <div class="ux-header">
+      <div>
+        <h1 class="ux-title">Saved Payment Methods</h1>
+        <p class="ux-subtitle">Manage your saved references and pick your default checkout preference.</p>
+      </div>
+      <div>
+        <a href="{% url 'store:payment_method_create' %}" class="ux-btn-primary">
+          <i class="fas fa-plus"></i> Add Payment Method
+        </a>
+      </div>
+    </div>
+
+    <div class="ux-alert info">
+      <strong><i class="fas fa-lock"></i> Security:</strong> only tokenized references are saved. Raw card details are never stored here.
+    </div>
 
   {% if payment_methods %}
-    <div class="row">
+    <div class="row g-3">
       {% for method in payment_methods %}
-        <div class="col-md-6 mb-4">
-          <div class="card border-0 shadow-sm {% if method.is_default %}border-success border-2{% endif %}">
+        <div class="col-md-6">
+          <div class="ux-card" style="height:100%; {% if method.is_default %}border-color:#aadabf;{% endif %}">
             {% if method.is_default %}
-              <div class="card-header bg-success text-white">
-                <span class="badge bg-light text-success">Default</span>
+              <div class="ux-card-head" style="background:linear-gradient(90deg, rgba(31,139,77,0.13), rgba(31,139,77,0.06));">
+                <span class="ux-pill" style="background:#ecfbf2; border-color:#b8e2c8; color:#1f8b4d;">Default Method</span>
               </div>
             {% endif %}
-            <div class="card-body">
-              <div class="d-flex align-items-center justify-content-between mb-3">
-                <h5 class="card-title mb-0">
+            <div class="ux-card-body">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h4 style="margin:0; font-weight:800; font-size:1.1rem;">
                   {% if method.payment_type == 'card' %}
                     <i class="fas fa-credit-card"></i>
                   {% elif method.payment_type == 'upi' %}
@@ -46,27 +47,24 @@
                     <i class="fas fa-wallet"></i>
                   {% endif %}
                   {{ method.display_name }}
-                </h5>
+                </h4>
+                <span class="ux-pill">{{ method.get_payment_type_display }}</span>
               </div>
 
-              <p class="card-text text-muted">
-                <strong>Type:</strong> {{ method.get_payment_type_display }}<br>
+              <p class="ux-subtitle" style="margin-top:0;">
                 {% if method.last_four %}
-                  <strong>Last 4 Digits:</strong> {{ method.last_four }}<br>
+                  Ending with {{ method.last_four }} ·
                 {% endif %}
-                {% if method.expiry_month and method.expiry_year %}
-                  <strong>Expires:</strong> {{ method.expiry_month }}/{{ method.expiry_year }}<br>
-                {% endif %}
-                <small class="text-muted">Added on {{ method.created_at|date:"M d, Y" }}</small>
+                Added on {{ method.created_at|date:"M d, Y" }}
               </p>
 
-              <div class="btn-group mt-3" role="group">
+              <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
                 {% if not method.is_default %}
-                  <a href="{% url 'store:payment_method_set_default' method.id %}" class="btn btn-sm btn-outline-success">
+                  <a href="{% url 'store:payment_method_set_default' method.id %}" class="ux-btn-secondary" style="padding:10px 12px;">
                     <i class="fas fa-check"></i> Set Default
                   </a>
                 {% endif %}
-                <a href="{% url 'store:payment_method_delete' method.id %}" class="btn btn-sm btn-outline-danger">
+                <a href="{% url 'store:payment_method_delete' method.id %}" class="ux-btn-secondary" style="padding:10px 12px; border-color:#edc7c7; color:#a53a3a;">
                   <i class="fas fa-trash"></i> Remove
                 </a>
               </div>
@@ -76,17 +74,21 @@
       {% endfor %}
     </div>
   {% else %}
-    <div class="alert alert-info" role="alert">
-      <i class="fas fa-info-circle"></i> No payment methods saved yet.
-      <a href="{% url 'store:payment_method_create' %}" class="alert-link">Add your first payment method</a>
+    <div class="ux-card ux-empty">
+      <i class="fas fa-wallet" style="font-size:3rem; color:#668cb7;"></i>
+      <h3>No payment method saved yet</h3>
+      <p class="ux-subtitle">Save one method to speed up future checkout.</p>
+      <a href="{% url 'store:payment_method_create' %}" class="ux-btn-primary" style="margin-top:10px;">
+        <i class="fas fa-plus"></i> Add your first method
+      </a>
     </div>
   {% endif %}
 
-  <!-- Back to Dashboard -->
-  <div class="mt-4">
-    <a href="{% url 'store:customer_dashboard' %}" class="btn btn-outline-secondary">
+  <div style="margin-top:16px;">
+    <a href="{% url 'store:customer_dashboard' %}" class="ux-btn-ghost">
       <i class="fas fa-arrow-left"></i> Back to Dashboard
     </a>
   </div>
 </div>
+</section>
 {% endblock %}

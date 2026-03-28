@@ -1,0 +1,199 @@
+{% extends "agent/base.html" %}
+
+{% block agent_content %}
+<style>
+    .conversation-item {
+        display: block;
+        padding: 12px 16px;
+        border-bottom: 1px solid #eef3f8;
+        text-decoration: none;
+        color: #22364f;
+        background: transparent;
+    }
+
+    .conversation-item.active {
+        background: #e7f0ff;
+    }
+</style>
+
+<div class="page-header">
+    <h3><i class="fas fa-comments"></i>Customer Messages</h3>
+    <p>Reply to customers directly from your portal.</p>
+</div>
+
+<div class="card" style="border-radius: 12px; overflow: hidden;">
+    <div class="row g-0" style="min-height: 520px;">
+        <div class="col-lg-4" style="border-right: 1px solid #e2e8f0; background: #f8fbff;">
+            <div style="padding: 14px 16px; border-bottom: 1px solid #e2e8f0; font-weight: 700;">
+                Conversations
+            </div>
+            <div style="max-height: 520px; overflow-y: auto;">
+                {% for conv in conversations %}
+                <a href="{% url 'agent:messages_detail' conv.id %}" class="conversation-item {% if selected_conversation and selected_conversation.id == conv.id %}active{% endif %}">
+                    <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center;">
+                        <strong style="font-size: 0.95rem;">{{ conv.customer.get_full_name|default:conv.customer.username }}</strong>
+                        {% if conv.unread_count %}
+                        <span style="min-width: 22px; height: 22px; border-radius: 999px; background: #1261d1; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700;">{{ conv.unread_count }}</span>
+                        {% endif %}
+                    </div>
+                    <div style="margin-top: 4px; font-size: 0.82rem; color: #5b6d80;">{{ conv.product.title|truncatechars:36 }}</div>
+                    <div style="margin-top: 3px; font-size: 0.75rem; color: #8ea0b4;">{{ conv.updated_at|date:"M d, H:i" }}</div>
+                </a>
+                {% empty %}
+                <div style="padding: 20px; color: #6d7f95;">No customer messages yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-lg-8" style="display: flex; flex-direction: column;">
+            {% if selected_conversation %}
+            <div style="padding: 14px 16px; border-bottom: 1px solid #e2e8f0; background: #fff;">
+                <strong>{{ selected_conversation.customer.get_full_name|default:selected_conversation.customer.username }}</strong>
+                <div style="font-size: 0.82rem; color: #5f7086;">About: {{ selected_conversation.product.title }}</div>
+            </div>
+
+            <div id="agentChatBody" style="padding: 16px; background: #f4f8fc; flex: 1; overflow-y: auto;"></div>
+
+            <div style="padding: 12px; border-top: 1px solid #e2e8f0; background: #fff; display: flex; gap: 8px;">
+                <input id="agentChatInput" type="text" placeholder="Type your reply..." style="flex: 1; border: 1px solid #cdd7e3; border-radius: 10px; padding: 10px;">
+                <button id="agentChatSend" class="btn btn-primary">Send</button>
+            </div>
+            {% else %}
+            <div style="display: flex; flex: 1; align-items: center; justify-content: center; color: #6d7f95; font-size: 1rem;">
+                Select a conversation to view messages.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if selected_conversation %}
+<div id="agentChatMeta" data-conversation-id="{{ selected_conversation.id }}" data-current-user-id="{{ request.user.id }}" style="display:none;"></div>
+<script>
+(function () {
+    const meta = document.getElementById('agentChatMeta');
+    const conversationId = Number(meta?.dataset.conversationId || 0);
+    const currentUserId = Number(meta?.dataset.currentUserId || 0);
+    const body = document.getElementById('agentChatBody');
+    const input = document.getElementById('agentChatInput');
+    const send = document.getElementById('agentChatSend');
+    if (!body || !input || !send || !conversationId || !currentUserId) return;
+    let lastInboundMessageId = 0;
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function renderMessage(msg) {
+        const mine = msg.sender_id === currentUserId;
+        const wrap = document.createElement('div');
+        wrap.style.maxWidth = '80%';
+        wrap.style.margin = mine ? '8px 0 8px auto' : '8px auto 8px 0';
+        wrap.style.padding = '10px 12px';
+        wrap.style.borderRadius = '10px';
+        wrap.style.background = mine ? '#1261d1' : '#fff';
+        wrap.style.border = mine ? 'none' : '1px solid #d7e2ee';
+        wrap.style.color = mine ? '#fff' : '#20364f';
+        wrap.innerHTML = '<div style="font-size:0.9rem;">' + escapeHtml(msg.body) + '</div><div style="font-size:0.72rem; margin-top:5px; opacity:0.8;">' + escapeHtml(msg.created_at) + '</div>';
+        body.appendChild(wrap);
+    }
+
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.style.position = 'fixed';
+        toast.style.top = '16px';
+        toast.style.right = '16px';
+        toast.style.zIndex = '2100';
+        toast.style.padding = '10px 12px';
+        toast.style.borderRadius = '10px';
+        toast.style.background = '#1261d1';
+        toast.style.color = '#fff';
+        toast.style.fontSize = '0.84rem';
+        toast.style.boxShadow = '0 8px 22px rgba(18, 97, 209, 0.25)';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(function () {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.25s ease';
+            setTimeout(function () { toast.remove(); }, 260);
+        }, 1800);
+    }
+
+    function playBeep() {
+        try {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) return;
+            const context = new AudioContextClass();
+            const oscillator = context.createOscillator();
+            const gain = context.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(820, context.currentTime);
+            gain.gain.setValueAtTime(0.0001, context.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.08, context.currentTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.2);
+            oscillator.connect(gain);
+            gain.connect(context.destination);
+            oscillator.start();
+            oscillator.stop(context.currentTime + 0.2);
+        } catch (error) {
+            // Ignore browser audio restrictions.
+        }
+    }
+
+    async function loadMessages() {
+        const res = await fetch('{% url "store:seller_chat_messages" selected_conversation.id %}');
+        const data = await res.json();
+        if (!data.ok) return;
+
+        const latestInbound = data.messages
+            .filter(function (msg) { return msg.sender_id !== currentUserId; })
+            .map(function (msg) { return Number(msg.id || 0); })
+            .reduce(function (max, id) { return id > max ? id : max; }, 0);
+
+        if (lastInboundMessageId && latestInbound > lastInboundMessageId) {
+            showToast('New customer message');
+            playBeep();
+        }
+        lastInboundMessageId = latestInbound;
+
+        body.innerHTML = '';
+        data.messages.forEach(renderMessage);
+        body.scrollTop = body.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const text = input.value.trim();
+        if (!text) return;
+
+        const res = await fetch('{% url "store:seller_chat_send" selected_conversation.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({message: text})
+        });
+        const data = await res.json();
+        if (!data.ok) return;
+
+        input.value = '';
+        renderMessage(data.message);
+        body.scrollTop = body.scrollHeight;
+    }
+
+    send.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    loadMessages();
+    setInterval(loadMessages, 7000);
+})();
+</script>
+{% endif %}
+{% endblock %}

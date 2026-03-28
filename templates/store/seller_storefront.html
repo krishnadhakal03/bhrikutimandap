@@ -1,0 +1,74 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block content %}
+<section class="section-margin">
+  <div class="container">
+    <nav aria-label="breadcrumb" style="margin-bottom: 24px;">
+      <ol class="breadcrumb" style="background: transparent; padding: 0;">
+        <li class="breadcrumb-item"><a href="{% url 'store:home' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'store:product_list' %}">Products</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ seller.company|default:seller.username }} Store</li>
+      </ol>
+    </nav>
+
+    <div style="background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.08)); border: 1px solid #e4e9ff; border-radius: 14px; padding: 24px; margin-bottom: 28px;">
+      <h2 style="margin: 0; font-weight: 800; color: #1f2d3d;">{{ seller.company|default:seller.username }} Storefront</h2>
+      <p style="margin: 8px 0 0; color: #5f6f82;">Explore products from this seller.</p>
+    </div>
+
+    {% if products %}
+    <div class="row">
+      {% for product in products %}
+      <div class="col-md-6 col-lg-4 col-xl-3">
+        <div class="card text-center card-product">
+          <div class="card-product__img">
+            {% if product.image %}
+            <a href="{% url 'store:product_detail' product.pk %}">
+              <img class="card-img" src="{{ product.image.url }}" alt="{{ product.title }}" style="height: 280px; object-fit: cover;">
+            </a>
+            {% else %}
+            <a href="{% url 'store:product_detail' product.pk %}">
+              <img class="card-img" src="{% static 'img/product/product1.png' %}" alt="{{ product.title }}" style="height: 280px; object-fit: cover;">
+            </a>
+            {% endif %}
+            <ul class="card-product__imgOverlay">
+              <li>
+                <a href="{% url 'store:product_detail' product.pk %}" title="View Details"><i class="ti-search"></i></a>
+              </li>
+              <li>
+                <button class="add-to-cart-btn" data-product-id="{{ product.pk }}" title="Add to Cart"><i class="ti-shopping-cart"></i></button>
+              </li>
+              <li>
+                <button class="add-to-wishlist-btn" data-product-id="{{ product.pk }}" title="Add to Wishlist"><i class="ti-heart"></i></button>
+              </li>
+            </ul>
+          </div>
+          <div class="card-body">
+            <h4 class="card-product__title"><a href="{% url 'store:product_detail' product.pk %}">{{ product.title }}</a></h4>
+            <p class="card-product__price">NPR {{ product.price }}</p>
+            <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:8px;">
+              <span style="color:#f4b400; letter-spacing:1px; font-size:0.82rem;">
+                {% for i in "12345"|make_list %}
+                  {% if forloop.counter <= product.avg_rating %}
+                    <i class="fas fa-star"></i>
+                  {% else %}
+                    <i class="far fa-star"></i>
+                  {% endif %}
+                {% endfor %}
+              </span>
+              <span style="color:#6b7683; font-size:0.8rem; font-weight:600;">{{ product.review_count }} review{{ product.review_count|pluralize }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info" role="alert">
+      No products are currently listed by this seller.
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

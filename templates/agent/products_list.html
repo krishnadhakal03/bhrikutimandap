@@ -1,9 +1,10 @@
 {% extends "agent/base.html" %}
 
 {% block agent_content %}
-<div class="mb-4 d-flex justify-content-between align-items-center">
+<div class="agent-toolbar">
     <div>
         <h3 class="text-dark mb-0">Products</h3>
+        <p class="subtitle">Manage listings, monitor stock, and quickly edit catalog entries.</p>
     </div>
     <a href="{% url 'agent:product_create' %}" class="btn btn-success">
         <i class="fas fa-plus mr-2"></i> Add Product
@@ -11,34 +12,34 @@
 </div>
 
 <!-- Filters -->
-<div class="card mb-4">
+<div class="card agent-filter-card mb-4">
     <div class="card-body">
-        <form method="get" class="row g-3">
-            <div class="col-md-3">
+        <form method="get" class="agent-filter-grid">
+            <div class="wide">
                 <input type="text" name="search" class="form-control" 
                        placeholder="Search by name or description" 
                        value="{{ request.GET.search }}">
             </div>
             
-            <div class="col-md-2">
-                <select name="price_min" class="form-select">
+            <div>
+                <select name="min_price" class="form-select">
                     <option value="">Min Price</option>
-                    <option value="0" {% if request.GET.price_min == '0' %}selected{% endif %}>0+</option>
-                    <option value="100" {% if request.GET.price_min == '100' %}selected{% endif %}>100+</option>
-                    <option value="500" {% if request.GET.price_min == '500' %}selected{% endif %}>500+</option>
+                    <option value="0" {% if request.GET.min_price == '0' %}selected{% endif %}>0+</option>
+                    <option value="100" {% if request.GET.min_price == '100' %}selected{% endif %}>100+</option>
+                    <option value="500" {% if request.GET.min_price == '500' %}selected{% endif %}>500+</option>
                 </select>
             </div>
             
-            <div class="col-md-2">
-                <select name="price_max" class="form-select">
+            <div>
+                <select name="max_price" class="form-select">
                     <option value="">Max Price</option>
-                    <option value="100" {% if request.GET.price_max == '100' %}selected{% endif %}>100</option>
-                    <option value="500" {% if request.GET.price_max == '500' %}selected{% endif %}>500</option>
-                    <option value="1000" {% if request.GET.price_max == '1000' %}selected{% endif %}>1000+</option>
+                    <option value="100" {% if request.GET.max_price == '100' %}selected{% endif %}>100</option>
+                    <option value="500" {% if request.GET.max_price == '500' %}selected{% endif %}>500</option>
+                    <option value="1000" {% if request.GET.max_price == '1000' %}selected{% endif %}>1000+</option>
                 </select>
             </div>
             
-            <div class="col-md-2">
+            <div>
                 <select name="stock_status" class="form-select">
                     <option value="">All Stock Status</option>
                     <option value="low" {% if request.GET.stock_status == 'low' %}selected{% endif %}>Low Stock</option>
@@ -47,8 +48,9 @@
                 </select>
             </div>
             
-            <div class="col-md-3">
-                <button type="submit" class="btn btn-primary w-100">Filter</button>
+            <div class="actions">
+                <button type="submit" class="btn btn-primary">Apply</button>
+                <a href="{% url 'agent:products_list' %}" class="btn btn-secondary">Reset</a>
             </div>
         </form>
     </div>
@@ -89,12 +91,14 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'agent:product_edit' product.id %}" class="btn btn-sm btn-primary">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <a href="{% url 'agent:product_delete' product.id %}" class="btn btn-sm btn-danger">
-                                <i class="fas fa-trash"></i>
-                            </a>
+                            <div class="agent-table-actions">
+                                <a href="{% url 'agent:product_edit' product.id %}" class="btn btn-sm btn-primary" title="Edit product">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'agent:product_delete' product.id %}" class="btn btn-sm btn-danger" title="Delete product">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -131,7 +135,11 @@
         </nav>
         {% endif %}
         {% else %}
-        <p class="text-center text-muted py-5">No products found. <a href="{% url 'agent:product_create' %}">Create your first product</a></p>
+        <div class="agent-empty">
+            <i class="fas fa-box-open"></i>
+            <p class="mb-2">No products found for the current filter.</p>
+            <a href="{% url 'agent:product_create' %}" class="btn btn-primary btn-sm">Create your first product</a>
+        </div>
         {% endif %}
     </div>
 </div>
